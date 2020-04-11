@@ -4,11 +4,13 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import socket
+import aphytcip
 
 
 class NXMessageDispatcher:
     def __init__(self):
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sequence_number = 0
 
     def __del__(self):
         self.tcp_socket.close()
@@ -17,7 +19,7 @@ class NXMessageDispatcher:
         self.tcp_socket.connect((ip_address, port))
 
     def get_input_data_size(self):
-        pass
+        command = aphytcip.cipmessage.CipMessage()
 
     def get_output_data_size(self):
         pass
