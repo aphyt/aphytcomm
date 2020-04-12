@@ -3,6 +3,8 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
+import binascii
+
 
 class CipResponse:
     def __init__(self, response_bytes):
@@ -27,4 +29,4 @@ class CipResponse:
         self.data = response_bytes[8:]
 
     def __repr__(self):
-        return 'Message Number: %s contains: %s' % (self.message_sequence_number, self.data)
+        return 'Message Number: %s contains: %s' % (self.message_sequence_number, binascii.hexlify(self.data))
