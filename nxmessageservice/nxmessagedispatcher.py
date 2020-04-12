@@ -19,10 +19,22 @@ class NXMessageDispatcher:
         self.tcp_socket.connect((ip_address, port))
 
     def get_input_data_size(self):
-        command = aphytcip.cipmessage.CipMessage()
+        cip_message = aphytcip.cipmessage.CipMessage(b'\x0e', b'\x74\x00', b'\x01\x00',
+                                                     b'\x02\x00', self.sequence_number)
+        self.tcp_socket.send(cip_message.command)
+        response_bytes = self.tcp_socket.recv(512)
+        response = aphytcip.cipresponse.CipResponse(response_bytes)
+        self.sequence_number += 1
+        return response
 
     def get_output_data_size(self):
-        pass
+        cip_message = aphytcip.cipmessage.CipMessage(b'\x0e', b'\x74\x00', b'\x01\x00',
+                                                     b'\x01\x00', self.sequence_number)
+        self.tcp_socket.send(cip_message.command)
+        response_bytes = self.tcp_socket.recv(512)
+        response = aphytcip.cipresponse.CipResponse(response_bytes)
+        self.sequence_number += 1
+        return response
 
     def get_input_data(self):
         pass
