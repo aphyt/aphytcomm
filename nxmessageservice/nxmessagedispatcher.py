@@ -43,6 +43,10 @@ class NXMessageDispatcher:
         response = self.execute_cip_command(b'\x0e', b'\x04\x00', b'\x94\x00', b'\x03\x00')
         return response
 
+    def get_configuration_instance_data(self):
+        response = self.execute_cip_command(b'\x0e', b'\x04\x00', b'\xc7\x00', b'\x03\x00')
+        return response
+
     def set_output_data(self, data):
         response = self.execute_cip_command(b'\x10', b'\x04\x00', b'\x94\x00', b'\x03\x00')
         return response
@@ -51,6 +55,22 @@ class NXMessageDispatcher:
         response = self.execute_cip_command(b'\x32', b'\x74\x00', b'\x01\x00', b'\x00\x00')
         return response
 
-    def change_nx_state(self):
-        response = self.execute_cip_command(b'\x39', b'\x74\x00', b'\x01\x00', b'\x00\x00')
+    def change_nx_state(self, output_watchdog_timeout=100, operational=True):
+        if operational:
+            data = b'\x08'
+        else:
+            data = b'\x04'
+
+        data += b'\00'+int.to_bytes(output_watchdog_timeout, 4, 'little')
+        response = self.execute_cip_command(b'\x39', b'\x74\x00', b'\x01\x00', b'\x00\x00', data)
+        return response
+
+    def read_nx_object(self, unit=0, index=0x1000, sub_index=0, control_field=0):
+        data = int.to_bytes(unit, 2, 'little')
+        data += int.to_bytes(index, 2, 'little')
+        data += int.to_bytes(sub_index, 1, 'little')
+        data += int.to_bytes(control_field, 1, 'little')
+        response = self.execute_cip_command(b'\x33', b'\x74\x00', b'\x01\x00', b'\x00\x00', data)
+        # b'\x00\x00\x00\x00\x00\x00'
+        # b'\x33\x02\x01\x24\x74\x20\x00\x00\x00\x00\x00'
         return response
