@@ -18,6 +18,11 @@ class NXMessageDispatcher:
     def connect(self, ip_address: str = '192.168.250.1', port: int = 64000):
         self.tcp_socket.connect((ip_address, port))
 
+    def disconnect(self):
+        self.tcp_socket.shutdown(socket.SHUT_RDWR)
+        self.tcp_socket.close()
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
     def execute_cip_command(self, service_code, class_id, instance_id, attribute_id, data=b''):
         cip_message = aphytcip.cipmessage.CipMessage(service_code, class_id, instance_id,
                                                      attribute_id, self.sequence_number, data)
@@ -71,6 +76,4 @@ class NXMessageDispatcher:
         data += int.to_bytes(sub_index, 1, 'little')
         data += int.to_bytes(control_field, 1, 'little')
         response = self.execute_cip_command(b'\x33', b'\x74\x00', b'\x01\x00', b'\x00\x00', data)
-        # b'\x00\x00\x00\x00\x00\x00'
-        # b'\x33\x02\x01\x24\x74\x20\x00\x00\x00\x00\x00'
         return response
