@@ -52,25 +52,29 @@ class WxNxMessageDemo(wx.Frame):
         self.Centre()
 
     def get_status_method(self, event):
-        ip_address = self.ip_address_field.GetLineText(0)
-        self.status_window.Clear()
-        self.dispatcher.connect(ip_address)
-        input_data = binascii.hexlify(self.dispatcher.get_input_data().data)
-        output_data = binascii.hexlify(self.dispatcher.get_output_data().data)
-        self.write_line("Input Data Is:")
-        self.write_line(input_data)
-        self.write_line("Output Data Is:")
-        self.write_line(output_data)
-        coupler = self.dispatcher.read_nx_object(unit=0, index=0x1000, sub_index=2, control_field=0).data[2:]
-        number_of_cards = self.dispatcher.read_nx_object(unit=0, index=0x2003, sub_index=3, control_field=0).data[2:]
-        print(number_of_cards)
-        number_of_cards = int(math.log(int.from_bytes(number_of_cards, 'little')+1)/math.log(2))-1
-        self.write_line("{} has {} cards:".format(coupler.decode('ascii').strip(), number_of_cards))
-        for i in range(number_of_cards):
-            name = self.dispatcher.read_nx_object(unit=i+1, index=0x1000, sub_index=2, control_field=0).data[2:]
-            self.write_line(name.decode('ascii').strip())
-
-        self.dispatcher.disconnect()
+        try:
+            ip_address = self.ip_address_field.GetLineText(0)
+            self.status_window.Clear()
+            self.dispatcher.connect(ip_address)
+            input_data = binascii.hexlify(self.dispatcher.get_input_data().data)
+            output_data = binascii.hexlify(self.dispatcher.get_output_data().data)
+            self.write_line("Input Data Is:")
+            self.write_line(input_data)
+            self.write_line("Output Data Is:")
+            self.write_line(output_data)
+            coupler = self.dispatcher.read_nx_object(unit=0, index=0x1000, sub_index=2, control_field=0).data[2:]
+            number_of_cards = self.dispatcher.read_nx_object(unit=0, index=0x2003, sub_index=3, control_field=0).data[2:]
+            number_of_cards = int(math.log(int.from_bytes(number_of_cards, 'little')+1)/math.log(2))-1
+            self.write_line("{} has {} cards:".format(coupler.decode('ascii').strip(), number_of_cards))
+            for i in range(number_of_cards):
+                name = self.dispatcher.read_nx_object(unit=i+1, index=0x1000, sub_index=2, control_field=0).data[2:]
+                self.write_line(name.decode('ascii').strip())
+        except socket.error:
+            print("SHIT")
+        try:
+            self.dispatcher.disconnect()
+        except socket.error:
+            pass
 
     def other_task(self, event):
         task = asyncio.create_task(async_runner(print("H3llo")))

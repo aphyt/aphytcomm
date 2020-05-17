@@ -3,5 +3,5 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
-from . import cipmessage
-from . import cipresponse
+from . import nxmessage
+from . import nxresponse
