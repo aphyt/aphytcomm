@@ -19,6 +19,44 @@ class EIPMessage:
         self.command_data = command_data
 
 
+class CIPMessage:
+    def __init__(self, request_service: bytes, request_path: bytes, request_data: bytes = b'\x01\x00'):
+        """
+
+        :param request_service: bytes
+        :param request_path: bytes
+        :param request_data: bytes
+        """
+        self.request_service = request_service
+        self.request_data = request_data
+        self.request_path_size = len(request_path) // 2
+        self.request_path = request_path
+
+    @staticmethod
+    def tag_request_path(tag_name: str) -> bytes:
+        request_path_bytes = b'\x91' + len(tag_name).to_bytes(1, 'little') + tag_name.encode('utf-8')
+        if len(request_path_bytes) % 2 != 0:
+            request_path_bytes = request_path_bytes + b'\x00'
+        return request_path_bytes
+
+    def bytes(self):
+        return self.request_service + self.request_path_size.to_bytes(1, 'little') + \
+               self.request_path + self.request_data
+
+
+class CommandSpecificData:
+    def __init__(self, interface_handle: bytes = b'\x00\x00\x00\x00',
+                 timeout: bytes = b'\x08\x00',
+                 encapsulated_packet: bytes = b''):
+        self.interface_handle = interface_handle
+        self.timeout = timeout
+        self.encapsulated_packet = encapsulated_packet
+
+    def bytes(self):
+        return self.interface_handle + self.timeout + self.encapsulated_packet
+
+
+
 class EIP:
     explicit_message_port = 44818
     null_address_item = b'\x00\x00\x00\x00'
@@ -75,26 +113,27 @@ class EIP:
             received_eip_message.command_data = received_data[24:]
         return received_eip_message
 
-    # TODO Create NJ CIP message format to use in this method
-    '''
-    This method adds x0100 to the end of the tag which means Route Path (Port 1 address 0)
-    1 is the backplane port, 0 is the CPU unit address.
-    '''
-
+    # def read_tag(self, tag_name: str):
+    #     tag_char_count = len(tag_name)
+    #     if len(tag_name) % 2 == 0:
+    #         tag_bytes = tag_name.encode('utf-8') + b'\x01\x00'
+    #     else:
+    #         tag_bytes = tag_name.encode('utf-8') + b'\x00\x01\x00'
+    #     word_count = len(tag_bytes) // 2
+    #     tag_bytes = b'\x4c' + word_count.to_bytes(1, 'little') + b'\x91' + tag_char_count.to_bytes(1,
+    #                                                                                                'little') + tag_bytes
+    #     tag_bytes = b'\x02\x00' + self.null_address_item + b'\xb2\x00' + len(tag_bytes).to_bytes(2,
+    #                                                                                              'little') + tag_bytes
+    #     tag_bytes = self.cip_handle + b'\x08\x00' + tag_bytes
+    #     eip_message = EIPMessage(b'\x6f\x00', tag_bytes, self.session_handle_id)
+    #     return self.send_command(eip_message).command_data
     def read_tag(self, tag_name: str):
-        tag_char_count = len(tag_name)
-        if len(tag_name) % 2 == 0:
-            tag_bytes = tag_name.encode('utf-8') + b'\x01\x00'
-        else:
-            tag_bytes = tag_name.encode('utf-8') + b'\x00\x01\x00'
-        word_count = len(tag_bytes) // 2
-        tag_bytes = b'\x4c' + word_count.to_bytes(1, 'little') + b'\x91' + tag_char_count.to_bytes(1,
-                                                                                                   'little') + tag_bytes
-        tag_bytes = b'\x02\x00' + self.null_address_item + b'\xb2\x00' + len(tag_bytes).to_bytes(2,
-                                                                                                 'little') + tag_bytes
-        tag_bytes = self.cip_handle + b'\x08\x00' + tag_bytes
-        feip_message = EIPMessage(b'\x6f\x00', tag_bytes, self.session_handle_id)
-        return self.send_command(feip_message).command_data
+        request_path = CIPMessage.tag_request_path(tag_name)
+        cip_message = CIPMessage(b'\x4c', request_path)
+        return cip_message.bytes()
+
+    def send_rr_data(self, command_specific_data: bytes):
+        pass
 
     def list_services(self):
         eip_message = EIPMessage(b'\x04\x00')
