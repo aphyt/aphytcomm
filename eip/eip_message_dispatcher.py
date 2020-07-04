@@ -10,19 +10,21 @@ from typing import List
 
 class CIPMessage:
     """
-    • Read Tag Service (0x4c)
-    • Read Tag Fragmented Service (0x52)
-    • Write Tag Service (0x4d)
-    • Write Tag Fragmented Service (0x53)
-    • Read Modify Write Tag Service (0x4e)
+    * Read Tag Service (0x4c)
+    * Read Tag Fragmented Service (0x52)
+    * Write Tag Service (0x4d)
+    * Write Tag Fragmented Service (0x53)
+    * Read Modify Write Tag Service (0x4e)
+    * Get_Instance_Attribute_List Service (Request) (0x55)
     """
     READ_TAG_SERVICE = b'\x4c'
     READ_TAG_FRAGMENTED_SERVICE = b'\x52'
     WRITE_TAG_SERVICE = b'\x4d'
     WRITE_TAG_FRAGMENTED_SERVICE = b'\x53'
     READ_MODIFY_WRITE_TAG_SERVICE = b'\x4e'
+    GET_INSTANCE_ATTRIBUTE_LIST = b'\x55'
 
-    def __init__(self, request_service: bytes, request_path: bytes, request_data: bytes = b'\x01\x00'):
+    def __init__(self, request_service: bytes, request_path: bytes, request_data: bytes = b''):
         """
 
         :param request_service: bytes
@@ -61,6 +63,9 @@ class DataAndAddressItem:
         self.length = len(command).to_bytes(2, 'little')
         self.command = command
 
+    def from_bytes(self, bytes_data_address_item: bytes):
+        pass
+
     def bytes(self):
         return self.type_id + self.length + self.command
 
@@ -76,13 +81,16 @@ class CIPCommonPacketFormat:
         else:
             self.packets = packets
         self.item_count = len(self.packets)
-        print(self.item_count)
+        self.packet_bytes = b''
+        for packet in self.packets:
+            self.packet_bytes += packet.bytes()
+
+    def from_bytes(self, bytes_common_packet_format: bytes):
+        self.item_count = int.from_bytes(bytes_common_packet_format[0:2], 'little')
+        self.packet_bytes = bytes_common_packet_format[2:]
 
     def bytes(self):
-        packet_bytes = b''
-        for packet in self.packets:
-            packet_bytes += packet.bytes()
-        return self.item_count.to_bytes(2, 'little') + packet_bytes
+        return self.item_count.to_bytes(2, 'little') + self.packet_bytes
 
 
 class CommandSpecificData:
@@ -92,6 +100,11 @@ class CommandSpecificData:
         self.interface_handle = interface_handle
         self.timeout = timeout
         self.encapsulated_packet = encapsulated_packet
+
+    def from_bytes(self, bytes_command_specific_data: bytes):
+        self.interface_handle = bytes_command_specific_data[0:4]
+        self.timeout = bytes_command_specific_data[4:6]
+        self.encapsulated_packet = bytes_command_specific_data[6:]
 
     def bytes(self):
         return self.interface_handle + self.timeout + self.encapsulated_packet
@@ -168,7 +181,7 @@ class EIP:
 
     def read_tag(self, tag_name: str):
         request_path = CIPMessage.tag_request_path(tag_name)
-        cip_message = CIPMessage(CIPMessage.READ_TAG_SERVICE, request_path)
+        cip_message = CIPMessage(CIPMessage.READ_TAG_SERVICE, request_path, b'\x01\x00')
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
         packets = [data_address_item]
         common_packet_format = CIPCommonPacketFormat(packets)
@@ -198,10 +211,14 @@ class EIP:
         self.session_handle_id = response.session_handle_id
         return response
 
-    def get_instance_attribute_list(self, command_data=b''):
-        eip_message = EIPMessage(b'\x6f\x00', b'\x55\x03\x00\x00\x20\x6B\x25\x00\x00\x00\x02\x00\x01\x00\x02\x00', self.session_handle_id)
-        response = self.send_command(eip_message)
-        return response.status
+    def get_variable(self, route_path, command_data=b''):
+        cip_message = CIPMessage(b'\x01',
+                                 route_path, b'')
+        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
+        packets = [data_address_item]
+        common_packet_format = CIPCommonPacketFormat(packets)
+        command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
+        return self.send_rr_data(command_specific_data.bytes())
 
     # feip_commands = FEIPCommands(
     #     nop=CodeDescription(b'\x00\x00',
