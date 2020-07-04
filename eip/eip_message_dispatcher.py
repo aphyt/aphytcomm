@@ -4,22 +4,24 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import socket
-
-
-class EIPMessage:
-    def __init__(self, command=b'\x00\x00', command_data=b'', session_handle_id=b'\x00\x00\x00\x00',
-                 status=b'\x00\x00\x00\x00', sender_context_data=b'\x00\x00\x00\x00\x00\x00\x00\x00',
-                 command_options=b'\x00\x00\x00\x00'):
-        self.command = command
-        self.length = len(command_data).to_bytes(2, 'little')
-        self.session_handle_id = session_handle_id
-        self.status = status
-        self.sender_context_data = sender_context_data
-        self.command_options = command_options
-        self.command_data = command_data
+import binascii
+from typing import List
 
 
 class CIPMessage:
+    """
+    • Read Tag Service (0x4c)
+    • Read Tag Fragmented Service (0x52)
+    • Write Tag Service (0x4d)
+    • Write Tag Fragmented Service (0x53)
+    • Read Modify Write Tag Service (0x4e)
+    """
+    READ_TAG_SERVICE = b'\x4c'
+    READ_TAG_FRAGMENTED_SERVICE = b'\x52'
+    WRITE_TAG_SERVICE = b'\x4d'
+    WRITE_TAG_FRAGMENTED_SERVICE = b'\x53'
+    READ_MODIFY_WRITE_TAG_SERVICE = b'\x4e'
+
     def __init__(self, request_service: bytes, request_path: bytes, request_data: bytes = b'\x01\x00'):
         """
 
@@ -29,6 +31,7 @@ class CIPMessage:
         """
         self.request_service = request_service
         self.request_data = request_data
+        # Length is in Words, so the byte length is divided in half
         self.request_path_size = len(request_path) // 2
         self.request_path = request_path
 
@@ -44,6 +47,44 @@ class CIPMessage:
                self.request_path + self.request_data
 
 
+class DataAndAddressItem:
+    NULL_ADDRESS_ITEM = b'\x00\x00'
+    CONNECTED_TRANSPORT_PACKET = b'\xb1\x00'
+    UNCONNECTED_MESSAGE = b'\xb2\x00'
+    LIST_SERVICES_RESPONSE = b'\x00\x01'
+    SOCKADDR_INFO_ORIGINATOR_TO_TARGET = b'\x00\x80'
+    SOCKADDR_INFO_TARGET_TO_ORIGINATOR = b'\x01\x80'
+    SEQUENCED_ADDRESS_ITEM = b'\x02\x80'
+
+    def __init__(self, type_id, command: bytes):
+        self.type_id = type_id
+        self.length = len(command).to_bytes(2, 'little')
+        self.command = command
+
+    def bytes(self):
+        return self.type_id + self.length + self.command
+
+
+class CIPCommonPacketFormat:
+    def __init__(self, packets: List[DataAndAddressItem]):
+        self.packets = [DataAndAddressItem(DataAndAddressItem.NULL_ADDRESS_ITEM, b''),
+                        DataAndAddressItem(DataAndAddressItem.NULL_ADDRESS_ITEM, b'')]
+        if len(packets) < 1:
+            pass
+        elif len(packets) < 2:
+            self.packets[1] = packets[0]
+        else:
+            self.packets = packets
+        self.item_count = len(self.packets)
+        print(self.item_count)
+
+    def bytes(self):
+        packet_bytes = b''
+        for packet in self.packets:
+            packet_bytes += packet.bytes()
+        return self.item_count.to_bytes(2, 'little') + packet_bytes
+
+
 class CommandSpecificData:
     def __init__(self, interface_handle: bytes = b'\x00\x00\x00\x00',
                  timeout: bytes = b'\x08\x00',
@@ -55,6 +96,18 @@ class CommandSpecificData:
     def bytes(self):
         return self.interface_handle + self.timeout + self.encapsulated_packet
 
+
+class EIPMessage:
+    def __init__(self, command=b'\x00\x00', command_data=b'', session_handle_id=b'\x00\x00\x00\x00',
+                 status=b'\x00\x00\x00\x00', sender_context_data=b'\x00\x00\x00\x00\x00\x00\x00\x00',
+                 command_options=b'\x00\x00\x00\x00'):
+        self.command = command
+        self.length = len(command_data).to_bytes(2, 'little')
+        self.session_handle_id = session_handle_id
+        self.status = status
+        self.sender_context_data = sender_context_data
+        self.command_options = command_options
+        self.command_data = command_data
 
 
 class EIP:
@@ -113,31 +166,22 @@ class EIP:
             received_eip_message.command_data = received_data[24:]
         return received_eip_message
 
-    # def read_tag(self, tag_name: str):
-    #     tag_char_count = len(tag_name)
-    #     if len(tag_name) % 2 == 0:
-    #         tag_bytes = tag_name.encode('utf-8') + b'\x01\x00'
-    #     else:
-    #         tag_bytes = tag_name.encode('utf-8') + b'\x00\x01\x00'
-    #     word_count = len(tag_bytes) // 2
-    #     tag_bytes = b'\x4c' + word_count.to_bytes(1, 'little') + b'\x91' + tag_char_count.to_bytes(1,
-    #                                                                                                'little') + tag_bytes
-    #     tag_bytes = b'\x02\x00' + self.null_address_item + b'\xb2\x00' + len(tag_bytes).to_bytes(2,
-    #                                                                                              'little') + tag_bytes
-    #     tag_bytes = self.cip_handle + b'\x08\x00' + tag_bytes
-    #     eip_message = EIPMessage(b'\x6f\x00', tag_bytes, self.session_handle_id)
-    #     return self.send_command(eip_message).command_data
     def read_tag(self, tag_name: str):
         request_path = CIPMessage.tag_request_path(tag_name)
-        cip_message = CIPMessage(b'\x4c', request_path)
-        return cip_message.bytes()
+        cip_message = CIPMessage(CIPMessage.READ_TAG_SERVICE, request_path)
+        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
+        packets = [data_address_item]
+        common_packet_format = CIPCommonPacketFormat(packets)
+        command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
+        return self.send_rr_data(command_specific_data.bytes())
 
     def send_rr_data(self, command_specific_data: bytes):
-        pass
+        eip_message = EIPMessage(b'\x6f\x00', command_specific_data, self.session_handle_id)
+        return self.send_command(eip_message).command_data
 
     def list_services(self):
         eip_message = EIPMessage(b'\x04\x00')
-        return self.send_command(eip_message)
+        return self.send_command(eip_message).command_data
 
     def list_identity(self):
         eip_message = EIPMessage(b'\x63\x00')
