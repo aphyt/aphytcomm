@@ -159,6 +159,19 @@ class EIPMessage:
         self.command_options = command_options
         self.command_data = command_data
 
+    def bytes(self):
+        return self.command + self.length + self.session_handle_id + self.status + self.sender_context_data + \
+               self.command_options + self.command_data
+
+    def from_bytes(self, eip_message_bytes: bytes):
+        self.command = eip_message_bytes[0:2]
+        self.length = eip_message_bytes[2:4]
+        self.session_handle_id = eip_message_bytes[4:8]
+        self.status = eip_message_bytes[8:12]
+        self.sender_context_data = eip_message_bytes[12:20]
+        self.command_options = eip_message_bytes[20:24]
+        self.command_data = eip_message_bytes[24:]
+
 
 class EIP:
     """
@@ -202,21 +215,12 @@ class EIP:
             self.explicit_message_socket.close()
 
     def send_command(self, eip_command: EIPMessage) -> EIPMessage:
+        # TODO move to EIPMessage bytes and from bytes method
         received_eip_message = EIPMessage()
-        command_bytes = \
-            eip_command.command + eip_command.length + eip_command.session_handle_id + \
-            eip_command.status + eip_command.sender_context_data + eip_command.command_options + \
-            eip_command.command_data
         if self.is_connected_explicit:
-            self.explicit_message_socket.send(command_bytes)
+            self.explicit_message_socket.send(eip_command.bytes())
             received_data = self.explicit_message_socket.recv(self.BUFFER_SIZE)
-            received_eip_message.command = received_data[0:2]
-            received_eip_message.length = received_data[2:4]
-            received_eip_message.session_handle_id = received_data[4:8]
-            received_eip_message.status = received_data[8:12]
-            received_eip_message.sender_context_data = received_data[12:20]
-            received_eip_message.command_options = received_data[20:24]
-            received_eip_message.command_data = received_data[24:]
+            received_eip_message.from_bytes(received_data)
         return received_eip_message
 
     def read_tag(self, tag_name: str):
