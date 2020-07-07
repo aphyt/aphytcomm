@@ -8,6 +8,69 @@ import binascii
 from typing import List
 
 
+class CIPDataTypes:
+    """
+    C1 Boolean (bit)
+    C2 SINT (1-byte signed binary)
+    C3 INT (1-word signed binary)
+    C4 DINT (2-word signed binary)
+    C5 LINT (4-word signed binary)
+    C6 USINT (1-byte unsigned binary)
+    C7 UINT (1-word unsigned binary)
+    C8 UDINT (2-word unsigned binary)
+    C9 ULINT (4-word unsigned binary)
+    CA REAL (2-word floating point)
+    CB LREAL (4-word floating point)
+    D0 STRING
+    D1 BYTE (1-byte hexadecimal)
+    D2 WORD (1-word hexadecimal)
+    D3 DWORD (2-word hexadecimal)
+    DB TIME (8-byte data)
+    D4 LWORD (4-word hexadecimal)
+    A0 Abbreviated STRUCT
+    A2 STRUCT
+    A3 ARRAY
+    04 UINT BCD (1-word unsigned BCD)
+    05 UDINT BCD (2-word unsigned BCD)
+    06 ULINT BCD (4-word unsigned BCD)
+    07 ENUM
+    08 DATE_NSEC
+    09 TIME_NSEC
+    0A DATE_AND_TIME_NSEC
+    0B TIME_OF_DAY_NSEC
+    0C Union
+    """
+    CIP_BOOLEAN = b'\xc1' # (bit)
+    CIP_SINT = b'\xc2' # (1-byte signed binary)
+    CIP_INT = b'\xc3' # (1-word signed binary)
+    CIP_DINT = b'\xc4' # (2-word signed binary)
+    CIP_LINT = b'\xc5' # (4-word signed binary)
+    CIP_USINT = b'\xc6' # (1-byte unsigned binary)
+    CIP_UINT = b'\xc7' # (1-word unsigned binary)
+    CIP_UDINT = b'\xc8' # (2-word unsigned binary)
+    CIP_ULINT = b'\xc9' # (4-word unsigned binary)
+    CIP_REAL = b'\xca' # (2-word floating point)
+    CIP_LREAL = b'\xcb' # (4-word floating point)
+    CIP_STRING = b'\xd0'
+    CIP_BYTE = b'\xd1' # (1-byte hexadecimal)
+    CIP_WORD = b'\xd2' # (1-word hexadecimal)
+    CIP_DWORD = b'\xd3' # (2-word hexadecimal)
+    CIP_TIME = b'\xdb' # (8-byte data)
+    CIP_LWORD = b'\xd4' # (4-word hexadecimal)
+    CIP_ABBREVIATED_STRUCT = b'\xa0'
+    CIP_STRUCT = b'\xa2'
+    CIP_ARRAY = b'\xa3'
+    OMRON_UINT_BCD = b'\x04' # (1-word unsigned BCD)
+    OMRON_UDINT_BCD = b'\x05' # (2-word unsigned BCD)
+    OMRON_ULINT_BCD = b'\x06' # (4-word unsigned BCD)
+    OMRON_ENUM = b'\x07'
+    OMRON_DATE_NSEC = b'\x08'
+    OMRON_TIME_NSEC = b'\x09'
+    OMRON_DATE_AND_TIME_NSEC = b'\x0a'
+    OMRON_TIME_OF_DAY_NSEC = b'\x0b'
+    OMRON_UNION = b'\x0c'
+
+
 class CIPRequest:
     """
 
@@ -60,10 +123,11 @@ class CIPReply:
         # TODO Research any replies that use this. It's usually zero, so I am guessing it is in words
         extended_status_byte_offset = int.from_bytes(self.extended_status_size, 'little') * 2
         self.extended_status = reply_bytes[4:extended_status_byte_offset]
-        self.reply_data = reply_bytes[4+extended_status_byte_offset:len(reply_bytes)]
+        self.reply_data = reply_bytes[4+extended_status_byte_offset:]
 
-    def value(self):
-        pass
+    def bytes(self):
+        return self.reply_service + self.reserved + self.general_status + self.extended_status_size + \
+               self.extended_status + self.reply_data
 
 
 class DataAndAddressItem:
@@ -113,9 +177,9 @@ class CommonPacketFormat:
         while packet_offset < len(self.packet_bytes):
             data_address_item_id = self.packet_bytes[packet_offset: packet_offset+2]
             data_address_item_length = int.from_bytes(self.packet_bytes[packet_offset+2: packet_offset+4], 'little')
-            data_address_item_data = self.packet_bytes[packet_offset+4: packet_offset+data_address_item_length]
+            data_address_item_data = self.packet_bytes[packet_offset+4: packet_offset+data_address_item_length+4]
             self.packets[packet_index] = DataAndAddressItem(data_address_item_id, data_address_item_data)
-            packet_offset = packet_offset + 4 + data_address_item_length
+            packet_offset = packet_offset + data_address_item_length + 4
             packet_index = packet_index + 1
 
     def bytes(self):
@@ -159,7 +223,7 @@ class EIPMessage:
         self.command_options = command_options
         self.command_data = command_data
 
-    def bytes(self):
+    def bytes(self) -> bytes:
         return self.command + self.length + self.session_handle_id + self.status + self.sender_context_data + \
                self.command_options + self.command_data
 
@@ -214,6 +278,33 @@ class EIP:
         if self.explicit_message_socket:
             self.explicit_message_socket.close()
 
+    @staticmethod
+    def command_specific_data_from_eip_message_bytes(eip_message_bytes: bytes):
+        eip_message = EIPMessage()
+        eip_message.from_bytes(eip_message_bytes)
+        return EIP.command_specific_data_from_eip_message(eip_message)
+
+    @staticmethod
+    def command_specific_data_from_eip_message(eip_message: EIPMessage) -> CommandSpecificData:
+        command_specific_data = CommandSpecificData()
+        command_specific_data.from_bytes(eip_message.bytes())
+        return command_specific_data
+
+    @staticmethod
+    def cip_reply_from_eip_message_bytes(eip_message_bytes: bytes) -> CIPReply:
+        eip_message = EIPMessage()
+        eip_message.from_bytes(eip_message_bytes)
+        return EIP.cip_reply_from_eip_message(eip_message)
+
+    @staticmethod
+    def cip_reply_from_eip_message(eip_message: EIPMessage) -> CIPReply:
+        command_specific_data = CommandSpecificData()
+        command_specific_data.from_bytes(eip_message.command_data)
+        common_packet_format = CommonPacketFormat([])
+        common_packet_format.from_bytes(command_specific_data.bytes())
+        cip_reply = CIPReply(common_packet_format.packets[1].bytes())
+        return cip_reply
+
     def send_command(self, eip_command: EIPMessage) -> EIPMessage:
         # TODO move to EIPMessage bytes and from bytes method
         received_eip_message = EIPMessage()
@@ -230,11 +321,16 @@ class EIP:
         packets = [data_address_item]
         common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
-        return self.send_rr_data(command_specific_data.bytes())
+        return self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
 
-    def send_rr_data(self, command_specific_data: bytes):
+    def send_rr_data(self, command_specific_data: bytes) -> CommonPacketFormat:
         eip_message = EIPMessage(b'\x6f\x00', command_specific_data, self.session_handle_id)
-        return self.send_command(eip_message).command_data
+        reply = self.send_command(eip_message)
+        reply_command_specific_data = CommandSpecificData()
+        reply_command_specific_data.from_bytes(reply.command_data)
+        reply_packet = CommonPacketFormat([])
+        reply_packet.from_bytes(reply_command_specific_data.encapsulated_packet)
+        return reply_packet
 
     def list_services(self):
         eip_message = EIPMessage(b'\x04\x00')
@@ -262,7 +358,7 @@ class EIP:
         packets = [data_address_item]
         common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
-        return self.send_rr_data(command_specific_data.bytes())
+        return self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
 
     # feip_commands = FEIPCommands(
     #     nop=CodeDescription(b'\x00\x00',
