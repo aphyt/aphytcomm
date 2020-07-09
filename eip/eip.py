@@ -10,35 +10,7 @@ from typing import List
 
 class CIPDataTypes:
     """
-    C1 Boolean (bit)
-    C2 SINT (1-byte signed binary)
-    C3 INT (1-word signed binary)
-    C4 DINT (2-word signed binary)
-    C5 LINT (4-word signed binary)
-    C6 USINT (1-byte unsigned binary)
-    C7 UINT (1-word unsigned binary)
-    C8 UDINT (2-word unsigned binary)
-    C9 ULINT (4-word unsigned binary)
-    CA REAL (2-word floating point)
-    CB LREAL (4-word floating point)
-    D0 STRING
-    D1 BYTE (1-byte hexadecimal)
-    D2 WORD (1-word hexadecimal)
-    D3 DWORD (2-word hexadecimal)
-    DB TIME (8-byte data)
-    D4 LWORD (4-word hexadecimal)
-    A0 Abbreviated STRUCT
-    A2 STRUCT
-    A3 ARRAY
-    04 UINT BCD (1-word unsigned BCD)
-    05 UDINT BCD (2-word unsigned BCD)
-    06 ULINT BCD (4-word unsigned BCD)
-    07 ENUM
-    08 DATE_NSEC
-    09 TIME_NSEC
-    0A DATE_AND_TIME_NSEC
-    0B TIME_OF_DAY_NSEC
-    0C Union
+
     """
     CIP_BOOLEAN = b'\xc1' # (bit)
     CIP_SINT = b'\xc2' # (1-byte signed binary)
@@ -69,6 +41,12 @@ class CIPDataTypes:
     OMRON_DATE_AND_TIME_NSEC = b'\x0a'
     OMRON_TIME_OF_DAY_NSEC = b'\x0b'
     OMRON_UNION = b'\x0c'
+
+    def from_bytes(self, data: bytes, data_type: bytes):
+        pass
+
+    def to_bytes(self, value, data_type: bytes):
+        pass
 
 
 class CIPRequest:
@@ -254,6 +232,9 @@ class EIP:
         self.session_handle_id = b'\x00\x00\x00\x00\x00\x00\x00\x00'
         self.is_connected_explicit = False
         self.has_session_handle = False
+        self.variables = {}
+        self.user_variables = {}
+        self.system_variables = {}
         self.BUFFER_SIZE = 4096
 
     def __del__(self):
@@ -321,7 +302,11 @@ class EIP:
         packets = [data_address_item]
         common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
-        return self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
+        response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
+        reply_data_and_address_item = DataAndAddressItem('','')
+        reply_data_and_address_item.from_bytes(response)
+        cip_reply = CIPReply(reply_data_and_address_item.data)
+        return cip_reply.reply_data
 
     def send_rr_data(self, command_specific_data: bytes) -> CommonPacketFormat:
         eip_message = EIPMessage(b'\x6f\x00', command_specific_data, self.session_handle_id)
@@ -351,14 +336,53 @@ class EIP:
         self.session_handle_id = response.session_handle_id
         return response
 
-    def get_variable(self, route_path, command_data=b''):
+    def get_variable(self, route_path):
         cip_message = CIPRequest(b'\x01',
                                  route_path, b'')
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
         packets = [data_address_item]
-        common_packet_format = CommonPacketFormat(packets)
-        command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
-        return self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
+        request_common_packet_format = CommonPacketFormat(packets)
+        command_specific_data = CommandSpecificData(encapsulated_packet=request_common_packet_format.bytes())
+        response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
+        cip_reply = CIPReply(response)
+
+        return cip_reply.reply_data
+
+    def update_variable_dictionary(self):
+        variable_list = self._get_variable_list()
+        for variable in variable_list:
+            self.variables.update({variable: 1})
+            variable_response_bytes = self.read_tag(variable)
+            if variable[0:1] == '_':
+                self.system_variables.update({variable: variable_response_bytes[0:1]})
+            else:
+                self.user_variables.update({variable: variable_response_bytes[0:1]})
+
+    def _request_route_path(self, route_path: bytes):
+        cip_message = CIPRequest(b'\x01',
+                                 route_path, b'')
+        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
+        packets = [data_address_item]
+        request_common_packet_format = CommonPacketFormat(packets)
+        command_specific_data = CommandSpecificData(encapsulated_packet=request_common_packet_format.bytes())
+        response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
+        return response
+
+    def _get_variable_list(self):
+        tag_list = []
+        for tag_index in range(self._get_number_of_variables()):
+            offset = tag_index + 1
+            route_path = b'\x20\x6a\x25\x00' + offset.to_bytes(2, 'little')
+            response = self._request_route_path(route_path)
+            tag = str(response[13:13+int.from_bytes(response[12:13], 'little')], 'utf-8')
+            tag_list.append(tag)
+        return tag_list
+
+    def _get_number_of_variables(self) -> int:
+        route_path = b'\x20\x6a\x25\x00\x00\x00'
+        reply = self._request_route_path(route_path)
+        print(reply)
+        return int.from_bytes(reply[10:12], 'little')
 
     # feip_commands = FEIPCommands(
     #     nop=CodeDescription(b'\x00\x00',
