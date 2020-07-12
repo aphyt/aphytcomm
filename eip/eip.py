@@ -66,6 +66,12 @@ class CIPRequest:
     WRITE_TAG_SERVICE = b'\x4d'
     WRITE_TAG_FRAGMENTED_SERVICE = b'\x53'
     READ_MODIFY_WRITE_TAG_SERVICE = b'\x4e'
+    # w506_nx_nj - series_cpu_unit_built - in_ethernet_ip_port_users_manual_en.pdf
+    # 303 of 570 CIP Object Services
+    GET_ATTRIBUTE_ALL = b'\x01'
+    GET_ATTRIBUTE_SINGLE = b'\x0e'
+    RESET = b'\x05'
+    SET_ATTRIBUTE_SINGLE = b'\x10'
 
     def __init__(self, request_service: bytes, request_path: bytes, request_data: bytes = b''):
         """
@@ -81,11 +87,59 @@ class CIPRequest:
         self.request_path = request_path
 
     @staticmethod
-    def tag_request_path(tag_name: str) -> bytes:
+    def tag_request_path_segment(tag_name: str) -> bytes:
+        # Symbolic segment
+        # 1756-pm020_-en-p.pdf 17 of 94
         request_path_bytes = b'\x91' + len(tag_name).to_bytes(1, 'little') + tag_name.encode('utf-8')
         if len(request_path_bytes) % 2 != 0:
             request_path_bytes = request_path_bytes + b'\x00'
         return request_path_bytes
+
+    @staticmethod
+    def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,
+                                     attribute_id: bytes = None) -> bytes:
+        """
+
+        :param class_id: class id with low byte first
+        :param instance_id:
+        :param attribute_id:
+        :return:
+        """
+        # Logical segment  1756-pm020 16 of 94
+        request_path_bytes = b''
+        if class_id is not None:
+            # 8-bit id uses b'\x20 16-bit uses b'\x21'
+            if len(class_id) == 1:
+                request_path_bytes += b'\x20' + class_id
+            elif len(class_id) == 2:
+                request_path_bytes += b'\x21\x00' + class_id
+        if instance_id is not None:
+            # 8-bit id uses b'\x24' 16-bit uses b'\x25'
+            if len(instance_id) == 1:
+                request_path_bytes += b'\x24' + instance_id
+            elif len(instance_id) == 2:
+                request_path_bytes += b'\25\x00' + instance_id
+        if attribute_id is not None:
+            # 8-bit id uses b'\x30' 16-bit uses b'\x31'
+            if len(attribute_id) == 1:
+                request_path_bytes += b'\x30' + attribute_id
+            elif len(attribute_id) == 2:
+                request_path_bytes += b'\x31\x00' + attribute_id
+        return request_path_bytes
+
+    @staticmethod
+    def member_id(member_id: bytes) -> bytes:
+        # member_id is called element_id in Rockwell
+        # # 8-bit id uses b'\x28' 16-bit uses b'\x29' 32-bit id uses b'\x2a
+        member_id_bytes = b''
+        if member_id is not None:
+            if len(member_id) == 1:
+                member_id_bytes += b'\x28' + member_id
+            elif len(member_id) == 2:
+                member_id_bytes += b'\x29\x00' + member_id
+            elif len(member_id) == 4:
+                member_id_bytes += b'\x2a\x00' + member_id
+        return member_id_bytes
 
     def bytes(self):
         return self.request_service + self.request_path_size.to_bytes(1, 'little') + \
@@ -98,7 +152,7 @@ class CIPReply:
         self.reserved = reply_bytes[1:2]
         self.general_status = reply_bytes[2:3]
         self.extended_status_size = reply_bytes[3:4]
-        # TODO Research any replies that use this. It's usually zero, so I am guessing it is in words
+        # TODO Research replies that use this. It's usually zero, so I am guessing it is in words (like the request)
         extended_status_byte_offset = int.from_bytes(self.extended_status_size, 'little') * 2
         self.extended_status = reply_bytes[4:extended_status_byte_offset]
         self.reply_data = reply_bytes[4+extended_status_byte_offset:]
@@ -296,14 +350,14 @@ class EIP:
         return received_eip_message
 
     def read_tag(self, tag_name: str):
-        request_path = CIPRequest.tag_request_path(tag_name)
+        request_path = CIPRequest.tag_request_path_segment(tag_name)
         cip_message = CIPRequest(CIPRequest.READ_TAG_SERVICE, request_path, b'\x01\x00')
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
         packets = [data_address_item]
         common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
         response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
-        reply_data_and_address_item = DataAndAddressItem('','')
+        reply_data_and_address_item = DataAndAddressItem('', '')
         reply_data_and_address_item.from_bytes(response)
         cip_reply = CIPReply(reply_data_and_address_item.data)
         return cip_reply.reply_data
@@ -336,17 +390,21 @@ class EIP:
         self.session_handle_id = response.session_handle_id
         return response
 
-    def get_variable(self, route_path):
-        cip_message = CIPRequest(b'\x01',
-                                 route_path, b'')
-        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
-        packets = [data_address_item]
-        request_common_packet_format = CommonPacketFormat(packets)
-        command_specific_data = CommandSpecificData(encapsulated_packet=request_common_packet_format.bytes())
-        response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
-        cip_reply = CIPReply(response)
-
-        return cip_reply.reply_data
+    # def get_variable(self, route_path):
+    #     """
+    #     ToDo
+    #     :param route_path:
+    #     :return:
+    #     """
+    #     cip_message = CIPRequest(b'\x01',
+    #                              route_path, b'')
+    #     data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
+    #     packets = [data_address_item]
+    #     request_common_packet_format = CommonPacketFormat(packets)
+    #     command_specific_data = CommandSpecificData(encapsulated_packet=request_common_packet_format.bytes())
+    #     response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
+    #     cip_reply = CIPReply(response)
+    #     return cip_reply.reply_data
 
     def update_variable_dictionary(self):
         variable_list = self._get_variable_list()
@@ -358,7 +416,14 @@ class EIP:
             else:
                 self.user_variables.update({variable: variable_response_bytes[0:1]})
 
+    def _get_attribute_all(self, route_path: bytes):
+        pass
+
+    def _get_attribute_single(self, route_path: bytes):
+        pass
+
     def _request_route_path(self, route_path: bytes):
+        # ToDo eliminate with a get_attribute_all method
         cip_message = CIPRequest(b'\x01',
                                  route_path, b'')
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
