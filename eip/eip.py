@@ -12,29 +12,29 @@ class CIPDataTypes:
     """
 
     """
-    CIP_BOOLEAN = b'\xc1' # (bit)
-    CIP_SINT = b'\xc2' # (1-byte signed binary)
-    CIP_INT = b'\xc3' # (1-word signed binary)
-    CIP_DINT = b'\xc4' # (2-word signed binary)
-    CIP_LINT = b'\xc5' # (4-word signed binary)
-    CIP_USINT = b'\xc6' # (1-byte unsigned binary)
-    CIP_UINT = b'\xc7' # (1-word unsigned binary)
-    CIP_UDINT = b'\xc8' # (2-word unsigned binary)
-    CIP_ULINT = b'\xc9' # (4-word unsigned binary)
-    CIP_REAL = b'\xca' # (2-word floating point)
-    CIP_LREAL = b'\xcb' # (4-word floating point)
+    CIP_BOOLEAN = b'\xc1'  # (bit)
+    CIP_SINT = b'\xc2'  # (1-byte signed binary)
+    CIP_INT = b'\xc3'  # (1-word signed binary)
+    CIP_DINT = b'\xc4'  # (2-word signed binary)
+    CIP_LINT = b'\xc5'  # (4-word signed binary)
+    CIP_USINT = b'\xc6'  # (1-byte unsigned binary)
+    CIP_UINT = b'\xc7'  # (1-word unsigned binary)
+    CIP_UDINT = b'\xc8'  # (2-word unsigned binary)
+    CIP_ULINT = b'\xc9'  # (4-word unsigned binary)
+    CIP_REAL = b'\xca'  # (2-word floating point)
+    CIP_LREAL = b'\xcb'  # (4-word floating point)
     CIP_STRING = b'\xd0'
-    CIP_BYTE = b'\xd1' # (1-byte hexadecimal)
-    CIP_WORD = b'\xd2' # (1-word hexadecimal)
-    CIP_DWORD = b'\xd3' # (2-word hexadecimal)
-    CIP_TIME = b'\xdb' # (8-byte data)
-    CIP_LWORD = b'\xd4' # (4-word hexadecimal)
+    CIP_BYTE = b'\xd1'  # (1-byte hexadecimal)
+    CIP_WORD = b'\xd2'  # (1-word hexadecimal)
+    CIP_DWORD = b'\xd3'  # (2-word hexadecimal)
+    CIP_TIME = b'\xdb'  # (8-byte data)
+    CIP_LWORD = b'\xd4'  # (4-word hexadecimal)
     CIP_ABBREVIATED_STRUCT = b'\xa0'
     CIP_STRUCT = b'\xa2'
     CIP_ARRAY = b'\xa3'
-    OMRON_UINT_BCD = b'\x04' # (1-word unsigned BCD)
-    OMRON_UDINT_BCD = b'\x05' # (2-word unsigned BCD)
-    OMRON_ULINT_BCD = b'\x06' # (4-word unsigned BCD)
+    OMRON_UINT_BCD = b'\x04'  # (1-word unsigned BCD)
+    OMRON_UDINT_BCD = b'\x05'  # (2-word unsigned BCD)
+    OMRON_ULINT_BCD = b'\x06'  # (4-word unsigned BCD)
     OMRON_ENUM = b'\x07'
     OMRON_DATE_NSEC = b'\x08'
     OMRON_TIME_NSEC = b'\x09'
@@ -357,7 +357,7 @@ class EIP:
         common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
         response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
-        reply_data_and_address_item = DataAndAddressItem('', '')
+        reply_data_and_address_item = DataAndAddressItem('', b'')
         reply_data_and_address_item.from_bytes(response)
         cip_reply = CIPReply(reply_data_and_address_item.data)
         return cip_reply.reply_data
@@ -390,22 +390,6 @@ class EIP:
         self.session_handle_id = response.session_handle_id
         return response
 
-    # def get_variable(self, route_path):
-    #     """
-    #     ToDo
-    #     :param route_path:
-    #     :return:
-    #     """
-    #     cip_message = CIPRequest(b'\x01',
-    #                              route_path, b'')
-    #     data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
-    #     packets = [data_address_item]
-    #     request_common_packet_format = CommonPacketFormat(packets)
-    #     command_specific_data = CommandSpecificData(encapsulated_packet=request_common_packet_format.bytes())
-    #     response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
-    #     cip_reply = CIPReply(response)
-    #     return cip_reply.reply_data
-
     def update_variable_dictionary(self):
         variable_list = self._get_variable_list()
         for variable in variable_list:
@@ -422,7 +406,7 @@ class EIP:
     def _get_attribute_single(self, route_path: bytes):
         pass
 
-    def _request_route_path(self, route_path: bytes):
+    def _get_request_route_path(self, route_path: bytes):
         # ToDo eliminate with a get_attribute_all method
         cip_message = CIPRequest(b'\x01',
                                  route_path, b'')
@@ -434,19 +418,20 @@ class EIP:
         return response
 
     def _get_variable_list(self):
+        # ToDo fix route path
         tag_list = []
         for tag_index in range(self._get_number_of_variables()):
             offset = tag_index + 1
             route_path = b'\x20\x6a\x25\x00' + offset.to_bytes(2, 'little')
-            response = self._request_route_path(route_path)
+            response = self._get_request_route_path(route_path)
             tag = str(response[13:13+int.from_bytes(response[12:13], 'little')], 'utf-8')
             tag_list.append(tag)
         return tag_list
 
     def _get_number_of_variables(self) -> int:
+        """ToDo fix route path to use method"""
         route_path = b'\x20\x6a\x25\x00\x00\x00'
-        reply = self._request_route_path(route_path)
-        print(reply)
+        reply = self._get_request_route_path(route_path)
         return int.from_bytes(reply[10:12], 'little')
 
     # feip_commands = FEIPCommands(
