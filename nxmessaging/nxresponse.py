@@ -7,8 +7,12 @@ import binascii
 
 
 class CipResponse:
+    """
+
+    """
     def __init__(self, response_bytes):
-        """ Parse Response Bytes
+        """
+        Parse Response Bytes
 
         | Message sequence number   | 2 bytes little endian |
         | Data size                 | 2 bytes little endian |

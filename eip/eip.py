@@ -10,7 +10,7 @@ from typing import List
 
 class CIPDataTypes:
     """
-
+    CIP has a byte that defines the data represented in the message
     """
     CIP_BOOLEAN = b'\xc1'  # (bit)
     CIP_SINT = b'\xc2'  # (1-byte signed binary)
@@ -52,7 +52,7 @@ class CIPDataTypes:
 class CIPRequest:
     """
 
-    1756-pm020_-en-p.pdf 17 of 94
+    ``1756-pm020_-en-p.pdf 17 of 94``
 
     * Read Tag Service (0x4c)
     * Read Tag Fragmented Service (0x52)
@@ -73,8 +73,11 @@ class CIPRequest:
     RESET = b'\x05'
     SET_ATTRIBUTE_SINGLE = b'\x10'
 
-    def __init__(self, request_service: bytes, request_path: bytes, request_data: bytes = b''):
-        """
+    def __init__(self,
+                 request_service: bytes,
+                 request_path: bytes,
+                 request_data: bytes = b''):
+        """ Constructor method
 
         :param request_service: bytes
         :param request_path: bytes
@@ -88,6 +91,11 @@ class CIPRequest:
 
     @staticmethod
     def tag_request_path_segment(tag_name: str) -> bytes:
+        """
+
+        :param tag_name:
+        :return:
+        """
         # Symbolic segment
         # 1756-pm020_-en-p.pdf 17 of 94
         request_path_bytes = b'\x91' + len(tag_name).to_bytes(1, 'little') + tag_name.encode('utf-8')
@@ -129,6 +137,11 @@ class CIPRequest:
 
     @staticmethod
     def member_id(member_id: bytes) -> bytes:
+        """
+
+        :param member_id:
+        :return:
+        """
         # member_id is called element_id in Rockwell
         # # 8-bit id uses b'\x28' 16-bit uses b'\x29' 32-bit id uses b'\x2a
         member_id_bytes = b''
@@ -142,12 +155,23 @@ class CIPRequest:
         return member_id_bytes
 
     def bytes(self):
+        """
+
+        :return:
+        """
         return self.request_service + self.request_path_size.to_bytes(1, 'little') + \
                self.request_path + self.request_data
 
 
 class CIPReply:
+    """
+
+    """
     def __init__(self, reply_bytes: bytes):
+        """
+
+        :param reply_bytes:
+        """
         self.reply_service = reply_bytes[0:1]
         self.reserved = reply_bytes[1:2]
         self.general_status = reply_bytes[2:3]
@@ -158,6 +182,10 @@ class CIPReply:
         self.reply_data = reply_bytes[4+extended_status_byte_offset:]
 
     def bytes(self):
+        """
+
+        :return:
+        """
         return self.reply_service + self.reserved + self.general_status + self.extended_status_size + \
                self.extended_status + self.reply_data
 
@@ -173,21 +201,42 @@ class DataAndAddressItem:
     SEQUENCED_ADDRESS_ITEM = b'\x02\x80'
 
     def __init__(self, type_id, data: bytes):
+        """
+
+        :param type_id:
+        :param data:
+        """
         self.type_id = type_id
         self.length = len(data).to_bytes(2, 'little')
         self.data = data
 
     def from_bytes(self, bytes_data_address_item: bytes):
+        """
+
+        :param bytes_data_address_item:
+        :return:
+        """
         self.type_id = bytes_data_address_item[0:2]
         self.length = bytes_data_address_item[2:4]
         self.data = bytes_data_address_item[4:]
 
     def bytes(self):
+        """
+
+        :return:
+        """
         return self.type_id + self.length + self.data
 
 
 class CommonPacketFormat:
+    """
+
+    """
     def __init__(self, packets: List[DataAndAddressItem]):
+        """
+
+        :param packets:
+        """
         self.packets = [DataAndAddressItem(DataAndAddressItem.NULL_ADDRESS_ITEM, b''),
                         DataAndAddressItem(DataAndAddressItem.NULL_ADDRESS_ITEM, b'')]
         if len(packets) < 1:
@@ -202,6 +251,11 @@ class CommonPacketFormat:
             self.packet_bytes += packet.bytes()
 
     def from_bytes(self, bytes_common_packet_format: bytes):
+        """
+
+        :param bytes_common_packet_format:
+        :return:
+        """
         self.item_count = int.from_bytes(bytes_common_packet_format[0:2], 'little')
         self.packet_bytes = bytes_common_packet_format[2:]
         packet_offset = 0
@@ -215,23 +269,45 @@ class CommonPacketFormat:
             packet_index = packet_index + 1
 
     def bytes(self):
+        """
+
+        :return:
+        """
         return self.item_count.to_bytes(2, 'little') + self.packet_bytes
 
 
 class CommandSpecificData:
+    """
+
+    """
     def __init__(self, interface_handle: bytes = b'\x00\x00\x00\x00',
                  timeout: bytes = b'\x08\x00',
                  encapsulated_packet: bytes = b''):
+        """
+
+        :param interface_handle:
+        :param timeout:
+        :param encapsulated_packet:
+        """
         self.interface_handle = interface_handle
         self.timeout = timeout
         self.encapsulated_packet = encapsulated_packet
 
     def from_bytes(self, bytes_command_specific_data: bytes):
+        """
+
+        :param bytes_command_specific_data:
+        :return:
+        """
         self.interface_handle = bytes_command_specific_data[0:4]
         self.timeout = bytes_command_specific_data[4:6]
         self.encapsulated_packet = bytes_command_specific_data[6:]
 
     def bytes(self):
+        """
+
+        :return:
+        """
         return self.interface_handle + self.timeout + self.encapsulated_packet
 
 
@@ -247,6 +323,15 @@ class EIPMessage:
     def __init__(self, command=b'\x00\x00', command_data=b'', session_handle_id=b'\x00\x00\x00\x00',
                  status=b'\x00\x00\x00\x00', sender_context_data=b'\x00\x00\x00\x00\x00\x00\x00\x00',
                  command_options=b'\x00\x00\x00\x00'):
+        """
+
+        :param command:
+        :param command_data:
+        :param session_handle_id:
+        :param status:
+        :param sender_context_data:
+        :param command_options:
+        """
         self.command = command
         self.length = len(command_data).to_bytes(2, 'little')
         self.session_handle_id = session_handle_id
@@ -256,10 +341,19 @@ class EIPMessage:
         self.command_data = command_data
 
     def bytes(self) -> bytes:
+        """
+
+        :return:
+        """
         return self.command + self.length + self.session_handle_id + self.status + self.sender_context_data + \
                self.command_options + self.command_data
 
     def from_bytes(self, eip_message_bytes: bytes):
+        """
+
+        :param eip_message_bytes:
+        :return:
+        """
         self.command = eip_message_bytes[0:2]
         self.length = eip_message_bytes[2:4]
         self.session_handle_id = eip_message_bytes[4:8]
@@ -308,6 +402,10 @@ class EIP:
                 self.is_connected_explicit = False
 
     def close_explicit(self):
+        """
+
+        :return:
+        """
         self.is_connected_explicit = False
         self.has_session_handle = False
         if self.explicit_message_socket:
@@ -315,24 +413,44 @@ class EIP:
 
     @staticmethod
     def command_specific_data_from_eip_message_bytes(eip_message_bytes: bytes):
+        """
+
+        :param eip_message_bytes:
+        :return:
+        """
         eip_message = EIPMessage()
         eip_message.from_bytes(eip_message_bytes)
         return EIP.command_specific_data_from_eip_message(eip_message)
 
     @staticmethod
     def command_specific_data_from_eip_message(eip_message: EIPMessage) -> CommandSpecificData:
+        """
+
+        :param eip_message:
+        :return:
+        """
         command_specific_data = CommandSpecificData()
         command_specific_data.from_bytes(eip_message.bytes())
         return command_specific_data
 
     @staticmethod
     def cip_reply_from_eip_message_bytes(eip_message_bytes: bytes) -> CIPReply:
+        """
+
+        :param eip_message_bytes:
+        :return:
+        """
         eip_message = EIPMessage()
         eip_message.from_bytes(eip_message_bytes)
         return EIP.cip_reply_from_eip_message(eip_message)
 
     @staticmethod
     def cip_reply_from_eip_message(eip_message: EIPMessage) -> CIPReply:
+        """
+
+        :param eip_message:
+        :return:
+        """
         command_specific_data = CommandSpecificData()
         command_specific_data.from_bytes(eip_message.command_data)
         common_packet_format = CommonPacketFormat([])
@@ -341,6 +459,11 @@ class EIP:
         return cip_reply
 
     def send_command(self, eip_command: EIPMessage) -> EIPMessage:
+        """
+
+        :param eip_command:
+        :return:
+        """
         # TODO move to EIPMessage bytes and from bytes method
         received_eip_message = EIPMessage()
         if self.is_connected_explicit:
@@ -350,6 +473,11 @@ class EIP:
         return received_eip_message
 
     def read_tag(self, tag_name: str):
+        """
+
+        :param tag_name:
+        :return:
+        """
         request_path = CIPRequest.tag_request_path_segment(tag_name)
         cip_message = CIPRequest(CIPRequest.READ_TAG_SERVICE, request_path, b'\x01\x00')
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
@@ -363,6 +491,11 @@ class EIP:
         return cip_reply.reply_data
 
     def send_rr_data(self, command_specific_data: bytes) -> CommonPacketFormat:
+        """
+
+        :param command_specific_data:
+        :return:
+        """
         eip_message = EIPMessage(b'\x6f\x00', command_specific_data, self.session_handle_id)
         reply = self.send_command(eip_message)
         reply_command_specific_data = CommandSpecificData()
@@ -372,18 +505,35 @@ class EIP:
         return reply_packet
 
     def list_services(self):
+        """
+
+        :return:
+        """
         eip_message = EIPMessage(b'\x04\x00')
         return self.send_command(eip_message).command_data
 
     def list_identity(self):
+        """
+
+        :return:
+        """
         eip_message = EIPMessage(b'\x63\x00')
         return self.send_command(eip_message).command_data
 
     def list_interfaces(self):
+        """
+
+        :return:
+        """
         eip_message = EIPMessage(b'\x64\x00')
         return self.send_command(eip_message).command_data
 
     def register_session(self, command_data=b'\x01\x00\x00\x00'):
+        """
+
+        :param command_data:
+        :return:
+        """
         eip_message = EIPMessage(b'\x65\x00', command_data)
         response = self.send_command(eip_message)
         self.has_session_handle = True
@@ -391,6 +541,10 @@ class EIP:
         return response
 
     def update_variable_dictionary(self):
+        """
+
+        :return:
+        """
         variable_list = self._get_variable_list()
         for variable in variable_list:
             self.variables.update({variable: 1})
@@ -407,6 +561,11 @@ class EIP:
         pass
 
     def _get_request_route_path(self, route_path: bytes):
+        """
+
+        :param route_path:
+        :return:
+        """
         # ToDo eliminate with a get_attribute_all method
         cip_message = CIPRequest(b'\x01',
                                  route_path, b'')
@@ -418,6 +577,10 @@ class EIP:
         return response
 
     def _get_variable_list(self):
+        """
+
+        :return:
+        """
         # ToDo fix route path
         tag_list = []
         for tag_index in range(self._get_number_of_variables()):
@@ -429,6 +592,10 @@ class EIP:
         return tag_list
 
     def _get_number_of_variables(self) -> int:
+        """
+
+        :return:
+        """
         """ToDo fix route path to use method"""
         route_path = b'\x20\x6a\x25\x00\x00\x00'
         reply = self._get_request_route_path(route_path)
