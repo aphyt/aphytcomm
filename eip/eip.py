@@ -12,35 +12,35 @@ class CIPDataTypes:
     """
     CIP has a byte that defines the data represented in the message
     """
-    CIP_BOOLEAN = b'\xc1'  # (bit)
-    CIP_SINT = b'\xc2'  # (1-byte signed binary)
-    CIP_INT = b'\xc3'  # (1-word signed binary)
-    CIP_DINT = b'\xc4'  # (2-word signed binary)
-    CIP_LINT = b'\xc5'  # (4-word signed binary)
-    CIP_USINT = b'\xc6'  # (1-byte unsigned binary)
-    CIP_UINT = b'\xc7'  # (1-word unsigned binary)
-    CIP_UDINT = b'\xc8'  # (2-word unsigned binary)
-    CIP_ULINT = b'\xc9'  # (4-word unsigned binary)
-    CIP_REAL = b'\xca'  # (2-word floating point)
-    CIP_LREAL = b'\xcb'  # (4-word floating point)
-    CIP_STRING = b'\xd0'
-    CIP_BYTE = b'\xd1'  # (1-byte hexadecimal)
-    CIP_WORD = b'\xd2'  # (1-word hexadecimal)
-    CIP_DWORD = b'\xd3'  # (2-word hexadecimal)
-    CIP_TIME = b'\xdb'  # (8-byte data)
-    CIP_LWORD = b'\xd4'  # (4-word hexadecimal)
-    CIP_ABBREVIATED_STRUCT = b'\xa0'
-    CIP_STRUCT = b'\xa2'
-    CIP_ARRAY = b'\xa3'
-    OMRON_UINT_BCD = b'\x04'  # (1-word unsigned BCD)
-    OMRON_UDINT_BCD = b'\x05'  # (2-word unsigned BCD)
-    OMRON_ULINT_BCD = b'\x06'  # (4-word unsigned BCD)
-    OMRON_ENUM = b'\x07'
-    OMRON_DATE_NSEC = b'\x08'
-    OMRON_TIME_NSEC = b'\x09'
-    OMRON_DATE_AND_TIME_NSEC = b'\x0a'
-    OMRON_TIME_OF_DAY_NSEC = b'\x0b'
-    OMRON_UNION = b'\x0c'
+    CIP_BOOLEAN = b'\xc1\x00'  # (bit)
+    CIP_SINT = b'\xc2\x00'  # (1-byte signed binary)
+    CIP_INT = b'\xc3\x00'  # (1-word signed binary)
+    CIP_DINT = b'\xc4\x00'  # (2-word signed binary)
+    CIP_LINT = b'\xc5\x00'  # (4-word signed binary)
+    CIP_USINT = b'\xc6\x00'  # (1-byte unsigned binary)
+    CIP_UINT = b'\xc7\x00'  # (1-word unsigned binary)
+    CIP_UDINT = b'\xc8\x00'  # (2-word unsigned binary)
+    CIP_ULINT = b'\xc9\x00'  # (4-word unsigned binary)
+    CIP_REAL = b'\xca\x00'  # (2-word floating point)
+    CIP_LREAL = b'\xcb\x00'  # (4-word floating point)
+    CIP_STRING = b'\xd0\x00'
+    CIP_BYTE = b'\xd1\x00'  # (1-byte hexadecimal)
+    CIP_WORD = b'\xd2\x00'  # (1-word hexadecimal)
+    CIP_DWORD = b'\xd3\x00'  # (2-word hexadecimal)
+    CIP_TIME = b'\xdb\x00'  # (8-byte data)
+    CIP_LWORD = b'\xd4\x00'  # (4-word hexadecimal)
+    CIP_ABBREVIATED_STRUCT = b'\xa0\x00'
+    CIP_STRUCT = b'\xa2\x00'
+    CIP_ARRAY = b'\xa3\x00'
+    OMRON_UINT_BCD = b'\x04\x00'  # (1-word unsigned BCD)
+    OMRON_UDINT_BCD = b'\x05\x00'  # (2-word unsigned BCD)
+    OMRON_ULINT_BCD = b'\x06\x00'  # (4-word unsigned BCD)
+    OMRON_ENUM = b'\x07\x00'
+    OMRON_DATE_NSEC = b'\x08\x00'
+    OMRON_TIME_NSEC = b'\x09\x00'
+    OMRON_DATE_AND_TIME_NSEC = b'\x0a\x00'
+    OMRON_TIME_OF_DAY_NSEC = b'\x0b\x00'
+    OMRON_UNION = b'\x0c\x00'
 
     def from_bytes(self, data: bytes, data_type: bytes):
         pass
@@ -167,6 +167,7 @@ class CIPReply:
     """
 
     """
+
     def __init__(self, reply_bytes: bytes):
         """
 
@@ -179,7 +180,7 @@ class CIPReply:
         # TODO Research replies that use this. It's usually zero, so I am guessing it is in words (like the request)
         extended_status_byte_offset = int.from_bytes(self.extended_status_size, 'little') * 2
         self.extended_status = reply_bytes[4:extended_status_byte_offset]
-        self.reply_data = reply_bytes[4+extended_status_byte_offset:]
+        self.reply_data = reply_bytes[4 + extended_status_byte_offset:]
 
     def bytes(self):
         """
@@ -232,6 +233,7 @@ class CommonPacketFormat:
     """
 
     """
+
     def __init__(self, packets: List[DataAndAddressItem]):
         """
 
@@ -261,9 +263,9 @@ class CommonPacketFormat:
         packet_offset = 0
         packet_index = 0
         while packet_offset < len(self.packet_bytes):
-            data_address_item_id = self.packet_bytes[packet_offset: packet_offset+2]
-            data_address_item_length = int.from_bytes(self.packet_bytes[packet_offset+2: packet_offset+4], 'little')
-            data_address_item_data = self.packet_bytes[packet_offset+4: packet_offset+data_address_item_length+4]
+            data_address_item_id = self.packet_bytes[packet_offset: packet_offset + 2]
+            data_address_item_length = int.from_bytes(self.packet_bytes[packet_offset + 2: packet_offset + 4], 'little')
+            data_address_item_data = self.packet_bytes[packet_offset + 4: packet_offset + data_address_item_length + 4]
             self.packets[packet_index] = DataAndAddressItem(data_address_item_id, data_address_item_data)
             packet_offset = packet_offset + data_address_item_length + 4
             packet_index = packet_index + 1
@@ -280,6 +282,7 @@ class CommandSpecificData:
     """
 
     """
+
     def __init__(self, interface_handle: bytes = b'\x00\x00\x00\x00',
                  timeout: bytes = b'\x08\x00',
                  encapsulated_packet: bytes = b''):
@@ -313,13 +316,15 @@ class CommandSpecificData:
 
 class EIPMessage:
     """
-    EIP Message
-    |-Command Specific Data
-      |-Common Packet Format
-        |-Data And Address Item
-          |-CIP Message
-            |-Route Path
+
+    EIP Message::
+        |-Command Specific Data
+          |-Common Packet Format
+            |-Data And Address Item
+              |-CIP Message
+                |-Route Path
     """
+
     def __init__(self, command=b'\x00\x00', command_data=b'', session_handle_id=b'\x00\x00\x00\x00',
                  status=b'\x00\x00\x00\x00', sender_context_data=b'\x00\x00\x00\x00\x00\x00\x00\x00',
                  command_options=b'\x00\x00\x00\x00'):
@@ -587,7 +592,7 @@ class EIP:
             offset = tag_index + 1
             route_path = b'\x20\x6a\x25\x00' + offset.to_bytes(2, 'little')
             response = self._get_request_route_path(route_path)
-            tag = str(response[13:13+int.from_bytes(response[12:13], 'little')], 'utf-8')
+            tag = str(response[13:13 + int.from_bytes(response[12:13], 'little')], 'utf-8')
             tag_list.append(tag)
         return tag_list
 
