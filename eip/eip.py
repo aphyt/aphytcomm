@@ -12,35 +12,35 @@ class CIPDataTypes:
     """
     CIP has a byte that defines the data represented in the message
     """
-    CIP_BOOLEAN = b'\xc1\x00'  # (bit)
-    CIP_SINT = b'\xc2\x00'  # (1-byte signed binary)
-    CIP_INT = b'\xc3\x00'  # (1-word signed binary)
-    CIP_DINT = b'\xc4\x00'  # (2-word signed binary)
-    CIP_LINT = b'\xc5\x00'  # (4-word signed binary)
-    CIP_USINT = b'\xc6\x00'  # (1-byte unsigned binary)
-    CIP_UINT = b'\xc7\x00'  # (1-word unsigned binary)
-    CIP_UDINT = b'\xc8\x00'  # (2-word unsigned binary)
-    CIP_ULINT = b'\xc9\x00'  # (4-word unsigned binary)
-    CIP_REAL = b'\xca\x00'  # (2-word floating point)
-    CIP_LREAL = b'\xcb\x00'  # (4-word floating point)
-    CIP_STRING = b'\xd0\x00'
-    CIP_BYTE = b'\xd1\x00'  # (1-byte hexadecimal)
-    CIP_WORD = b'\xd2\x00'  # (1-word hexadecimal)
-    CIP_DWORD = b'\xd3\x00'  # (2-word hexadecimal)
-    CIP_TIME = b'\xdb\x00'  # (8-byte data)
-    CIP_LWORD = b'\xd4\x00'  # (4-word hexadecimal)
-    CIP_ABBREVIATED_STRUCT = b'\xa0\x00'
-    CIP_STRUCT = b'\xa2\x00'
-    CIP_ARRAY = b'\xa3\x00'
-    OMRON_UINT_BCD = b'\x04\x00'  # (1-word unsigned BCD)
-    OMRON_UDINT_BCD = b'\x05\x00'  # (2-word unsigned BCD)
-    OMRON_ULINT_BCD = b'\x06\x00'  # (4-word unsigned BCD)
-    OMRON_ENUM = b'\x07\x00'
-    OMRON_DATE_NSEC = b'\x08\x00'
-    OMRON_TIME_NSEC = b'\x09\x00'
-    OMRON_DATE_AND_TIME_NSEC = b'\x0a\x00'
-    OMRON_TIME_OF_DAY_NSEC = b'\x0b\x00'
-    OMRON_UNION = b'\x0c\x00'
+    CIP_BOOLEAN = b'\xc1'  # (bit)
+    CIP_SINT = b'\xc2'  # (1-byte signed binary)
+    CIP_INT = b'\xc3'  # (1-word signed binary)
+    CIP_DINT = b'\xc4'  # (2-word signed binary)
+    CIP_LINT = b'\xc5'  # (4-word signed binary)
+    CIP_USINT = b'\xc6'  # (1-byte unsigned binary)
+    CIP_UINT = b'\xc7'  # (1-word unsigned binary)
+    CIP_UDINT = b'\xc8'  # (2-word unsigned binary)
+    CIP_ULINT = b'\xc9'  # (4-word unsigned binary)
+    CIP_REAL = b'\xca'  # (2-word floating point)
+    CIP_LREAL = b'\xcb'  # (4-word floating point)
+    CIP_STRING = b'\xd0'
+    CIP_BYTE = b'\xd1'  # (1-byte hexadecimal)
+    CIP_WORD = b'\xd2'  # (1-word hexadecimal)
+    CIP_DWORD = b'\xd3'  # (2-word hexadecimal)
+    CIP_TIME = b'\xdb'  # (8-byte data)
+    CIP_LWORD = b'\xd4'  # (4-word hexadecimal)
+    CIP_ABBREVIATED_STRUCT = b'\xa0'
+    CIP_STRUCT = b'\xa2'
+    CIP_ARRAY = b'\xa3'
+    OMRON_UINT_BCD = b'\x04'  # (1-word unsigned BCD)
+    OMRON_UDINT_BCD = b'\x05'  # (2-word unsigned BCD)
+    OMRON_ULINT_BCD = b'\x06'  # (4-word unsigned BCD)
+    OMRON_ENUM = b'\x07'
+    OMRON_DATE_NSEC = b'\x08'
+    OMRON_TIME_NSEC = b'\x09'
+    OMRON_DATE_AND_TIME_NSEC = b'\x0a'
+    OMRON_TIME_OF_DAY_NSEC = b'\x0b'
+    OMRON_UNION = b'\x0c'
 
     def from_bytes(self, data: bytes, data_type: bytes):
         pass
@@ -557,7 +557,7 @@ class EIP:
             if variable[0:1] == '_':
                 self.system_variables.update({variable: variable_response_bytes[0:1]})
             else:
-                self.user_variables.update({variable: variable_response_bytes[0:1]})
+                self.user_variables.update({variable: variable_response_bytes[0:2]})
 
     def _get_attribute_all(self, route_path: bytes):
         pass
