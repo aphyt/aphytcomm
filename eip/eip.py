@@ -8,47 +8,6 @@ import binascii
 from typing import List
 
 
-class CIPDataTypes:
-    """
-    CIP has a byte that defines the data represented in the message
-    """
-    CIP_BOOLEAN = b'\xc1'  # (bit)
-    CIP_SINT = b'\xc2'  # (1-byte signed binary)
-    CIP_INT = b'\xc3'  # (1-word signed binary)
-    CIP_DINT = b'\xc4'  # (2-word signed binary)
-    CIP_LINT = b'\xc5'  # (4-word signed binary)
-    CIP_USINT = b'\xc6'  # (1-byte unsigned binary)
-    CIP_UINT = b'\xc7'  # (1-word unsigned binary)
-    CIP_UDINT = b'\xc8'  # (2-word unsigned binary)
-    CIP_ULINT = b'\xc9'  # (4-word unsigned binary)
-    CIP_REAL = b'\xca'  # (2-word floating point)
-    CIP_LREAL = b'\xcb'  # (4-word floating point)
-    CIP_STRING = b'\xd0'
-    CIP_BYTE = b'\xd1'  # (1-byte hexadecimal)
-    CIP_WORD = b'\xd2'  # (1-word hexadecimal)
-    CIP_DWORD = b'\xd3'  # (2-word hexadecimal)
-    CIP_TIME = b'\xdb'  # (8-byte data)
-    CIP_LWORD = b'\xd4'  # (4-word hexadecimal)
-    CIP_ABBREVIATED_STRUCT = b'\xa0'
-    CIP_STRUCT = b'\xa2'
-    CIP_ARRAY = b'\xa3'
-    OMRON_UINT_BCD = b'\x04'  # (1-word unsigned BCD)
-    OMRON_UDINT_BCD = b'\x05'  # (2-word unsigned BCD)
-    OMRON_ULINT_BCD = b'\x06'  # (4-word unsigned BCD)
-    OMRON_ENUM = b'\x07'
-    OMRON_DATE_NSEC = b'\x08'
-    OMRON_TIME_NSEC = b'\x09'
-    OMRON_DATE_AND_TIME_NSEC = b'\x0a'
-    OMRON_TIME_OF_DAY_NSEC = b'\x0b'
-    OMRON_UNION = b'\x0c'
-
-    def from_bytes(self, data: bytes, data_type: bytes):
-        pass
-
-    def to_bytes(self, value, data_type: bytes):
-        pass
-
-
 class CIPRequest:
     """
 
@@ -154,7 +113,7 @@ class CIPRequest:
                 member_id_bytes += b'\x2a\x00' + member_id
         return member_id_bytes
 
-    def bytes(self):
+    def bytes(self) -> bytes:
         """
 
         :return:
@@ -189,6 +148,74 @@ class CIPReply:
         """
         return self.reply_service + self.reserved + self.general_status + self.extended_status_size + \
                self.extended_status + self.reply_data
+
+
+class CIPDataTypes:
+    """
+    CIP has a byte that defines the data represented in the message
+    """
+    CIP_BOOLEAN = b'\xc1'  # (bit)
+    CIP_SINT = b'\xc2'  # (1-byte signed binary)
+    CIP_INT = b'\xc3'  # (1-word signed binary)
+    CIP_DINT = b'\xc4'  # (2-word signed binary)
+    CIP_LINT = b'\xc5'  # (4-word signed binary)
+    CIP_USINT = b'\xc6'  # (1-byte unsigned binary)
+    CIP_UINT = b'\xc7'  # (1-word unsigned binary)
+    CIP_UDINT = b'\xc8'  # (2-word unsigned binary)
+    CIP_ULINT = b'\xc9'  # (4-word unsigned binary)
+    CIP_REAL = b'\xca'  # (2-word floating point)
+    CIP_LREAL = b'\xcb'  # (4-word floating point)
+    CIP_STRING = b'\xd0'
+    CIP_BYTE = b'\xd1'  # (1-byte hexadecimal)
+    CIP_WORD = b'\xd2'  # (1-word hexadecimal)
+    CIP_DWORD = b'\xd3'  # (2-word hexadecimal)
+    CIP_TIME = b'\xdb'  # (8-byte data)
+    CIP_LWORD = b'\xd4'  # (4-word hexadecimal)
+    CIP_ABBREVIATED_STRUCT = b'\xa0'
+    CIP_STRUCT = b'\xa2'
+    CIP_ARRAY = b'\xa3'
+    OMRON_UINT_BCD = b'\x04'  # (1-word unsigned BCD)
+    OMRON_UDINT_BCD = b'\x05'  # (2-word unsigned BCD)
+    OMRON_ULINT_BCD = b'\x06'  # (4-word unsigned BCD)
+    OMRON_ENUM = b'\x07'
+    OMRON_DATE_NSEC = b'\x08'
+    OMRON_TIME_NSEC = b'\x09'
+    OMRON_DATE_AND_TIME_NSEC = b'\x0a'
+    OMRON_TIME_OF_DAY_NSEC = b'\x0b'
+    OMRON_UNION = b'\x0c'
+
+    def cip_reply_representation(self, cip_reply: CIPReply):
+        data_type = cip_reply.reply_data[0:1]
+        additional_info_length = int.from_bytes(cip_reply.reply_data[1:2], 'little')
+        additional_info = cip_reply.reply_data[2:2+additional_info_length]
+        reply_data = cip_reply.reply_data[2+additional_info_length:]
+        if data_type == CIPDataTypes.CIP_BOOLEAN:
+            pass
+
+
+class CIPCommonFormat:
+    """
+    Look at W506 page 341 of 570 for definition
+    """
+    def __init__(self,
+                 data_type: bytes = b'',
+                 additional_info_length: int = 0,
+                 additional_info: bytes = b'',
+                 data: bytes = b''):
+        self.data_type = data_type
+        self.additional_info_length = additional_info_length
+        self.additional_info = additional_info
+        self.data = data
+
+    def from_bytes(self, bytes_cip_common_format):
+        self.data_type = bytes_cip_common_format.reply_data[0:1]
+        self.additional_info_length = int.from_bytes(bytes_cip_common_format.reply_data[1:2], 'little')
+        self.additional_info = bytes_cip_common_format.reply_data[2:2+self.additional_info_length]
+        self.data = bytes_cip_common_format[2+self.additional_info_length:]
+
+    def to_value(self):
+        # ToDo use data type to display the value rationally
+        pass
 
 
 class DataAndAddressItem:
@@ -552,12 +579,12 @@ class EIP:
         """
         variable_list = self._get_variable_list()
         for variable in variable_list:
-            self.variables.update({variable: 1})
             variable_response_bytes = self.read_tag(variable)
+            self.variables.update({variable: variable_response_bytes[0:1]})
             if variable[0:1] == '_':
                 self.system_variables.update({variable: variable_response_bytes[0:1]})
             else:
-                self.user_variables.update({variable: variable_response_bytes[0:2]})
+                self.user_variables.update({variable: variable_response_bytes[0:1]})
 
     def _get_attribute_all(self, route_path: bytes):
         pass
