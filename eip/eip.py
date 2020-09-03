@@ -506,7 +506,7 @@ class EIP:
 
     def read_tag(self, tag_name: str):
         """
-
+        ToDo Currently just reading symbolic. Add Logical Segment (Class Instance Attribute)
         :param tag_name:
         :return:
         """
