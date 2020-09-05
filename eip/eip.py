@@ -192,17 +192,17 @@ class CIPDataTypes:
         self.data = None
 
     def bytes(self):
-        byte_value = self.data_type_code +\
-                     self.addition_info_length.to_bytes(1, 'little') +\
-                     self.additional_info +\
+        byte_value = self.data_type_code + \
+                     self.addition_info_length.to_bytes(1, 'little') + \
+                     self.additional_info + \
                      self.data
         return byte_value
 
     def from_bytes(self, bytes_cip_data_type):
         self.data_type_code = bytes_cip_data_type[0:1]
         self.addition_info_length = int.from_bytes(bytes_cip_data_type[1:2], 'little')
-        self.additional_info = bytes_cip_data_type[2:2+self.addition_info_length]
-        self.data = bytes_cip_data_type[2+self.addition_info_length:]
+        self.additional_info = bytes_cip_data_type[2:2 + self.addition_info_length]
+        self.data = bytes_cip_data_type[2 + self.addition_info_length:]
 
     def value(self):
         if self.data_type_code == CIPDataTypes.CIP_BOOLEAN:
@@ -274,12 +274,11 @@ class CIPDataTypes:
             if value:
                 self.data = struct.pack("<h", 1)
             else:
-                self.data = struct.pack("<h", 1)
+                self.data = struct.pack("<h", 0)
         elif self.data_type_code == CIPDataTypes.CIP_SINT:
             self.data = struct.pack("<b", value)
         elif self.data_type_code == CIPDataTypes.CIP_INT:
-            self.data = struct.pack("<b", value)
-            return struct.unpack("<h", self.data)[0]
+            self.data = struct.pack("<h", value)
         elif self.data_type_code == CIPDataTypes.CIP_DINT:
             self.data = struct.pack("<l", value)
         elif self.data_type_code == CIPDataTypes.CIP_LINT:
@@ -331,10 +330,12 @@ class CIPDataTypes:
         elif self.data_type_code == CIPDataTypes.OMRON_UNION:
             pass
 
+
 class CIPCommonFormat:
     """
     Look at W506 page 341 of 570 for definition
     """
+
     def __init__(self,
                  data_type: bytes = b'',
                  additional_info_length: int = 0,
@@ -348,8 +349,8 @@ class CIPCommonFormat:
     def from_bytes(self, bytes_cip_common_format):
         self.data_type = bytes_cip_common_format.reply_data[0:1]
         self.additional_info_length = int.from_bytes(bytes_cip_common_format.reply_data[1:2], 'little')
-        self.additional_info = bytes_cip_common_format.reply_data[2:2+self.additional_info_length]
-        self.data = bytes_cip_common_format[2+self.additional_info_length:]
+        self.additional_info = bytes_cip_common_format.reply_data[2:2 + self.additional_info_length]
+        self.data = bytes_cip_common_format[2 + self.additional_info_length:]
 
     def to_value(self):
         # ToDo use data type to display the value rationally
@@ -646,8 +647,20 @@ class EIP:
         cip_data_type = self._get_variable_with_cip_data_type(variable_name=variable_name)
         return cip_data_type.value()
 
-    def write_variable(self, variable_name: str, data, data_type_code: bytes, additional_info: bytes=b''):
-        pass
+    def write_variable(self, variable_name: str, data, additional_info: bytes = b''):
+        cip_data_type = self.variables.get(variable_name)
+        cip_data = CIPDataTypes()
+        cip_data.from_value(data, cip_data_type, additional_info)
+        request_path = CIPRequest.variable_request_path_segment(variable_name)
+        data_bytes = cip_data.data_type_code + cip_data.addition_info_length.to_bytes(1, 'little') + \
+                     b'\x01\x00' + cip_data.data
+        cip_message = CIPRequest(CIPRequest.WRITE_TAG_SERVICE, request_path, data_bytes)
+        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
+        packets = [data_address_item]
+        common_packet_format = CommonPacketFormat(packets)
+        command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
+        response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
+        return response
 
     def _get_variable_with_cip_data_type(self, variable_name: str):
         """
