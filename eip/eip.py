@@ -4,6 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import socket
+import struct
 import binascii
 from typing import List
 
@@ -49,7 +50,7 @@ class CIPRequest:
         self.request_path = request_path
 
     @staticmethod
-    def tag_request_path_segment(tag_name: str) -> bytes:
+    def variable_request_path_segment(tag_name: str) -> bytes:
         """
 
         :param tag_name:
@@ -155,10 +156,10 @@ class CIPDataTypes:
     CIP has a byte that defines the data represented in the message
     """
     CIP_BOOLEAN = b'\xc1'  # (bit)
-    CIP_SINT = b'\xc2'  # (1-byte signed binary)
-    CIP_INT = b'\xc3'  # (1-word signed binary)
-    CIP_DINT = b'\xc4'  # (2-word signed binary)
-    CIP_LINT = b'\xc5'  # (4-word signed binary)
+    CIP_SINT = b'\xc2'  # (1-byte signed binary) signed char
+    CIP_INT = b'\xc3'  # (1-word signed binary) short
+    CIP_DINT = b'\xc4'  # (2-word signed binary) int
+    CIP_LINT = b'\xc5'  # (4-word signed binary) long long
     CIP_USINT = b'\xc6'  # (1-byte unsigned binary)
     CIP_UINT = b'\xc7'  # (1-word unsigned binary)
     CIP_UDINT = b'\xc8'  # (2-word unsigned binary)
@@ -184,13 +185,80 @@ class CIPDataTypes:
     OMRON_TIME_OF_DAY_NSEC = b'\x0b'
     OMRON_UNION = b'\x0c'
 
-    def cip_reply_representation(self, cip_reply: CIPReply):
-        data_type = cip_reply.reply_data[0:1]
-        additional_info_length = int.from_bytes(cip_reply.reply_data[1:2], 'little')
-        additional_info = cip_reply.reply_data[2:2+additional_info_length]
-        reply_data = cip_reply.reply_data[2+additional_info_length:]
-        if data_type == CIPDataTypes.CIP_BOOLEAN:
+    def __init__(self):
+        self.data_type_code = b''
+        self.addition_info_length = 0
+        self.additional_info = b''
+        self.data = None
+
+    def from_bytes(self, bytes_cip_data_type):
+        self.data_type_code = bytes_cip_data_type[0:1]
+        self.addition_info_length = int.from_bytes(bytes_cip_data_type[1:2], 'little')
+        self.additional_info = bytes_cip_data_type[2:2+self.addition_info_length]
+        self.data = bytes_cip_data_type[2+self.addition_info_length:]
+
+    def value(self):
+        if self.data_type_code == CIPDataTypes.CIP_BOOLEAN:
+            bool_value = int.from_bytes(self.data, 'little')
+            if bool_value == 1:
+                return True
+            else:
+                return False
+        elif self.data_type_code == CIPDataTypes.CIP_SINT:
+            return struct.unpack("<b", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_INT:
+            return struct.unpack("<h", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_DINT:
+            return struct.unpack("<l", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_LINT:
+            return struct.unpack("<q", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_USINT:
+            return struct.unpack("<B", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_UINT:
+            return struct.unpack("<H", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_UDINT:
+            return struct.unpack("<L", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_ULINT:
+            return struct.unpack("<Q", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_REAL:
+            return struct.unpack("<f", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_LREAL:
+            return struct.unpack("<d", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_STRING:
             pass
+        elif self.data_type_code == CIPDataTypes.CIP_WORD:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_DWORD:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_TIME:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_LWORD:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_ABBREVIATED_STRUCT:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_STRUCT:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_ARRAY:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_UINT_BCD:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_UDINT_BCD:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_ULINT_BCD:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_ENUM:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_DATE_NSEC:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_TIME_NSEC:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_DATE_AND_TIME_NSEC:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_TIME_OF_DAY_NSEC:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_UNION:
+            pass
+
 
 
 class CIPCommonFormat:
@@ -504,13 +572,17 @@ class EIP:
             received_eip_message.from_bytes(received_data)
         return received_eip_message
 
-    def read_tag(self, tag_name: str):
+    def read_variable(self, variable_name:str):
+        cip_data_type = self._get_variable_with_cip_data_type(variable_name=variable_name)
+        return cip_data_type.value()
+
+    def _get_variable_with_cip_data_type(self, variable_name: str):
         """
         ToDo Currently just reading symbolic. Add Logical Segment (Class Instance Attribute)
-        :param tag_name:
+        :param variable_name:
         :return:
         """
-        request_path = CIPRequest.tag_request_path_segment(tag_name)
+        request_path = CIPRequest.variable_request_path_segment(variable_name)
         cip_message = CIPRequest(CIPRequest.READ_TAG_SERVICE, request_path, b'\x01\x00')
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
         packets = [data_address_item]
@@ -520,7 +592,9 @@ class EIP:
         reply_data_and_address_item = DataAndAddressItem('', b'')
         reply_data_and_address_item.from_bytes(response)
         cip_reply = CIPReply(reply_data_and_address_item.data)
-        return cip_reply.reply_data
+        cip_data_type = CIPDataTypes()
+        cip_data_type.from_bytes(cip_reply.reply_data)
+        return cip_data_type
 
     def send_rr_data(self, command_specific_data: bytes) -> CommonPacketFormat:
         """
@@ -579,12 +653,12 @@ class EIP:
         """
         variable_list = self._get_variable_list()
         for variable in variable_list:
-            variable_response_bytes = self.read_tag(variable)
-            self.variables.update({variable: variable_response_bytes[0:1]})
+            variable_response_bytes = self._get_variable_with_cip_data_type(variable)
+            self.variables.update({variable: variable_response_bytes.data_type_code})
             if variable[0:1] == '_':
-                self.system_variables.update({variable: variable_response_bytes[0:1]})
+                self.system_variables.update({variable: variable_response_bytes.data_type_code})
             else:
-                self.user_variables.update({variable: variable_response_bytes[0:1]})
+                self.user_variables.update({variable: variable_response_bytes.data_type_code})
 
     def _get_attribute_all(self, route_path: bytes):
         pass
