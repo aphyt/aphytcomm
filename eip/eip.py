@@ -191,6 +191,13 @@ class CIPDataTypes:
         self.additional_info = b''
         self.data = None
 
+    def bytes(self):
+        byte_value = self.data_type_code +\
+                     self.addition_info_length.to_bytes(1, 'little') +\
+                     self.additional_info +\
+                     self.data
+        return byte_value
+
     def from_bytes(self, bytes_cip_data_type):
         self.data_type_code = bytes_cip_data_type[0:1]
         self.addition_info_length = int.from_bytes(bytes_cip_data_type[1:2], 'little')
@@ -259,7 +266,70 @@ class CIPDataTypes:
         elif self.data_type_code == CIPDataTypes.OMRON_UNION:
             pass
 
-
+    def from_value(self, value, data_type_code, additional_info):
+        self.data_type_code = data_type_code
+        self.addition_info_length = len(additional_info)
+        self.additional_info = additional_info
+        if self.data_type_code == CIPDataTypes.CIP_BOOLEAN:
+            if value:
+                self.data = struct.pack("<h", 1)
+            else:
+                self.data = struct.pack("<h", 1)
+        elif self.data_type_code == CIPDataTypes.CIP_SINT:
+            self.data = struct.pack("<b", value)
+        elif self.data_type_code == CIPDataTypes.CIP_INT:
+            self.data = struct.pack("<b", value)
+            return struct.unpack("<h", self.data)[0]
+        elif self.data_type_code == CIPDataTypes.CIP_DINT:
+            self.data = struct.pack("<l", value)
+        elif self.data_type_code == CIPDataTypes.CIP_LINT:
+            self.data = struct.pack("<q", value)
+        elif self.data_type_code == CIPDataTypes.CIP_USINT:
+            self.data = struct.pack("<B", value)
+        elif self.data_type_code == CIPDataTypes.CIP_UINT:
+            self.data = struct.pack("<H", value)
+        elif self.data_type_code == CIPDataTypes.CIP_UDINT:
+            self.data = struct.pack("<L", value)
+        elif self.data_type_code == CIPDataTypes.CIP_ULINT:
+            self.data = struct.pack("<Q", value)
+        elif self.data_type_code == CIPDataTypes.CIP_REAL:
+            self.data = struct.pack("<f", value)
+        elif self.data_type_code == CIPDataTypes.CIP_LREAL:
+            self.data = struct.pack("<d", value)
+        elif self.data_type_code == CIPDataTypes.CIP_STRING:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_WORD:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_DWORD:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_TIME:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_LWORD:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_ABBREVIATED_STRUCT:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_STRUCT:
+            pass
+        elif self.data_type_code == CIPDataTypes.CIP_ARRAY:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_UINT_BCD:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_UDINT_BCD:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_ULINT_BCD:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_ENUM:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_DATE_NSEC:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_TIME_NSEC:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_DATE_AND_TIME_NSEC:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_TIME_OF_DAY_NSEC:
+            pass
+        elif self.data_type_code == CIPDataTypes.OMRON_UNION:
+            pass
 
 class CIPCommonFormat:
     """
@@ -572,9 +642,12 @@ class EIP:
             received_eip_message.from_bytes(received_data)
         return received_eip_message
 
-    def read_variable(self, variable_name:str):
+    def read_variable(self, variable_name: str):
         cip_data_type = self._get_variable_with_cip_data_type(variable_name=variable_name)
         return cip_data_type.value()
+
+    def write_variable(self, variable_name: str, data, data_type_code: bytes, additional_info: bytes=b''):
+        pass
 
     def _get_variable_with_cip_data_type(self, variable_name: str):
         """
