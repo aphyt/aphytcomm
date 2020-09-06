@@ -11,6 +11,7 @@ from typing import List
 
 class CIPRequest:
     """
+    Class for assembling CIP requests
 
     ``1756-pm020_-en-p.pdf 17 of 94``
 
@@ -50,15 +51,15 @@ class CIPRequest:
         self.request_path = request_path
 
     @staticmethod
-    def variable_request_path_segment(tag_name: str) -> bytes:
+    def variable_request_path_segment(variable_name: str) -> bytes:
         """
-
-        :param tag_name:
-        :return:
+        This static method returns a variable name to a symbolic segment request path.
+        :param variable_name: The name of the variable for the request path
+        :return: Request path as a bytes object
         """
         # Symbolic segment
         # 1756-pm020_-en-p.pdf 17 of 94
-        request_path_bytes = b'\x91' + len(tag_name).to_bytes(1, 'little') + tag_name.encode('utf-8')
+        request_path_bytes = b'\x91' + len(variable_name).to_bytes(1, 'little') + variable_name.encode('utf-8')
         if len(request_path_bytes) % 2 != 0:
             request_path_bytes = request_path_bytes + b'\x00'
         return request_path_bytes
@@ -125,7 +126,7 @@ class CIPRequest:
 
 class CIPReply:
     """
-
+    Class for parsing CIP replies
     """
 
     def __init__(self, reply_bytes: bytes):
@@ -137,14 +138,14 @@ class CIPReply:
         self.reserved = reply_bytes[1:2]
         self.general_status = reply_bytes[2:3]
         self.extended_status_size = reply_bytes[3:4]
-        # TODO Research replies that use this. It's usually zero, so I am guessing it is in words (like the request)
+        # Research replies that use this. It's usually zero, so I am guessing it is in words (like the request)
         extended_status_byte_offset = int.from_bytes(self.extended_status_size, 'little') * 2
         self.extended_status = reply_bytes[4:extended_status_byte_offset]
         self.reply_data = reply_bytes[4 + extended_status_byte_offset:]
 
     def bytes(self):
         """
-
+        The bytes in the CIP reply
         :return:
         """
         return self.reply_service + self.reserved + self.general_status + self.extended_status_size + \
@@ -397,7 +398,7 @@ class DataAndAddressItem:
 
 class CommonPacketFormat:
     """
-
+    Common Packet Format stores the Data and Address packets. Used in both requests and replies.
     """
 
     def __init__(self, packets: List[DataAndAddressItem]):
@@ -446,7 +447,7 @@ class CommonPacketFormat:
 
 class CommandSpecificData:
     """
-
+    Command Specific Data is sent in an EIP send rr command
     """
 
     def __init__(self, interface_handle: bytes = b'\x00\x00\x00\x00',
@@ -659,6 +660,7 @@ class EIP:
         packets = [data_address_item]
         common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
+        # Response will a common packet format and the index 1 will contain the data
         response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
         return response
 
