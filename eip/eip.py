@@ -6,7 +6,7 @@ __email__ = "jr@aphyt.com"
 import socket
 from typing import List
 
-from eip.cip import CIPRequest, CIPReply, CIPDataTypes
+from eip.cip import CIPRequest, CIPReply, CIPDataTypes, address_request_path_segment, variable_request_path_segment
 
 
 class DataAndAddressItem:
@@ -303,9 +303,8 @@ class EIP:
         cip_data_type = self.variables.get(variable_name)
         cip_data = CIPDataTypes()
         cip_data.from_value(data, cip_data_type, additional_info)
-        request_path = CIPRequest.variable_request_path_segment(variable_name)
-        data_bytes = cip_data.data_type_code + cip_data.addition_info_length.to_bytes(1, 'little') + \
-                     b'\x01\x00' + cip_data.data
+        request_path = variable_request_path_segment(variable_name)
+        data_bytes = cip_data.data_type_code + cip_data.addition_info_length.to_bytes(1, 'little') + b'\x01\x00' + cip_data.data
         cip_message = CIPRequest(CIPRequest.WRITE_TAG_SERVICE, request_path, data_bytes)
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
         packets = [data_address_item]
@@ -321,7 +320,7 @@ class EIP:
         :param variable_name:
         :return:
         """
-        request_path = CIPRequest.variable_request_path_segment(variable_name)
+        request_path = variable_request_path_segment(variable_name)
         cip_message = CIPRequest(CIPRequest.READ_TAG_SERVICE, request_path, b'\x01\x00')
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
         packets = [data_address_item]
@@ -441,8 +440,7 @@ class EIP:
 
         :return:
         """
-        """ToDo fix route path to use method"""
-        route_path = b'\x20\x6a\x25\x00\x00\x00'
+        route_path = address_request_path_segment(b'\x6a', b'\x00\x00')
         reply = self._get_request_route_path(route_path)
         return int.from_bytes(reply[10:12], 'little')
 

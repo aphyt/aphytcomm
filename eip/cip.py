@@ -1,6 +1,61 @@
 import struct
 
 
+def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,
+                                 attribute_id: bytes = None, element_id: bytes = None) -> bytes:
+    """
+
+    :param class_id: class id with low byte first
+    :param instance_id:
+    :param attribute_id:
+    :param element_id
+    :return:
+    """
+    # Logical segment  1756-pm020 16 of 94
+    request_path_bytes = b''
+    if class_id is not None:
+        # 8-bit id uses b'\x20 16-bit uses b'\x21'
+        if len(class_id) == 1:
+            request_path_bytes += b'\x20' + class_id
+        elif len(class_id) == 2:
+            request_path_bytes += b'\x21\x00' + class_id
+    if instance_id is not None:
+        # 8-bit id uses b'\x24' 16-bit uses b'\x25'
+        if len(instance_id) == 1:
+            request_path_bytes += b'\x24' + instance_id
+        elif len(instance_id) == 2:
+            request_path_bytes += b'\x25\x00' + instance_id
+    if attribute_id is not None:
+        # 8-bit id uses b'\x30' 16-bit uses b'\x31'
+        if len(attribute_id) == 1:
+            request_path_bytes += b'\x30' + attribute_id
+        elif len(attribute_id) == 2:
+            request_path_bytes += b'\x31\x00' + attribute_id
+    if element_id is not None:
+        # 8-bit id uses b'\x28' 16-bit uses b'\x29' 32-bit uses b'\x2a'
+        if len(element_id) == 1:
+            request_path_bytes += b'\x28' + element_id
+        elif len(element_id) == 2:
+            request_path_bytes += b'\x29\x00' + element_id
+        elif len(element_id) == 4:
+            request_path_bytes += b'\x2a\x00' + element_id
+    return request_path_bytes
+
+
+def variable_request_path_segment(variable_name: str) -> bytes:
+    """
+    This static method returns a variable name to a symbolic segment request path.
+    :param variable_name: The name of the variable for the request path
+    :return: Request path as a bytes object
+    """
+    # Symbolic segment
+    # 1756-pm020_-en-p.pdf 17 of 94
+    request_path_bytes = b'\x91' + len(variable_name).to_bytes(1, 'little') + variable_name.encode('utf-8')
+    if len(request_path_bytes) % 2 != 0:
+        request_path_bytes = request_path_bytes + b'\x00'
+    return request_path_bytes
+
+
 class CIPRequest:
     """
     Class for assembling CIP requests
@@ -41,71 +96,6 @@ class CIPRequest:
         # Length is in Words, so the byte length is divided in half
         self.request_path_size = len(request_path) // 2
         self.request_path = request_path
-
-    @staticmethod
-    def variable_request_path_segment(variable_name: str) -> bytes:
-        """
-        This static method returns a variable name to a symbolic segment request path.
-        :param variable_name: The name of the variable for the request path
-        :return: Request path as a bytes object
-        """
-        # Symbolic segment
-        # 1756-pm020_-en-p.pdf 17 of 94
-        request_path_bytes = b'\x91' + len(variable_name).to_bytes(1, 'little') + variable_name.encode('utf-8')
-        if len(request_path_bytes) % 2 != 0:
-            request_path_bytes = request_path_bytes + b'\x00'
-        return request_path_bytes
-
-    @staticmethod
-    def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,
-                                     attribute_id: bytes = None) -> bytes:
-        """
-
-        :param class_id: class id with low byte first
-        :param instance_id:
-        :param attribute_id:
-        :return:
-        """
-        # Logical segment  1756-pm020 16 of 94
-        request_path_bytes = b''
-        if class_id is not None:
-            # 8-bit id uses b'\x20 16-bit uses b'\x21'
-            if len(class_id) == 1:
-                request_path_bytes += b'\x20' + class_id
-            elif len(class_id) == 2:
-                request_path_bytes += b'\x21\x00' + class_id
-        if instance_id is not None:
-            # 8-bit id uses b'\x24' 16-bit uses b'\x25'
-            if len(instance_id) == 1:
-                request_path_bytes += b'\x24' + instance_id
-            elif len(instance_id) == 2:
-                request_path_bytes += b'\25\x00' + instance_id
-        if attribute_id is not None:
-            # 8-bit id uses b'\x30' 16-bit uses b'\x31'
-            if len(attribute_id) == 1:
-                request_path_bytes += b'\x30' + attribute_id
-            elif len(attribute_id) == 2:
-                request_path_bytes += b'\x31\x00' + attribute_id
-        return request_path_bytes
-
-    @staticmethod
-    def member_id(member_id: bytes) -> bytes:
-        """
-
-        :param member_id:
-        :return:
-        """
-        # member_id is called element_id in Rockwell
-        # # 8-bit id uses b'\x28' 16-bit uses b'\x29' 32-bit id uses b'\x2a
-        member_id_bytes = b''
-        if member_id is not None:
-            if len(member_id) == 1:
-                member_id_bytes += b'\x28' + member_id
-            elif len(member_id) == 2:
-                member_id_bytes += b'\x29\x00' + member_id
-            elif len(member_id) == 4:
-                member_id_bytes += b'\x2a\x00' + member_id
-        return member_id_bytes
 
     def bytes(self) -> bytes:
         """
@@ -182,7 +172,7 @@ class CIPDataTypes:
         self.data_type_code = b''
         self.addition_info_length = 0
         self.additional_info = b''
-        self.data = None
+        self.data = b''
 
     def bytes(self):
         byte_value = self.data_type_code + \
@@ -259,7 +249,7 @@ class CIPDataTypes:
         elif self.data_type_code == CIPDataTypes.OMRON_UNION:
             pass
 
-    def from_value(self, value, data_type_code, additional_info):
+    def from_value(self, value, data_type_code: bytes, additional_info: bytes):
         self.data_type_code = data_type_code
         self.addition_info_length = len(additional_info)
         self.additional_info = additional_info
