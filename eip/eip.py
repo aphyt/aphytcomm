@@ -436,7 +436,7 @@ class EIP:
 
     def _get_number_of_variables(self) -> int:
         """
-
+        Find number of variables from Tag Name Server
         :return:
         """
         route_path = address_request_path_segment(b'\x6a', b'\x00\x00')
