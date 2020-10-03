@@ -425,11 +425,10 @@ class EIP:
 
         :return:
         """
-        # ToDo fix route path
         tag_list = []
         for tag_index in range(self._get_number_of_variables()):
             offset = tag_index + 1
-            route_path = b'\x20\x6a\x25\x00' + offset.to_bytes(2, 'little')
+            route_path = address_request_path_segment(b'\x6a', offset.to_bytes(2, 'little'))
             response = self._get_request_route_path(route_path)
             tag = str(response[13:13 + int.from_bytes(response[12:13], 'little')], 'utf-8')
             tag_list.append(tag)
