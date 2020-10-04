@@ -97,13 +97,11 @@ class CIPRequest:
         self.request_path_size = len(request_path) // 2
         self.request_path = request_path
 
+    @property
     def bytes(self) -> bytes:
-        """
-
-        :return:
-        """
-        return self.request_service + self.request_path_size.to_bytes(1, 'little') + \
-               self.request_path + self.request_data
+        return \
+            self.request_service + self.request_path_size.to_bytes(1, 'little') + \
+            self.request_path + self.request_data
 
 
 class CIPReply:
@@ -125,13 +123,15 @@ class CIPReply:
         self.extended_status = reply_bytes[4:extended_status_byte_offset]
         self.reply_data = reply_bytes[4 + extended_status_byte_offset:]
 
+    @property
     def bytes(self):
         """
         The bytes in the CIP reply
         :return:
         """
-        return self.reply_service + self.reserved + self.general_status + self.extended_status_size + \
-               self.extended_status + self.reply_data
+        return \
+            self.reply_service + self.reserved + self.general_status + \
+            self.extended_status_size + self.extended_status + self.reply_data
 
 
 class CIPDataTypes:

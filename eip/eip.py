@@ -168,8 +168,9 @@ class EIPMessage:
 
         :return:
         """
-        return self.command + self.length + self.session_handle_id + self.status + self.sender_context_data + \
-               self.command_options + self.command_data
+        return \
+            self.command + self.length + self.session_handle_id + self.status + \
+            self.sender_context_data + self.command_options + self.command_data
 
     def from_bytes(self, eip_message_bytes: bytes):
         """
@@ -188,17 +189,13 @@ class EIPMessage:
 
 class EIP:
     """
-    EIP
+    EIP is an encapsulation protocol for CIP (common industrial protocol) messages
     """
     explicit_message_port = 44818
     null_address_item = b'\x00\x00\x00\x00'
     cip_handle = b'\x00\x00\x00\x00'
 
     def __init__(self):
-        """
-
-
-        """
         self.explicit_message_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.session_handle_id = b'\x00\x00\x00\x00\x00\x00\x00\x00'
         self.is_connected_explicit = False
@@ -257,17 +254,6 @@ class EIP:
         return command_specific_data
 
     @staticmethod
-    def cip_reply_from_eip_message_bytes(eip_message_bytes: bytes) -> CIPReply:
-        """
-
-        :param eip_message_bytes:
-        :return:
-        """
-        eip_message = EIPMessage()
-        eip_message.from_bytes(eip_message_bytes)
-        return EIP.cip_reply_from_eip_message(eip_message)
-
-    @staticmethod
     def cip_reply_from_eip_message(eip_message: EIPMessage) -> CIPReply:
         """
 
@@ -304,9 +290,11 @@ class EIP:
         cip_data = CIPDataTypes()
         cip_data.from_value(data, cip_data_type, additional_info)
         request_path = variable_request_path_segment(variable_name)
-        data_bytes = cip_data.data_type_code + cip_data.addition_info_length.to_bytes(1, 'little') + b'\x01\x00' + cip_data.data
+        data_bytes = \
+            cip_data.data_type_code + cip_data.addition_info_length.to_bytes(1, 'little') + \
+            b'\x01\x00' + cip_data.data
         cip_message = CIPRequest(CIPRequest.WRITE_TAG_SERVICE, request_path, data_bytes)
-        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
+        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes)
         packets = [data_address_item]
         common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
@@ -322,7 +310,7 @@ class EIP:
         """
         request_path = variable_request_path_segment(variable_name)
         cip_message = CIPRequest(CIPRequest.READ_TAG_SERVICE, request_path, b'\x01\x00')
-        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
+        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes)
         packets = [data_address_item]
         common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
@@ -413,7 +401,7 @@ class EIP:
         # ToDo eliminate with a get_attribute_all method
         cip_message = CIPRequest(b'\x01',
                                  route_path, b'')
-        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes())
+        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, cip_message.bytes)
         packets = [data_address_item]
         request_common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=request_common_packet_format.bytes())
