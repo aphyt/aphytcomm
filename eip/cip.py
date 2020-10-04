@@ -1,4 +1,14 @@
 import struct
+from abc import ABC, abstractmethod
+
+
+class CIPDispatcher(ABC):
+    """
+    ToDo add all the methods that must be implemented on the dispatcher and methods CIP can do with those methods
+    """
+    @abstractmethod
+    def execute_cip_commands(self):
+        pass
 
 
 def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,
