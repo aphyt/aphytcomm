@@ -1,4 +1,28 @@
 import struct
+from abc import ABC, abstractmethod
+
+
+class CIPDataType(ABC):
+    """ToDo Create ABC for CIP data types maybe, change to CIPData that has a type"""
+
+    @property
+    @abstractmethod
+    def data_type_code(self):
+        pass
+
+    def __init__(self):
+        self._data_type_code = b''
+        self.addition_info_length = 0
+        self.additional_info = b''
+        self.data = b''
+
+    @abstractmethod
+    def value(self):
+        pass
+
+    @abstractmethod
+    def from_value(self):
+        pass
 
 
 class CIPDataTypes:
