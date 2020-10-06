@@ -325,7 +325,7 @@ class EIP:
 
     def send_rr_data(self, command_specific_data: bytes) -> CommonPacketFormat:
         """
-
+        Ethernet/IP command to send an encapsulated request and reply packet between originator and target
         :param command_specific_data:
         :return:
         """
@@ -431,32 +431,3 @@ class EIP:
         route_path = address_request_path_segment(b'\x6a', b'\x00\x00')
         reply = self._get_request_route_path(route_path)
         return int.from_bytes(reply[10:12], 'little')
-
-    # feip_commands = FEIPCommands(
-    #     nop=CodeDescription(b'\x00\x00',
-    #                         'A non-operational command used during TCP communications to verify TCP connection'),
-    #     list_services=CodeDescription(b'\x00\x04', 'List the scanners EtherNet/IP services available'),
-    #     list_identity=CodeDescription(b'\x00\x63', 'List the scanners EtherNet/IP identity, vendor ID,device ID, '
-    #                                                'serial number and other information'),
-    #     list_interfaces=CodeDescription(b'\x00\x64',
-    #                                     'List the scanners EtherNet/IP assembly and input/output object'
-    #                                     ' interfaces available'),
-    #     register_session=CodeDescription(b'\x00\x65', 'Open and register a communication session with the scanner'),
-    #     un_register_session=CodeDescription(b'\x00\x66',
-    #                                         'Close the registered communication session with the scanner'),
-    #     send_rr_data=CodeDescription(b'\x00\x6F',
-    #                                  'Send a request/reply command to the scanner along with a sub-command'
-    #                                  ' and optional data'))
-
-    # feip_errors = [CodeDescription(b'\x00\x00', 'No error in command request'),
-    #                CodeDescription(b'\x00\x01', 'Invalid command used in request'),
-    #                CodeDescription(b'\x00\x02', 'Insufficient memory in target device'),
-    #                CodeDescription(b'\x00\x03', 'Incorrect data used in request'),
-    #                CodeDescription(b'\x00\x64', 'Invalid session handle used in request'),
-    #                CodeDescription(b'\x00\x65', 'Invalid command length used in request'),
-    #                CodeDescription(b'\x00\x69', 'Unsupported protocol version used in request')]
-
-    # def error_code_to_description(self, code):
-    #     for error in self.feip_errors:
-    #         if code == error.code:
-    #             return error.description
