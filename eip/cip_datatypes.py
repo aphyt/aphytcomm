@@ -5,23 +5,283 @@ from abc import ABC, abstractmethod
 class CIPDataType(ABC):
     """ToDo Create ABC for CIP data types maybe, change to CIPData that has a type"""
 
-    @property
+    @staticmethod
     @abstractmethod
-    def data_type_code(self):
+    def data_type_code() -> bytes:
         pass
 
     def __init__(self):
-        self._data_type_code = b''
+        self._data_type_code = self.data_type_code()
         self.addition_info_length = 0
         self.additional_info = b''
         self.data = b''
+
+    def bytes(self):
+        byte_value = self.data_type_code + \
+                     self.addition_info_length.to_bytes(1, 'little') + \
+                     self.additional_info + \
+                     self.data
+        return byte_value
+
+    def from_bytes(self, bytes_cip_data_type):
+        self._data_type_code = bytes_cip_data_type[0:1]
+        self.addition_info_length = int.from_bytes(bytes_cip_data_type[1:2], 'little')
+        self.additional_info = bytes_cip_data_type[2:2 + self.addition_info_length]
+        self.data = bytes_cip_data_type[2 + self.addition_info_length:]
 
     @abstractmethod
     def value(self):
         pass
 
     @abstractmethod
-    def from_value(self):
+    def from_value(self, value):
+        pass
+
+
+class CIPBoolean(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xc1'  # (bit)
+
+    def value(self):
+        bool_value = int.from_bytes(self.data, 'little')
+        if bool_value == 1:
+            return True
+        else:
+            return False
+
+    def from_value(self, value):
+        if value:
+            self.data = struct.pack("<h", 1)
+        else:
+            self.data = struct.pack("<h", 0)
+
+
+class CIPShortInteger(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xc2'  # (1-byte signed binary)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPInteger(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xc3'  # (1-word signed binary)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPDoubleInteger(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xc4'  # (2-word signed binary)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPLongInteger(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xc5'  # (1-byte signed binary)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPUnsignedShortInteger(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xc6'  # (1-byte unsigned binary)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPUnsignedInteger(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xc7'  # (1-word signed binary)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPUnsignedDoubleInteger(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xc8'  # (2-word unsigned binary)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPUnsignedLongInteger(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xc9'  # (4-word unsigned binary)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPReal(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xca'  # (2-word floating point)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPLongReal(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xcb'  # (4-word floating point)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPString(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xd0'  #
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPByte(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xd1'
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPWord(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xd2'  #
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPDoubleWord(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xd3'  #
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPLongWord(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xd4'  #
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPTime(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xdb'  # (8-byte data)
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPAbbreviatedStructure(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xa0'  #
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPStructure(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xa2'  #
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
+        pass
+
+
+class CIPArray(CIPDataType):
+    @staticmethod
+    def data_type_code():
+        return b'\xa3'  # (1-byte signed binary) signed char
+
+    def value(self):
+        pass
+
+    def from_value(self, value):
         pass
 
 

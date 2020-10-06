@@ -339,7 +339,7 @@ class EIP:
 
     def list_services(self):
         """
-
+        Find which services a target supports
         :return:
         """
         eip_message = EIPMessage(b'\x04\x00')
@@ -347,7 +347,7 @@ class EIP:
 
     def list_identity(self):
         """
-
+        Used by an originator to locate possible targets
         :return:
         """
         eip_message = EIPMessage(b'\x63\x00')
@@ -355,7 +355,7 @@ class EIP:
 
     def list_interfaces(self):
         """
-
+        Used by an originator to identify possible non-CIP interfaces on the target
         :return:
         """
         eip_message = EIPMessage(b'\x64\x00')
@@ -363,7 +363,7 @@ class EIP:
 
     def register_session(self, command_data=b'\x01\x00\x00\x00'):
         """
-
+        Used by an originator to establish a session. It is required before sending CIP messages
         :param command_data:
         :return:
         """
