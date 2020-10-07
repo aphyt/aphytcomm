@@ -1,5 +1,16 @@
 == Unused Code ==
 
+    @staticmethod
+    def command_specific_data_from_eip_message_bytes(eip_message_bytes: bytes):
+        """
+
+        :param eip_message_bytes:
+        :return:
+        """
+        eip_message = EIPMessage()
+        eip_message.from_bytes(eip_message_bytes)
+        return EIP.command_specific_data_from_eip_message(eip_message)
+
     # feip_commands = FEIPCommands(
     #     nop=CodeDescription(b'\x00\x00',
     #                         'A non-operational command used during TCP communications to verify TCP connection'),

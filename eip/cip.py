@@ -1,68 +1,18 @@
 from abc import ABC, abstractmethod
 
 
-class CIPDispatcher(ABC):
-    """
-    ToDo add all the methods that must be implemented on the dispatcher and methods CIP can do with those methods
-    """
-    @abstractmethod
-    def execute_cip_commands(self):
-        pass
-
-
-def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,
-                                 attribute_id: bytes = None, element_id: bytes = None) -> bytes:
-    """
-
-    :param class_id: class id with low byte first
-    :param instance_id:
-    :param attribute_id:
-    :param element_id
-    :return:
-    """
-    # Logical segment  1756-pm020 16 of 94
-    request_path_bytes = b''
-    if class_id is not None:
-        # 8-bit id uses b'\x20 16-bit uses b'\x21'
-        if len(class_id) == 1:
-            request_path_bytes += b'\x20' + class_id
-        elif len(class_id) == 2:
-            request_path_bytes += b'\x21\x00' + class_id
-    if instance_id is not None:
-        # 8-bit id uses b'\x24' 16-bit uses b'\x25'
-        if len(instance_id) == 1:
-            request_path_bytes += b'\x24' + instance_id
-        elif len(instance_id) == 2:
-            request_path_bytes += b'\x25\x00' + instance_id
-    if attribute_id is not None:
-        # 8-bit id uses b'\x30' 16-bit uses b'\x31'
-        if len(attribute_id) == 1:
-            request_path_bytes += b'\x30' + attribute_id
-        elif len(attribute_id) == 2:
-            request_path_bytes += b'\x31\x00' + attribute_id
-    if element_id is not None:
-        # 8-bit id uses b'\x28' 16-bit uses b'\x29' 32-bit uses b'\x2a'
-        if len(element_id) == 1:
-            request_path_bytes += b'\x28' + element_id
-        elif len(element_id) == 2:
-            request_path_bytes += b'\x29\x00' + element_id
-        elif len(element_id) == 4:
-            request_path_bytes += b'\x2a\x00' + element_id
-    return request_path_bytes
-
-
-def variable_request_path_segment(variable_name: str) -> bytes:
-    """
-    This static method returns a variable name to a symbolic segment request path.
-    :param variable_name: The name of the variable for the request path
-    :return: Request path as a bytes object
-    """
-    # Symbolic segment
-    # 1756-pm020_-en-p.pdf 17 of 94
-    request_path_bytes = b'\x91' + len(variable_name).to_bytes(1, 'little') + variable_name.encode('utf-8')
-    if len(request_path_bytes) % 2 != 0:
-        request_path_bytes = request_path_bytes + b'\x00'
-    return request_path_bytes
+class CIPService:
+    READ_TAG_SERVICE = b'\x4c'
+    READ_TAG_FRAGMENTED_SERVICE = b'\x52'
+    WRITE_TAG_SERVICE = b'\x4d'
+    WRITE_TAG_FRAGMENTED_SERVICE = b'\x53'
+    READ_MODIFY_WRITE_TAG_SERVICE = b'\x4e'
+    # w506_nx_nj - series_cpu_unit_built - in_ethernet_ip_port_users_manual_en.pdf
+    # 303 of 570 CIP Object Services
+    GET_ATTRIBUTE_ALL = b'\x01'
+    GET_ATTRIBUTE_SINGLE = b'\x0e'
+    RESET = b'\x05'
+    SET_ATTRIBUTE_SINGLE = b'\x10'
 
 
 class CIPRequest:
@@ -78,17 +28,6 @@ class CIPRequest:
     * Read Modify Write Tag Service (0x4e)
 
     """
-    READ_TAG_SERVICE = b'\x4c'
-    READ_TAG_FRAGMENTED_SERVICE = b'\x52'
-    WRITE_TAG_SERVICE = b'\x4d'
-    WRITE_TAG_FRAGMENTED_SERVICE = b'\x53'
-    READ_MODIFY_WRITE_TAG_SERVICE = b'\x4e'
-    # w506_nx_nj - series_cpu_unit_built - in_ethernet_ip_port_users_manual_en.pdf
-    # 303 of 570 CIP Object Services
-    GET_ATTRIBUTE_ALL = b'\x01'
-    GET_ATTRIBUTE_SINGLE = b'\x0e'
-    RESET = b'\x05'
-    SET_ATTRIBUTE_SINGLE = b'\x10'
 
     def __init__(self,
                  request_service: bytes,
@@ -167,3 +106,81 @@ class CIPCommonFormat:
     def to_value(self):
         # ToDo use data type to display the value rationally
         pass
+
+
+class CIPDispatcher(ABC):
+    """
+    ToDo add all the methods that must be implemented on the dispatcher and methods CIP can do with those methods
+    """
+
+    def __init__(self):
+        self.variables = {}
+        self.user_variables = {}
+        self.system_variables = {}
+
+    @abstractmethod
+    def execute_cip_command(self, request: CIPRequest) -> CIPReply:
+        pass
+
+    def read_tag_service(self, tag_route_path):
+        read_tag_request = CIPRequest(CIPService.READ_TAG_SERVICE, tag_route_path, b'\x01\x00')
+        return self.execute_cip_command(read_tag_request)
+
+    def write_tag_service(self, tag_route_path, data):
+        write_tag_request = CIPRequest(CIPService.WRITE_TAG_SERVICE, tag_route_path, b'\x01\x00')
+        return self.execute_cip_command(write_tag_request)
+
+
+def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,
+                                 attribute_id: bytes = None, element_id: bytes = None) -> bytes:
+    """
+
+    :param class_id: class id with low byte first
+    :param instance_id:
+    :param attribute_id:
+    :param element_id
+    :return:
+    """
+    # Logical segment  1756-pm020 16 of 94
+    request_path_bytes = b''
+    if class_id is not None:
+        # 8-bit id uses b'\x20 16-bit uses b'\x21'
+        if len(class_id) == 1:
+            request_path_bytes += b'\x20' + class_id
+        elif len(class_id) == 2:
+            request_path_bytes += b'\x21\x00' + class_id
+    if instance_id is not None:
+        # 8-bit id uses b'\x24' 16-bit uses b'\x25'
+        if len(instance_id) == 1:
+            request_path_bytes += b'\x24' + instance_id
+        elif len(instance_id) == 2:
+            request_path_bytes += b'\x25\x00' + instance_id
+    if attribute_id is not None:
+        # 8-bit id uses b'\x30' 16-bit uses b'\x31'
+        if len(attribute_id) == 1:
+            request_path_bytes += b'\x30' + attribute_id
+        elif len(attribute_id) == 2:
+            request_path_bytes += b'\x31\x00' + attribute_id
+    if element_id is not None:
+        # 8-bit id uses b'\x28' 16-bit uses b'\x29' 32-bit uses b'\x2a'
+        if len(element_id) == 1:
+            request_path_bytes += b'\x28' + element_id
+        elif len(element_id) == 2:
+            request_path_bytes += b'\x29\x00' + element_id
+        elif len(element_id) == 4:
+            request_path_bytes += b'\x2a\x00' + element_id
+    return request_path_bytes
+
+
+def variable_request_path_segment(variable_name: str) -> bytes:
+    """
+    This static method returns a variable name to a symbolic segment request path.
+    :param variable_name: The name of the variable for the request path
+    :return: Request path as a bytes object
+    """
+    # Symbolic segment
+    # 1756-pm020_-en-p.pdf 17 of 94
+    request_path_bytes = b'\x91' + len(variable_name).to_bytes(1, 'little') + variable_name.encode('utf-8')
+    if len(request_path_bytes) % 2 != 0:
+        request_path_bytes = request_path_bytes + b'\x00'
+    return request_path_bytes

@@ -63,10 +63,10 @@ class CIPShortInteger(CIPDataType):
         return b'\xc2'  # (1-byte signed binary)
 
     def value(self):
-        pass
+        return struct.unpack("<b", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<b", value)
 
 
 class CIPInteger(CIPDataType):
@@ -75,10 +75,10 @@ class CIPInteger(CIPDataType):
         return b'\xc3'  # (1-word signed binary)
 
     def value(self):
-        pass
+        return struct.unpack("<h", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<h", value)
 
 
 class CIPDoubleInteger(CIPDataType):
@@ -87,10 +87,10 @@ class CIPDoubleInteger(CIPDataType):
         return b'\xc4'  # (2-word signed binary)
 
     def value(self):
-        pass
+        return struct.unpack("<l", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<l", value)
 
 
 class CIPLongInteger(CIPDataType):
@@ -99,10 +99,10 @@ class CIPLongInteger(CIPDataType):
         return b'\xc5'  # (1-byte signed binary)
 
     def value(self):
-        pass
+        return struct.unpack("<q", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<q", value)
 
 
 class CIPUnsignedShortInteger(CIPDataType):
@@ -111,10 +111,10 @@ class CIPUnsignedShortInteger(CIPDataType):
         return b'\xc6'  # (1-byte unsigned binary)
 
     def value(self):
-        pass
+        return struct.unpack("<B", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<B", value)
 
 
 class CIPUnsignedInteger(CIPDataType):
@@ -123,10 +123,10 @@ class CIPUnsignedInteger(CIPDataType):
         return b'\xc7'  # (1-word signed binary)
 
     def value(self):
-        pass
+        return struct.unpack("<H", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<H", value)
 
 
 class CIPUnsignedDoubleInteger(CIPDataType):
@@ -135,10 +135,10 @@ class CIPUnsignedDoubleInteger(CIPDataType):
         return b'\xc8'  # (2-word unsigned binary)
 
     def value(self):
-        pass
+        return struct.unpack("<L", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<L", value)
 
 
 class CIPUnsignedLongInteger(CIPDataType):
@@ -147,10 +147,10 @@ class CIPUnsignedLongInteger(CIPDataType):
         return b'\xc9'  # (4-word unsigned binary)
 
     def value(self):
-        pass
+        return struct.unpack("<Q", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<Q", value)
 
 
 class CIPReal(CIPDataType):
@@ -159,10 +159,10 @@ class CIPReal(CIPDataType):
         return b'\xca'  # (2-word floating point)
 
     def value(self):
-        pass
+        return struct.unpack("<f", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<f", value)
 
 
 class CIPLongReal(CIPDataType):
@@ -171,10 +171,10 @@ class CIPLongReal(CIPDataType):
         return b'\xcb'  # (4-word floating point)
 
     def value(self):
-        pass
+        return struct.unpack("<d", self.data)[0]
 
     def from_value(self, value):
-        pass
+        self.data = struct.pack("<d", value)
 
 
 class CIPString(CIPDataType):
@@ -195,10 +195,10 @@ class CIPByte(CIPDataType):
         return b'\xd1'
 
     def value(self):
-        pass
+        return self.data
 
     def from_value(self, value):
-        pass
+        self.data = value
 
 
 class CIPWord(CIPDataType):
@@ -207,10 +207,10 @@ class CIPWord(CIPDataType):
         return b'\xd2'  #
 
     def value(self):
-        pass
+        return self.data
 
     def from_value(self, value):
-        pass
+        self.data = value
 
 
 class CIPDoubleWord(CIPDataType):
@@ -219,10 +219,10 @@ class CIPDoubleWord(CIPDataType):
         return b'\xd3'  #
 
     def value(self):
-        pass
+        return self.data
 
     def from_value(self, value):
-        pass
+        self.data = value
 
 
 class CIPLongWord(CIPDataType):
@@ -231,10 +231,10 @@ class CIPLongWord(CIPDataType):
         return b'\xd4'  #
 
     def value(self):
-        pass
+        return self.data
 
     def from_value(self, value):
-        pass
+        self.data = value
 
 
 class CIPTime(CIPDataType):
