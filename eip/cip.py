@@ -117,6 +117,7 @@ class CIPDispatcher(ABC):
         self.variables = {}
         self.user_variables = {}
         self.system_variables = {}
+        self.data_type_dictionary = {}
 
     @abstractmethod
     def execute_cip_command(self, request: CIPRequest) -> CIPReply:
