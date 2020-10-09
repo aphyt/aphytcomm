@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import binascii
 
 
 class CIPService:
@@ -123,12 +124,14 @@ class CIPDispatcher(ABC):
     def execute_cip_command(self, request: CIPRequest) -> CIPReply:
         pass
 
-    def read_tag_service(self, tag_route_path):
-        read_tag_request = CIPRequest(CIPService.READ_TAG_SERVICE, tag_route_path, b'\x01\x00')
+    def read_tag_service(self, tag_route_path, number_of_elements = 1):
+        read_tag_request = \
+            CIPRequest(CIPService.READ_TAG_SERVICE, tag_route_path, number_of_elements.to_bytes(2, 'little'))
         return self.execute_cip_command(read_tag_request)
 
-    def write_tag_service(self, tag_route_path, data):
-        write_tag_request = CIPRequest(CIPService.WRITE_TAG_SERVICE, tag_route_path, b'\x01\x00')
+    def write_tag_service(self, tag_route_path, cip_datatype_code, data, number_of_elements=1):
+        data = cip_datatype_code + b'\x00' + number_of_elements.to_bytes(2, 'little') + data
+        write_tag_request = CIPRequest(CIPService.WRITE_TAG_SERVICE, tag_route_path, data)
         return self.execute_cip_command(write_tag_request)
 
 

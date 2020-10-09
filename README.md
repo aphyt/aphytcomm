@@ -29,9 +29,9 @@ Example Code
 
 ## Example Use
 
-    import eip.eip
+    import eip.n_series
     
-    fake_eip_instance = eip.eip.EIP()
+    fake_eip_instance = eip.n_series.NSeriesEIP()
     fake_eip_instance.connect_explicit('192.168.250.13')
     fake_eip_instance.register_session()
     fake_eip_instance.update_variable_dictionary()

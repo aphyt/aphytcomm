@@ -19,7 +19,7 @@ class CIPDataType(ABC):
         self.attribute_id = None
 
     def bytes(self):
-        byte_value = self.data_type_code + \
+        byte_value = self.data_type_code() + \
                      self.addition_info_length.to_bytes(1, 'little') + \
                      self.additional_info + \
                      self.data
@@ -242,7 +242,7 @@ class CIPLongWord(CIPDataType):
 class CIPTime(CIPDataType):
     @staticmethod
     def data_type_code():
-        return b'\xdb'  # (8-byte data)
+        return b'\xdb\x00'  # (8-byte data)
 
     def value(self):
         pass
@@ -254,7 +254,7 @@ class CIPTime(CIPDataType):
 class CIPAbbreviatedStructure(CIPDataType):
     @staticmethod
     def data_type_code():
-        return b'\xa0'  #
+        return b'\xa0\x00'  #
 
     def value(self):
         pass
@@ -266,7 +266,7 @@ class CIPAbbreviatedStructure(CIPDataType):
 class CIPStructure(CIPDataType):
     @staticmethod
     def data_type_code():
-        return b'\xa2'  #
+        return b'\xa2\x00'  #
 
     def value(self):
         pass
@@ -278,7 +278,7 @@ class CIPStructure(CIPDataType):
 class CIPArray(CIPDataType):
     @staticmethod
     def data_type_code():
-        return b'\xa3'  # (1-byte signed binary) signed char
+        return b'\xa3\x00'  # (1-byte signed binary) signed char
 
     def value(self):
         pass

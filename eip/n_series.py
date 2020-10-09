@@ -1,7 +1,7 @@
 from eip import *
 
 
-class NSeriesEIP(EIP2):
+class NSeriesEIP(EIP):
     def __init__(self):
         super().__init__()
 
@@ -10,38 +10,47 @@ class NSeriesEIP(EIP2):
         get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_route_path)
         return self.execute_cip_command(get_attribute_all_request)
 
-    def get_attribute_single(self, tag_route_path):
+    def get_attribute_single_service(self, tag_route_path):
         # ToDo move up to EIP super class
         get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_route_path)
         return self.execute_cip_command(get_attribute_single_request)
 
     def read_variable(self, variable_name: str):
-        # ToDo make a reply to rational response based on data type in response
         route_path = variable_request_path_segment(variable_name)
-        read_variable_request = CIPRequest(CIPService.READ_TAG_SERVICE, route_path, b'\x01\x00')
-        return self.execute_cip_command(read_variable_request).reply_data
+        response = self.read_tag_service(route_path)
+        cip_datatype = self.variables.get(variable_name)
+        cip_datatype.from_bytes(response.reply_data)
+        return cip_datatype.value()
 
     def write_variable(self, variable_name: str, data, additional_info: bytes = b''):
-        pass
+        route_path = variable_request_path_segment(variable_name)
+        cip_datatype = self.variables.get(variable_name)
+        cip_datatype.from_value(data)
+        self.write_tag_service(route_path, cip_datatype.data_type_code(), cip_datatype.data)
 
     def update_variable_dictionary(self):
         """
 
         :return:
         """
+        self._update_data_type_dictionary()
         variable_list = self._get_variable_list()
         attribute_id = 1
         for variable in variable_list:
-            # variable_response_bytes = self._get_variable_with_cip_data_type(variable)
-            variable_response_bytes = self.read_variable(variable)
-            self.variables.update({variable: variable_response_bytes.data_type_code})
+            route_path = variable_request_path_segment(variable)
+            variable_response_bytes = self.read_tag_service(route_path)
+            variable_cip_datatype_code = variable_response_bytes.reply_data[0:1]
+            variable_cip_datatype_object = self.data_type_dictionary.get(variable_cip_datatype_code)
+            if not isinstance(variable_cip_datatype_object, type(None)):
+                variable_cip_datatype = variable_cip_datatype_object()
+            self.variables.update({variable: variable_cip_datatype})
             if variable[0:1] == '_':
-                self.system_variables.update({variable: variable_response_bytes.data_type_code})
+                self.system_variables.update({variable: variable_cip_datatype})
             else:
-                self.user_variables.update({variable: variable_response_bytes.data_type_code})
+                self.user_variables.update({variable: variable_cip_datatype})
             attribute_id = attribute_id + 1
 
-    def update_data_type_dictionary(self):
+    def _update_data_type_dictionary(self):
         for sub_class in CIPDataType.__subclasses__():
             self.data_type_dictionary.update({sub_class.data_type_code(): sub_class})
 
@@ -65,7 +74,5 @@ class NSeriesEIP(EIP2):
         :return:
         """
         route_path = address_request_path_segment(b'\x6a', b'\x00\x00')
-        # reply = self._get_request_route_path(route_path)
         reply = self.get_attribute_all_service(route_path)
-        #return int.from_bytes(reply.bytes[10:12], 'little')
         return int.from_bytes(reply.reply_data[2:4], 'little')
