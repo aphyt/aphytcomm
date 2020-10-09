@@ -271,7 +271,6 @@ class EIP(CIPDispatcher):
         :param eip_command:
         :return:
         """
-        # TODO move to EIPMessage bytes and from bytes method
         received_eip_message = EIPMessage()
         if self.is_connected_explicit:
             self.explicit_message_socket.send(eip_command.bytes())

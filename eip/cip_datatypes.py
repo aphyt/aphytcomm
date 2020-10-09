@@ -1,9 +1,16 @@
+__author__ = 'Joseph Ryan'
+__license__ = "GPLv2"
+__maintainer__ = "Joseph Ryan"
+__email__ = "jr@aphyt.com"
+
 import struct
 from abc import ABC, abstractmethod
 
 
 class CIPDataType(ABC):
-    """ToDo Create ABC for CIP data types maybe, change to CIPData that has a type"""
+    """
+
+    """
 
     @staticmethod
     @abstractmethod

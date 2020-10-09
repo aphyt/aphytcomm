@@ -1,3 +1,8 @@
+__author__ = 'Joseph Ryan'
+__license__ = "GPLv2"
+__maintainer__ = "Joseph Ryan"
+__email__ = "jr@aphyt.com"
+
 from abc import ABC, abstractmethod
 import binascii
 
@@ -104,14 +109,12 @@ class CIPCommonFormat:
         self.additional_info = bytes_cip_common_format.reply_data[2:2 + self.additional_info_length]
         self.data = bytes_cip_common_format[2 + self.additional_info_length:]
 
-    def to_value(self):
-        # ToDo use data type to display the value rationally
-        pass
-
 
 class CIPDispatcher(ABC):
     """
-    ToDo add all the methods that must be implemented on the dispatcher and methods CIP can do with those methods
+    ToDo Read Tag Fragmented
+    ToDo Write Tag Fragmented
+
     """
 
     def __init__(self):
