@@ -20,6 +20,10 @@ class NSeriesEIP(EIP):
         get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_route_path)
         return self.execute_cip_command(get_attribute_single_request)
 
+    def get_instance_list_service(self, tag_route_path, data):
+        get_instance_list_request = CIPRequest(b'\x5f', tag_route_path, data)
+        return self.execute_cip_command(get_instance_list_request)
+
     def read_variable(self, variable_name: str):
         route_path = variable_request_path_segment(variable_name)
         response = self.read_tag_service(route_path)

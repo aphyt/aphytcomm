@@ -127,7 +127,7 @@ class CIPDispatcher(ABC):
     def execute_cip_command(self, request: CIPRequest) -> CIPReply:
         pass
 
-    def read_tag_service(self, tag_route_path, number_of_elements = 1):
+    def read_tag_service(self, tag_route_path, number_of_elements=1):
         read_tag_request = \
             CIPRequest(CIPService.READ_TAG_SERVICE, tag_route_path, number_of_elements.to_bytes(2, 'little'))
         return self.execute_cip_command(read_tag_request)
@@ -136,6 +136,19 @@ class CIPDispatcher(ABC):
         data = cip_datatype_code + b'\x00' + number_of_elements.to_bytes(2, 'little') + data
         write_tag_request = CIPRequest(CIPService.WRITE_TAG_SERVICE, tag_route_path, data)
         return self.execute_cip_command(write_tag_request)
+
+    def read_tag_fragmented_service(self, tag_route_path, offset, number_of_elements):
+        data = tag_route_path + number_of_elements.to_bytes(2, 'little') + offset.to_bytes(4, 'little')
+        read_tag_fragmented_request = \
+            CIPRequest(CIPService.READ_TAG_FRAGMENTED_SERVICE, tag_route_path, data)
+        return self.execute_cip_command(read_tag_fragmented_request)
+
+    def write_tag_fragmented_service(self, tag_route_path, cip_datatype_code, data, offset, number_of_elements=1):
+        data = \
+            cip_datatype_code + b'\x00' + number_of_elements.to_bytes(2, 'little') + \
+            offset.to_bytes(4, 'little') + data
+        write_tag_fragmented_request = CIPRequest(CIPService.WRITE_TAG_FRAGMENTED_SERVICE, tag_route_path, data)
+        return self.execute_cip_command(write_tag_fragmented_request)
 
 
 def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,

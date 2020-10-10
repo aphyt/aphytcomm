@@ -192,10 +192,10 @@ class CIPString(CIPDataType):
         return b'\xd0'  #
 
     def value(self):
-        pass
+        return self.data
 
     def from_value(self, value):
-        pass
+        self.data = value
 
 
 class CIPByte(CIPDataType):
