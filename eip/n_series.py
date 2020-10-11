@@ -66,8 +66,8 @@ class VariableTypeObjectReply(CIPReply):
     @property
     def next_instance_id(self):
         return \
-            self.reply_data[self.padding + 17 + self.array_dimension * 4 + self.variable_type_name_length:
-                            self.padding + 17 + self.array_dimension * 4 + self.variable_type_name_length + 4]
+            self.reply_data[self.padding+17+self.array_dimension*4+self.variable_type_name_length:
+                            self.padding+17+self.array_dimension*4+self.variable_type_name_length+4]
 
     @property
     def nesting_variable_type_instance_id(self):
@@ -88,6 +88,60 @@ class VariableTypeObjectReply(CIPReply):
                                               self.padding + 25 +
                                               self.array_dimension * 4 +
                                               self.variable_type_name_length + 4])[0]
+            array_start_list.append(array_start)
+        return array_start_list
+
+
+class VariableObjectReply(CIPReply):
+    """
+    CIP Reply from the Get Attribute All service to Variable Object Class Code 0x6B adding descriptive properties
+    """
+    def __init__(self, reply_bytes: bytes):
+        super().__init__(reply_bytes=reply_bytes)
+
+    @property
+    def size(self):
+        return struct.unpack("<L", self.reply_data[0:4])[0]
+
+    @property
+    def cip_data_type(self):
+        return self.reply_data[4:5]
+
+    @property
+    def cip_data_type_of_array(self):
+        return self.reply_data[5:6]
+
+    @property
+    def array_dimension(self):
+        # One byte of padding after this. Skip to byte 8
+        return struct.unpack("<B", self.reply_data[6:7])[0]
+
+    @property
+    def number_of_elements(self):
+        """Number of elements in each dimension of  the array"""
+        dimension_size_list = []
+        for i in range(self.array_dimension):
+            dimension_size = struct.unpack("<L", self.reply_data[8+i*4:8+i*4+4])[0]
+            dimension_size_list.append(dimension_size)
+        return dimension_size_list
+
+    @property
+    def bit_number(self):
+        return struct.unpack("<B", self.reply_data[16+self.array_dimension*4:17+self.array_dimension*4])[0]
+
+    @property
+    def variable_type_instance_id(self):
+        return self.reply_data[20+self.array_dimension*4:24+self.array_dimension*4]
+
+    @property
+    def start_array_elements(self):
+        """Number of elements in each dimension of  the array"""
+        array_start_list = []
+        for i in range(self.array_dimension):
+            array_start = \
+                struct.unpack("<L",
+                              self.reply_data[24+self.array_dimension * 4:
+                                              24+self.array_dimension * 4 + 4])[0]
             array_start_list.append(array_start)
         return array_start_list
 
