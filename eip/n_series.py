@@ -6,6 +6,92 @@ __email__ = "jr@aphyt.com"
 from eip import *
 
 
+class VariableTypeObjectReply(CIPReply):
+    """
+    CIP Reply from the Get Attribute All service to Variable Type Object Class Code 0x6C adding descriptive properties
+    """
+    def __init__(self, reply_bytes: bytes):
+        super().__init__(reply_bytes=reply_bytes)
+
+    @property
+    def size_in_memory(self):
+        return struct.unpack("<L", self.reply_data[0:4])[0]
+
+    @property
+    def cip_data_type(self):
+        return self.reply_data[5:6]
+
+    @property
+    def cip_data_type_of_array(self):
+        return self.reply_data[6:7]
+
+    @property
+    def array_dimension(self):
+        return struct.unpack("<B", self.reply_data[7:8])[0]
+
+    @property
+    def number_of_elements(self):
+        """Number of elements in each dimension of  the array"""
+        dimension_size_list = []
+        for i in range(self.array_dimension):
+            dimension_size = struct.unpack("<L", self.reply_data[8+i*4:8+i*4+4])[0]
+            dimension_size_list.append(dimension_size)
+        return dimension_size_list
+
+    @property
+    def number_of_members(self):
+        return struct.unpack("<H", self.reply_data[8+self.array_dimension*4:10+self.array_dimension*4])[0]
+
+    @property
+    def crc_code(self):
+        return struct.unpack("<H", self.reply_data[14+self.array_dimension*4:16+self.array_dimension*4])[0]
+
+    @property
+    def variable_type_name_length(self):
+        return struct.unpack("<B", self.reply_data[16 + self.array_dimension * 4:17 + self.array_dimension * 4])[0]
+
+    @property
+    def padding(self):
+        if self.variable_type_name_length % 2 == 0:
+            return 1
+        else:
+            return 0
+
+    @property
+    def variable_type_name(self):
+        return \
+            self.reply_data[17 + self.array_dimension * 4:
+                            17 + self.array_dimension * 4 + self.variable_type_name_length]
+
+    @property
+    def next_instance_id(self):
+        return \
+            self.reply_data[self.padding + 17 + self.array_dimension * 4 + self.variable_type_name_length:
+                            self.padding + 17 + self.array_dimension * 4 + self.variable_type_name_length + 4]
+
+    @property
+    def nesting_variable_type_instance_id(self):
+        return \
+            self.reply_data[self.padding + 21 + self.array_dimension * 4 + self.variable_type_name_length:
+                            self.padding + 21 + self.array_dimension * 4 + self.variable_type_name_length + 4]
+
+    @property
+    def start_array_elements(self):
+        """Number of elements in each dimension of  the array"""
+        array_start_list = []
+        for i in range(self.array_dimension):
+            array_start = \
+                struct.unpack("<L",
+                              self.reply_data[self.padding + 25 +
+                                              self.array_dimension * 4 +
+                                              self.variable_type_name_length:
+                                              self.padding + 25 +
+                                              self.array_dimension * 4 +
+                                              self.variable_type_name_length + 4])[0]
+            array_start_list.append(array_start)
+        return array_start_list
+
+
 class NSeriesEIP(EIP):
     def __init__(self):
         super().__init__()
@@ -31,7 +117,7 @@ class NSeriesEIP(EIP):
         cip_datatype.from_bytes(response.reply_data)
         return cip_datatype.value()
 
-    def write_variable(self, variable_name: str, data, additional_info: bytes = b''):
+    def write_variable(self, variable_name: str, data):
         route_path = variable_request_path_segment(variable_name)
         cip_datatype = self.variables.get(variable_name)
         cip_datatype.from_value(data)

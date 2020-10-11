@@ -1,6 +1,31 @@
 == Unused Code ==
 
+class GetInstanceListEx2Reply:
+    """
+    Extend the CIP Reply from the Get Instance List Ex2 service to Tag Name Server 0x6A to add descriptive properties
+    """
+    def __init__(self, reply_bytes: bytes):
+        super().__init__(reply_bytes=reply_bytes)
 
+    @property
+    def data_length(self):
+        return struct.unpack("<H", self.reply_data[0:2])[0]
+
+    @property
+    def class_id(self):
+        return self.reply_data[2:4]
+
+    @property
+    def instance_id(self):
+        return self.reply_data[4:8]
+
+    @property
+    def tag_name_length(self):
+        return struct.unpack("<B", self.reply_data[8:9])[0]
+
+    @property
+    def tag_name(self) -> str:
+        return str(self.reply_data[9:9+self.tag_name_length])
 
     @staticmethod
     def command_specific_data_from_eip_message_bytes(eip_message_bytes: bytes):

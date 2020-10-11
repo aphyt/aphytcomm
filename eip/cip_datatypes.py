@@ -129,7 +129,7 @@ class CIPUnsignedShortInteger(CIPDataType):
 class CIPUnsignedInteger(CIPDataType):
     @staticmethod
     def data_type_code():
-        return b'\xc7'  # (1-word signed binary)
+        return b'\xc7'  # (1-word unsigned binary)
 
     def value(self):
         return struct.unpack("<H", self.data)[0]
