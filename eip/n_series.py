@@ -48,7 +48,7 @@ class VariableTypeObjectReply(CIPReply):
 
     @property
     def variable_type_name_length(self):
-        return struct.unpack("<B", self.reply_data[16 + self.array_dimension * 4:17 + self.array_dimension * 4])[0]
+        return struct.unpack("<B", self.reply_data[16+self.array_dimension*4:17+self.array_dimension*4])[0]
 
     @property
     def padding(self):
@@ -60,8 +60,8 @@ class VariableTypeObjectReply(CIPReply):
     @property
     def variable_type_name(self):
         return \
-            self.reply_data[17 + self.array_dimension * 4:
-                            17 + self.array_dimension * 4 + self.variable_type_name_length]
+            self.reply_data[17+self.array_dimension*4:
+                            17+self.array_dimension*4+self.variable_type_name_length]
 
     @property
     def next_instance_id(self):
