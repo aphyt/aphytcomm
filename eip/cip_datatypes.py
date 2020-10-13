@@ -252,7 +252,7 @@ class CIPLongWord(CIPDataType):
 class CIPTime(CIPDataType):
     @staticmethod
     def data_type_code():
-        return b'\xdb\x00'  # (8-byte data)
+        return b'\xdb'  # (8-byte data)
 
     def value(self):
         pass
@@ -264,7 +264,7 @@ class CIPTime(CIPDataType):
 class CIPAbbreviatedStructure(CIPDataType):
     @staticmethod
     def data_type_code():
-        return b'\xa0\x00'  #
+        return b'\xa0'  #
 
     def value(self):
         pass
@@ -276,7 +276,7 @@ class CIPAbbreviatedStructure(CIPDataType):
 class CIPStructure(CIPDataType):
     @staticmethod
     def data_type_code():
-        return b'\xa2\x00'  #
+        return b'\xa2'  #
 
     def value(self):
         pass
@@ -286,15 +286,32 @@ class CIPStructure(CIPDataType):
 
 
 class CIPArray(CIPDataType):
+    def __init__(self,
+                 array_data_type,
+                 array_data_size,
+                 array_dimensions,
+                 number_of_elements,
+                 start_array_elements):
+        super().__init__()
+        self.array_data_type = array_data_type
+        self.array_data_type_size = array_data_size
+        self.array_dimensions = array_dimensions
+        self.number_of_elements = number_of_elements
+        self.start_array_elements = start_array_elements
+        total_size = self.array_data_type_size
+        for number in self.number_of_elements:
+            total_size = total_size * number
+        self.size = total_size
+
     @staticmethod
     def data_type_code():
-        return b'\xa3\x00'  # (1-byte signed binary) signed char
+        return b'\xa3'  # (1-byte signed binary) signed char
 
     def value(self):
-        pass
+        return self.data
 
     def from_value(self, value):
-        pass
+        self.data = value
 
 
 class CIPDataTypes:

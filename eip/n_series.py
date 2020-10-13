@@ -4,6 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from eip import *
+from .omron_datatypes import *
 
 
 class VariableTypeObjectReply(CIPReply):
@@ -92,19 +93,6 @@ class VariableTypeObjectReply(CIPReply):
         return array_start_list
 
 
-class SimpleDataSegmentRequest:
-    def __init__(self, offset, size):
-        self.simple_data_type_code = b'\x80'
-        self.segment_length = b'\x03'  # Fixed and in words
-        self.offset = offset
-        self.size = size
-
-    def bytes(self):
-        return \
-            self.simple_data_type_code + self.segment_length + \
-            struct.pack("<L", self.offset) + struct.pack("<H", self.size)
-
-
 class VariableObjectReply(CIPReply):
     """
     CIP Reply from the Get Attribute All service to Variable Object Class Code 0x6B adding descriptive properties
@@ -157,6 +145,19 @@ class VariableObjectReply(CIPReply):
                                               24+self.array_dimension * 4 + 4])[0]
             array_start_list.append(array_start)
         return array_start_list
+
+
+class SimpleDataSegmentRequest:
+    def __init__(self, offset, size):
+        self.simple_data_type_code = b'\x80'
+        self.segment_length = b'\x03'  # Fixed and in words
+        self.offset = offset
+        self.size = size
+
+    def bytes(self):
+        return \
+            self.simple_data_type_code + self.segment_length + \
+            struct.pack("<L", self.offset) + struct.pack("<H", self.size)
 
 
 class NSeriesEIP(EIP):
@@ -253,30 +254,32 @@ class NSeriesEIP(EIP):
         """
         self._update_data_type_dictionary()
         variable_list = self._get_variable_list()
-        attribute_id = 1
+        instance_id = 1
         for variable in variable_list:
 
-            route_path = variable_request_path_segment(variable)
-            variable_response_bytes = self.read_tag_service(route_path)
-            # Any variable with bytes larger than 494 will not respond to read_tag_service, so do a short
-            # simple data segment read
-            if variable_response_bytes.reply_data == b'':
-                variable_response_bytes = self._simple_data_segment_read(variable, 0, 10)
-            variable_cip_datatype_code = variable_response_bytes.reply_data[0:1]
-            variable_cip_datatype_object = self.data_type_dictionary.get(variable_cip_datatype_code)
-            if not isinstance(variable_cip_datatype_object, type(None)):
-                variable_cip_datatype = variable_cip_datatype_object()
-                variable_cip_datatype.attribute_id = attribute_id
-                route_path = eip.address_request_path_segment(
-                    class_id=b'\x6b', instance_id=attribute_id.to_bytes(2, 'little'))
-                reply = VariableObjectReply(self.get_attribute_all_service(route_path).bytes)
-                variable_cip_datatype.size = reply.size
+            route_path = eip.address_request_path_segment(
+                class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
+            reply = VariableObjectReply(self.get_attribute_all_service(route_path).bytes)
+            variable_cip_datatype = self.data_type_dictionary.get(reply.cip_data_type)
+            if not isinstance(variable_cip_datatype, type(None)):
+                # Instantiate the classes into objects
+                if reply.array_dimension != 0:
+                    variable_cip_datatype = \
+                        variable_cip_datatype(reply.cip_data_type_of_array,
+                                              reply.size,
+                                              reply.array_dimension,
+                                              reply.number_of_elements,
+                                              reply.start_array_elements)
+                else:
+                    variable_cip_datatype = variable_cip_datatype()
+                    variable_cip_datatype.size = reply.size
+                variable_cip_datatype.attribute_id = instance_id
                 self.variables.update({variable: variable_cip_datatype})
                 if variable[0:1] == '_':
                     self.system_variables.update({variable: variable_cip_datatype})
                 else:
                     self.user_variables.update({variable: variable_cip_datatype})
-            attribute_id = attribute_id + 1
+            instance_id = instance_id + 1
 
     def _update_data_type_dictionary(self):
         for sub_class in CIPDataType.__subclasses__():
