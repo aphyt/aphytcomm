@@ -192,10 +192,13 @@ class CIPString(CIPDataType):
         return b'\xd0'  #
 
     def value(self):
-        return self.data
+        return str(self.data, 'utf-8')
 
     def from_value(self, value):
-        self.data = value
+        byte_value = value.encode('utf-8')
+        length_difference = self.size - len(byte_value)
+        byte_value += length_difference * b'\x00'
+        self.data = byte_value
 
 
 class CIPByte(CIPDataType):

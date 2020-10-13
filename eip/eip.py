@@ -4,7 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import socket
-from typing import List
+from typing import List, Tuple
 
 from eip.cip import CIPRequest, CIPReply, address_request_path_segment, \
     variable_request_path_segment, CIPDispatcher, CIPService
@@ -231,6 +231,14 @@ class EIP(CIPDispatcher):
         self.has_session_handle = False
         if self.explicit_message_socket:
             self.explicit_message_socket.close()
+
+    def get_eip_command_size(self, request: CIPRequest) -> Tuple[int, int]:
+        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, request.bytes)
+        packets = [data_address_item]
+        common_packet_format = CommonPacketFormat(packets)
+        command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
+        eip_message = EIPMessage(b'\x6f\x00', command_specific_data.bytes(), self.session_handle_id)
+        return len(eip_message.bytes()), len(command_specific_data.bytes())
 
     def execute_cip_command(self, request: CIPRequest) -> CIPReply:
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, request.bytes)

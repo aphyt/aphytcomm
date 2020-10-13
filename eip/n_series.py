@@ -92,6 +92,19 @@ class VariableTypeObjectReply(CIPReply):
         return array_start_list
 
 
+class SimpleDataSegmentRequest:
+    def __init__(self, offset, size):
+        self.simple_data_type_code = b'\x80'
+        self.segment_length = b'\x03'  # Fixed and in words
+        self.offset = offset
+        self.size = size
+
+    def bytes(self):
+        return \
+            self.simple_data_type_code + self.segment_length + \
+            struct.pack("<L", self.offset) + struct.pack("<H", self.size)
+
+
 class VariableObjectReply(CIPReply):
     """
     CIP Reply from the Get Attribute All service to Variable Object Class Code 0x6B adding descriptive properties
@@ -147,6 +160,8 @@ class VariableObjectReply(CIPReply):
 
 
 class NSeriesEIP(EIP):
+    MAXIMUM_LENGTH = 502  # UCMM maximum length is 502 bytes
+
     def __init__(self):
         super().__init__()
 
@@ -166,16 +181,70 @@ class NSeriesEIP(EIP):
 
     def read_variable(self, variable_name: str):
         route_path = variable_request_path_segment(variable_name)
-        response = self.read_tag_service(route_path)
         cip_datatype = self.variables.get(variable_name)
-        cip_datatype.from_bytes(response.reply_data)
+        if isinstance(cip_datatype, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
+            return self._multi_message_variable_read(variable_name)
+        else:
+            response = self.read_tag_service(route_path)
+            cip_datatype.from_bytes(response.reply_data)
+            return cip_datatype.value()
+
+    def _simple_data_segment_read(self, variable_name, offset, read_size):
+        route_path = variable_request_path_segment(variable_name)
+        simple_data_route_path = SimpleDataSegmentRequest(offset, read_size)
+        route_path = route_path + simple_data_route_path.bytes()
+        response = self.read_tag_service(route_path)
+        return response
+
+    def _simple_data_segment_write(self, variable_name, offset, write_size, data_type_code, data):
+        route_path = variable_request_path_segment(variable_name)
+        simple_data_route_path = SimpleDataSegmentRequest(offset, write_size)
+        route_path = route_path + simple_data_route_path.bytes()
+        data = struct.pack("<H", len(data)) + data
+        response = self.write_tag_service(
+            route_path, data_type_code, data)
+        return response
+
+    def _multi_message_variable_read(self, variable_name, offset=0):
+        max_read_size = self.MAXIMUM_LENGTH - 8
+        cip_datatype = self.variables.get(variable_name)
+        data = b''
+        while offset < cip_datatype.size:
+            if cip_datatype.size - offset > max_read_size:
+                read_size = max_read_size
+            else:
+                read_size = cip_datatype.size - offset
+            response = self._simple_data_segment_read(variable_name, offset, read_size)
+            data = data + response.reply_data[4:]
+            offset = offset + max_read_size
+        cip_datatype.data = data
         return cip_datatype.value()
 
     def write_variable(self, variable_name: str, data):
         route_path = variable_request_path_segment(variable_name)
         cip_datatype = self.variables.get(variable_name)
         cip_datatype.from_value(data)
-        self.write_tag_service(route_path, cip_datatype.data_type_code(), cip_datatype.data)
+        if isinstance(cip_datatype, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
+            self._multi_message_variable_write(variable_name, data)
+        else:
+            self.write_tag_service(route_path, cip_datatype.data_type_code(), cip_datatype.data)
+
+    def _multi_message_variable_write(self, variable_name, data, offset=0):
+        message_overhead = 8
+        if message_overhead % 2 == 1:
+            message_overhead = message_overhead + 1
+        max_write_size = self.MAXIMUM_LENGTH - message_overhead
+        cip_datatype = self.variables.get(variable_name)
+        cip_datatype.from_value(data)
+        while offset < cip_datatype.size:
+            if cip_datatype.size - offset > max_write_size:
+                write_size = max_write_size
+            else:
+                write_size = cip_datatype.size - offset
+            response = self._simple_data_segment_write(
+                variable_name, offset, write_size,
+                cip_datatype.data_type_code(), cip_datatype.data[offset:offset + write_size])
+            offset = offset + max_write_size
 
     def update_variable_dictionary(self):
         """
@@ -186,17 +255,27 @@ class NSeriesEIP(EIP):
         variable_list = self._get_variable_list()
         attribute_id = 1
         for variable in variable_list:
+
             route_path = variable_request_path_segment(variable)
             variable_response_bytes = self.read_tag_service(route_path)
+            # Any variable with bytes larger than 494 will not respond to read_tag_service, so do a short
+            # simple data segment read
+            if variable_response_bytes.reply_data == b'':
+                variable_response_bytes = self._simple_data_segment_read(variable, 0, 10)
             variable_cip_datatype_code = variable_response_bytes.reply_data[0:1]
             variable_cip_datatype_object = self.data_type_dictionary.get(variable_cip_datatype_code)
             if not isinstance(variable_cip_datatype_object, type(None)):
                 variable_cip_datatype = variable_cip_datatype_object()
-            self.variables.update({variable: variable_cip_datatype})
-            if variable[0:1] == '_':
-                self.system_variables.update({variable: variable_cip_datatype})
-            else:
-                self.user_variables.update({variable: variable_cip_datatype})
+                variable_cip_datatype.attribute_id = attribute_id
+                route_path = eip.address_request_path_segment(
+                    class_id=b'\x6b', instance_id=attribute_id.to_bytes(2, 'little'))
+                reply = VariableObjectReply(self.get_attribute_all_service(route_path).bytes)
+                variable_cip_datatype.size = reply.size
+                self.variables.update({variable: variable_cip_datatype})
+                if variable[0:1] == '_':
+                    self.system_variables.update({variable: variable_cip_datatype})
+                else:
+                    self.user_variables.update({variable: variable_cip_datatype})
             attribute_id = attribute_id + 1
 
     def _update_data_type_dictionary(self):
