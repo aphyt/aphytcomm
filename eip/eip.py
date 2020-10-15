@@ -247,6 +247,7 @@ class EIP(CIPDispatcher):
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
         response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
         reply_data_and_address_item = DataAndAddressItem('', b'')
+        # ToDo is this removing error data?
         reply_data_and_address_item.from_bytes(response)
         cip_reply = CIPReply(reply_data_and_address_item.data)
         return cip_reply
@@ -335,3 +336,11 @@ class EIP(CIPDispatcher):
         self.has_session_handle = True
         self.session_handle_id = response.session_handle_id
         return response
+
+    def get_attribute_all_service(self, tag_request_path):
+        get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_request_path)
+        return self.execute_cip_command(get_attribute_all_request)
+
+    def get_attribute_single_service(self, tag_request_path):
+        get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
+        return self.execute_cip_command(get_attribute_single_request)

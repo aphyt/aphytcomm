@@ -168,50 +168,10 @@ class NSeriesEIP(EIP):
     def __init__(self):
         super().__init__()
 
-    def get_attribute_all_service(self, tag_request_path):
-        # ToDo move up to EIP super class
-        get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_request_path)
-        return self.execute_cip_command(get_attribute_all_request)
-
-    def get_attribute_single_service(self, tag_request_path):
-        # ToDo move up to EIP super class
-        get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
-        return self.execute_cip_command(get_attribute_single_request)
-
     def get_instance_list_service(self, tag_request_path, data):
+        """Omron specific"""
         get_instance_list_request = CIPRequest(b'\x5f', tag_request_path, data)
         return self.execute_cip_command(get_instance_list_request)
-
-    def read_variable(self, variable_name: str):
-        request_path = variable_request_path_segment(variable_name)
-        cip_datatype_object = self.variables.get(variable_name)
-        if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
-            return self._multi_message_variable_read(cip_datatype_object)
-        else:
-            response = self.read_tag_service(request_path)
-            cip_datatype_object.from_bytes(response.reply_data)
-            return cip_datatype_object.value()
-
-    def _simple_data_segment_read(self, cip_datatype_object: CIPDataType, offset, read_size):
-        request_path = variable_request_path_segment(cip_datatype_object.variable_name)
-        simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
-        request_path = request_path + simple_data_request_path.bytes()
-        response = self.read_tag_service(request_path)
-        return response
-
-    def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data):
-        request_path = variable_request_path_segment(cip_datatype_object.variable_name)
-        simple_data_request_path = SimpleDataSegmentRequest(offset, write_size)
-        request_path = request_path + simple_data_request_path.bytes()
-
-        if cip_datatype_object.data_type_code() == CIPString.data_type_code():
-            data = struct.pack("<H", len(data)) + data
-        elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
-            data = cip_datatype_object.array_data_type + b'\00' + data
-        # # print(data)
-        response = self.write_tag_service(
-            request_path, cip_datatype_object.data_type_code(), data)
-        return response
 
     def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0):
         max_read_size = self.MAXIMUM_LENGTH - 8
@@ -240,6 +200,59 @@ class NSeriesEIP(EIP):
         else:
             self.write_tag_service(request_path, cip_datatype_object.data_type_code(), cip_datatype_object.data)
 
+    def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, data, offset=0):
+        # 480 is exactly 60 times 8, which is the largest byte size for an elementary data type
+        max_write_size = 400
+        cip_datatype_object.from_value(data)
+        while offset < cip_datatype_object.size:
+            if cip_datatype_object.size - offset > max_write_size:
+                write_size = max_write_size
+            else:
+                write_size = cip_datatype_object.size - offset
+            response = self._simple_data_segment_write(
+                cip_datatype_object, offset, write_size,
+                cip_datatype_object.data[offset:offset + write_size])
+            # print(response.bytes)
+            offset = offset + max_write_size
+
+    def read_variable(self, variable_name: str):
+        request_path = variable_request_path_segment(variable_name)
+        cip_datatype_object = self.variables.get(variable_name)
+        if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
+            return self._multi_message_variable_read(cip_datatype_object)
+        else:
+            response = self.read_tag_service(request_path)
+            cip_datatype_object.from_bytes(response.reply_data)
+            return cip_datatype_object.value()
+
+    def _simple_data_segment_read(self, cip_datatype_object: CIPDataType, offset, read_size):
+        # ToDo consider the request path should reside with the variable (possibly converted to logical segment)
+        request_path = variable_request_path_segment(cip_datatype_object.variable_name)
+        simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
+        request_path = request_path + simple_data_request_path.bytes()
+        response = self.read_tag_service(request_path)
+        # print(response.reply_data)
+        return response
+
+    def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data):
+        request_path = variable_request_path_segment(cip_datatype_object.variable_name)
+        simple_data_request_path = SimpleDataSegmentRequest(offset, write_size)
+        request_path = request_path + simple_data_request_path.bytes()
+        # ToDo how to prevent testing type code here. Function is doing too much
+        if cip_datatype_object.data_type_code() == CIPString.data_type_code():
+            data = struct.pack("<H", len(data)) + data
+            response = self.write_tag_service(request_path, cip_datatype_object.data_type_code(), data)
+        elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
+            response = self.write_tag_service(
+                request_path, cip_datatype_object.array_data_type, data)
+        return response
+
+    def _simple_data_read_data(self, cip_data_type_object: CIPDataType, offset: int, read_size: int) -> bytes:
+        pass
+
+    def _simple_data_write_data(self, cip_data_type_object: CIPDataType, offset: int, write_size: int) -> bytes:
+        pass
+
     def _cip_string_read(self):
         pass
 
@@ -263,25 +276,6 @@ class NSeriesEIP(EIP):
 
     def _cip_array_write(self):
         pass
-
-    def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, data, offset=0):
-        message_overhead = 8
-        if message_overhead % 2 == 1:
-            message_overhead = message_overhead + 1
-        max_write_size = self.MAXIMUM_LENGTH - message_overhead
-        # cip_datatype_object = self.variables.get(variable_name)
-        cip_datatype_object.from_value(data)
-        # print(cip_datatype.data_type_code())
-        while offset < cip_datatype_object.size:
-            if cip_datatype_object.size - offset > max_write_size:
-                write_size = max_write_size
-            else:
-                write_size = cip_datatype_object.size - offset
-            response = self._simple_data_segment_write(
-                cip_datatype_object, offset, write_size,
-                cip_datatype_object.data[offset:offset + write_size])
-            # print(response.bytes)
-            offset = offset + max_write_size
 
     def update_variable_dictionary(self):
         """
