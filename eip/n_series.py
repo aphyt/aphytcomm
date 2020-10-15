@@ -168,48 +168,48 @@ class NSeriesEIP(EIP):
     def __init__(self):
         super().__init__()
 
-    def get_attribute_all_service(self, tag_route_path):
+    def get_attribute_all_service(self, tag_request_path):
         # ToDo move up to EIP super class
-        get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_route_path)
+        get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_request_path)
         return self.execute_cip_command(get_attribute_all_request)
 
-    def get_attribute_single_service(self, tag_route_path):
+    def get_attribute_single_service(self, tag_request_path):
         # ToDo move up to EIP super class
-        get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_route_path)
+        get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
         return self.execute_cip_command(get_attribute_single_request)
 
-    def get_instance_list_service(self, tag_route_path, data):
-        get_instance_list_request = CIPRequest(b'\x5f', tag_route_path, data)
+    def get_instance_list_service(self, tag_request_path, data):
+        get_instance_list_request = CIPRequest(b'\x5f', tag_request_path, data)
         return self.execute_cip_command(get_instance_list_request)
 
     def read_variable(self, variable_name: str):
-        route_path = variable_request_path_segment(variable_name)
+        request_path = variable_request_path_segment(variable_name)
         cip_datatype = self.variables.get(variable_name)
         if isinstance(cip_datatype, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
             return self._multi_message_variable_read(variable_name)
         else:
-            response = self.read_tag_service(route_path)
+            response = self.read_tag_service(request_path)
             cip_datatype.from_bytes(response.reply_data)
             return cip_datatype.value()
 
     def _simple_data_segment_read(self, variable_name, offset, read_size):
-        route_path = variable_request_path_segment(variable_name)
-        simple_data_route_path = SimpleDataSegmentRequest(offset, read_size)
-        route_path = route_path + simple_data_route_path.bytes()
-        response = self.read_tag_service(route_path)
+        request_path = variable_request_path_segment(variable_name)
+        simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
+        request_path = request_path + simple_data_request_path.bytes()
+        response = self.read_tag_service(request_path)
         return response
 
     def _simple_data_segment_write(self, variable_name, offset, write_size, cip_data_type, data):
-        route_path = variable_request_path_segment(variable_name)
-        simple_data_route_path = SimpleDataSegmentRequest(offset, write_size)
-        route_path = route_path + simple_data_route_path.bytes()
+        request_path = variable_request_path_segment(variable_name)
+        simple_data_request_path = SimpleDataSegmentRequest(offset, write_size)
+        request_path = request_path + simple_data_request_path.bytes()
         if cip_data_type.data_type_code() == CIPString.data_type_code():
             data = struct.pack("<H", len(data)) + data
         elif cip_data_type.data_type_code() == CIPArray.data_type_code():
             data = cip_data_type.array_data_type + b'\00' + data
-        # print(data)
+        # # print(data)
         response = self.write_tag_service(
-            route_path, cip_data_type.data_type_code(), data)
+            request_path, cip_data_type.data_type_code(), data)
         return response
 
     def _multi_message_variable_read(self, variable_name, offset=0):
@@ -232,13 +232,13 @@ class NSeriesEIP(EIP):
         return cip_datatype.value()
 
     def write_variable(self, variable_name: str, data):
-        route_path = variable_request_path_segment(variable_name)
+        request_path = variable_request_path_segment(variable_name)
         cip_datatype = self.variables.get(variable_name)
         cip_datatype.from_value(data)
         if isinstance(cip_datatype, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
             self._multi_message_variable_write(variable_name, data)
         else:
-            self.write_tag_service(route_path, cip_datatype.data_type_code(), cip_datatype.data)
+            self.write_tag_service(request_path, cip_datatype.data_type_code(), cip_datatype.data)
 
     def _cip_string_read(self):
         pass
@@ -293,9 +293,9 @@ class NSeriesEIP(EIP):
         instance_id = 1
         for variable in variable_list:
 
-            route_path = eip.address_request_path_segment(
+            request_path = eip.address_request_path_segment(
                 class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
-            reply = VariableObjectReply(self.get_attribute_all_service(route_path).bytes)
+            reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
             variable_cip_datatype = self.data_type_dictionary.get(reply.cip_data_type)
             if not isinstance(variable_cip_datatype, type(None)):
                 # Instantiate the classes into objects
@@ -310,6 +310,7 @@ class NSeriesEIP(EIP):
                     variable_cip_datatype = variable_cip_datatype()
                     variable_cip_datatype.size = reply.size
                 variable_cip_datatype.attribute_id = instance_id
+                variable_cip_datatype.variable_name = variable
                 self.variables.update({variable: variable_cip_datatype})
                 if variable[0:1] == '_':
                     self.system_variables.update({variable: variable_cip_datatype})
@@ -325,8 +326,8 @@ class NSeriesEIP(EIP):
         tag_list = []
         for tag_index in range(self._get_number_of_variables()):
             offset = tag_index + 1
-            route_path = address_request_path_segment(b'\x6a', offset.to_bytes(2, 'little'))
-            reply = self.get_attribute_all_service(route_path)
+            request_path = address_request_path_segment(b'\x6a', offset.to_bytes(2, 'little'))
+            reply = self.get_attribute_all_service(request_path)
             tag = str(reply.reply_data[5:5 + int.from_bytes(reply.reply_data[4:5], 'little')], 'utf-8')
             tag_list.append(tag)
         return tag_list
@@ -336,6 +337,6 @@ class NSeriesEIP(EIP):
         Find number of variables from Tag Name Server
         :return:
         """
-        route_path = address_request_path_segment(b'\x6a', b'\x00\x00')
-        reply = self.get_attribute_all_service(route_path)
+        request_path = address_request_path_segment(b'\x6a', b'\x00\x00')
+        reply = self.get_attribute_all_service(request_path)
         return int.from_bytes(reply.reply_data[2:4], 'little')

@@ -24,6 +24,7 @@ class CIPDataType(ABC):
         self.data = b''
         self.size = 0
         self.attribute_id = None
+        self.variable_name = ''
 
     def bytes(self):
         byte_value = self.data_type_code() + \
