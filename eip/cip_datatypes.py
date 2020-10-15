@@ -47,7 +47,22 @@ class CIPDataType(ABC):
         pass
 
 
+def _update_data_type_dictionary(data_type_dictionary):
+    for sub_class in CIPDataType.__subclasses__():
+        data_type_dictionary.update({sub_class.data_type_code(): sub_class})
+
+
+def _get_class_data_type_code(data_type: bytes) -> CIPDataType:
+    for sub_class in CIPDataType.__subclasses__():
+        if sub_class.data_type_code() == data_type:
+            return sub_class()
+
+
 class CIPBoolean(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = struct.pack("<h", 0)
+
     @staticmethod
     def data_type_code():
         return b'\xc1'  # (bit)
@@ -67,6 +82,10 @@ class CIPBoolean(CIPDataType):
 
 
 class CIPShortInteger(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xc2'  # (1-byte signed binary)
@@ -79,6 +98,10 @@ class CIPShortInteger(CIPDataType):
 
 
 class CIPInteger(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xc3'  # (1-word signed binary)
@@ -91,6 +114,10 @@ class CIPInteger(CIPDataType):
 
 
 class CIPDoubleInteger(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xc4'  # (2-word signed binary)
@@ -103,6 +130,10 @@ class CIPDoubleInteger(CIPDataType):
 
 
 class CIPLongInteger(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xc5'  # (1-byte signed binary)
@@ -115,6 +146,10 @@ class CIPLongInteger(CIPDataType):
 
 
 class CIPUnsignedShortInteger(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xc6'  # (1-byte unsigned binary)
@@ -127,6 +162,10 @@ class CIPUnsignedShortInteger(CIPDataType):
 
 
 class CIPUnsignedInteger(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xc7'  # (1-word unsigned binary)
@@ -139,6 +178,10 @@ class CIPUnsignedInteger(CIPDataType):
 
 
 class CIPUnsignedDoubleInteger(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xc8'  # (2-word unsigned binary)
@@ -151,6 +194,10 @@ class CIPUnsignedDoubleInteger(CIPDataType):
 
 
 class CIPUnsignedLongInteger(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xc9'  # (4-word unsigned binary)
@@ -163,6 +210,10 @@ class CIPUnsignedLongInteger(CIPDataType):
 
 
 class CIPReal(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xca'  # (2-word floating point)
@@ -175,6 +226,10 @@ class CIPReal(CIPDataType):
 
 
 class CIPLongReal(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xcb'  # (4-word floating point)
@@ -187,6 +242,10 @@ class CIPLongReal(CIPDataType):
 
 
 class CIPString(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = str("").encode('utf-8')
+
     @staticmethod
     def data_type_code():
         return b'\xd0'  #
@@ -202,6 +261,10 @@ class CIPString(CIPDataType):
 
 
 class CIPByte(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xd1'
@@ -214,6 +277,10 @@ class CIPByte(CIPDataType):
 
 
 class CIPWord(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xd2'  #
@@ -226,6 +293,10 @@ class CIPWord(CIPDataType):
 
 
 class CIPDoubleWord(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xd3'  #
@@ -238,6 +309,10 @@ class CIPDoubleWord(CIPDataType):
 
 
 class CIPLongWord(CIPDataType):
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+
     @staticmethod
     def data_type_code():
         return b'\xd4'  #
@@ -250,6 +325,9 @@ class CIPLongWord(CIPDataType):
 
 
 class CIPTime(CIPDataType):
+    def __init__(self):
+        super().__init__()
+
     @staticmethod
     def data_type_code():
         return b'\xdb'  # (8-byte data)
@@ -262,27 +340,33 @@ class CIPTime(CIPDataType):
 
 
 class CIPAbbreviatedStructure(CIPDataType):
+    def __init__(self):
+        super().__init__()
+
     @staticmethod
     def data_type_code():
         return b'\xa0'  #
 
     def value(self):
-        pass
+        return self.data
 
     def from_value(self, value):
-        pass
+        self.data = value
 
 
 class CIPStructure(CIPDataType):
+    def __init__(self):
+        super().__init__()
+
     @staticmethod
     def data_type_code():
         return b'\xa2'  #
 
     def value(self):
-        pass
+        return self.data
 
     def from_value(self, value):
-        pass
+        self.data = value
 
 
 class CIPArray(CIPDataType):
@@ -302,16 +386,32 @@ class CIPArray(CIPDataType):
         for number in self.number_of_elements:
             total_size = total_size * number
         self.size = total_size
+        self._local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
+        self._list_representation = []
+        for i in range(self.array_dimensions):
+            self._list_representation.append([self._local_cip_data_type_object.value()] * self.number_of_elements[i])
 
     @staticmethod
     def data_type_code():
         return b'\xa3'  # (1-byte signed binary) signed char
 
     def value(self):
-        return self.data
+        for dimension in range(self.array_dimensions):
+            for index in range(self.number_of_elements[dimension]):
+                start_bytes = dimension + index * self.array_data_type_size
+                self._local_cip_data_type_object.data = \
+                    self.data[start_bytes:start_bytes + self.array_data_type_size]
+                self._list_representation[dimension][index] = self._local_cip_data_type_object.value()
+        return self._list_representation
 
     def from_value(self, value):
-        self.data = value
+        data = b''
+        for dimension in range(self.array_dimensions):
+            for index in range(self.number_of_elements[dimension]):
+                self._local_cip_data_type_object.from_value(
+                    value[dimension][index])
+                data += self._local_cip_data_type_object.data
+        self.data = data
 
 
 class CIPDataTypes:

@@ -4,12 +4,13 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from eip import *
-from .omron_datatypes import *
+from .cip_datatypes import _update_data_type_dictionary
 
 
 class VariableTypeObjectReply(CIPReply):
     """
     CIP Reply from the Get Attribute All service to Variable Type Object Class Code 0x6C adding descriptive properties
+    Omron Vendor specific
     """
     def __init__(self, reply_bytes: bytes):
         super().__init__(reply_bytes=reply_bytes)
@@ -96,6 +97,7 @@ class VariableTypeObjectReply(CIPReply):
 class VariableObjectReply(CIPReply):
     """
     CIP Reply from the Get Attribute All service to Variable Object Class Code 0x6B adding descriptive properties
+    Omron Vendor specific
     """
     def __init__(self, reply_bytes: bytes):
         super().__init__(reply_bytes=reply_bytes)
@@ -197,26 +199,34 @@ class NSeriesEIP(EIP):
         response = self.read_tag_service(route_path)
         return response
 
-    def _simple_data_segment_write(self, variable_name, offset, write_size, data_type_code, data):
+    def _simple_data_segment_write(self, variable_name, offset, write_size, cip_data_type, data):
         route_path = variable_request_path_segment(variable_name)
         simple_data_route_path = SimpleDataSegmentRequest(offset, write_size)
         route_path = route_path + simple_data_route_path.bytes()
-        data = struct.pack("<H", len(data)) + data
+        if cip_data_type.data_type_code() == CIPString.data_type_code():
+            data = struct.pack("<H", len(data)) + data
+        elif cip_data_type.data_type_code() == CIPArray.data_type_code():
+            data = cip_data_type.array_data_type + b'\00' + data
+        # print(data)
         response = self.write_tag_service(
-            route_path, data_type_code, data)
+            route_path, cip_data_type.data_type_code(), data)
         return response
 
     def _multi_message_variable_read(self, variable_name, offset=0):
         max_read_size = self.MAXIMUM_LENGTH - 8
         cip_datatype = self.variables.get(variable_name)
         data = b''
+        # ToDo this burn character thing is inelegant. Think about it later
+        burn_characters = 0
+        if isinstance(cip_datatype, CIPString):
+            burn_characters = 2
         while offset < cip_datatype.size:
             if cip_datatype.size - offset > max_read_size:
                 read_size = max_read_size
             else:
                 read_size = cip_datatype.size - offset
             response = self._simple_data_segment_read(variable_name, offset, read_size)
-            data = data + response.reply_data[4:]
+            data = data + response.reply_data[2+burn_characters:]
             offset = offset + max_read_size
         cip_datatype.data = data
         return cip_datatype.value()
@@ -230,6 +240,30 @@ class NSeriesEIP(EIP):
         else:
             self.write_tag_service(route_path, cip_datatype.data_type_code(), cip_datatype.data)
 
+    def _cip_string_read(self):
+        pass
+
+    def _cip_string_write(self):
+        pass
+
+    def _cip_structure_read(self):
+        pass
+
+    def _cip_structure_write(self):
+        pass
+
+    def _cip_abbreviated_structure_read(self):
+        pass
+
+    def _cip_abbreviated_structure_write(self):
+        pass
+
+    def _cip_array_read(self):
+        pass
+
+    def _cip_array_write(self):
+        pass
+
     def _multi_message_variable_write(self, variable_name, data, offset=0):
         message_overhead = 8
         if message_overhead % 2 == 1:
@@ -237,6 +271,7 @@ class NSeriesEIP(EIP):
         max_write_size = self.MAXIMUM_LENGTH - message_overhead
         cip_datatype = self.variables.get(variable_name)
         cip_datatype.from_value(data)
+        # print(cip_datatype.data_type_code())
         while offset < cip_datatype.size:
             if cip_datatype.size - offset > max_write_size:
                 write_size = max_write_size
@@ -244,7 +279,8 @@ class NSeriesEIP(EIP):
                 write_size = cip_datatype.size - offset
             response = self._simple_data_segment_write(
                 variable_name, offset, write_size,
-                cip_datatype.data_type_code(), cip_datatype.data[offset:offset + write_size])
+                cip_datatype, cip_datatype.data[offset:offset + write_size])
+            # print(response.bytes)
             offset = offset + max_write_size
 
     def update_variable_dictionary(self):
@@ -252,7 +288,7 @@ class NSeriesEIP(EIP):
 
         :return:
         """
-        self._update_data_type_dictionary()
+        _update_data_type_dictionary(self.data_type_dictionary)
         variable_list = self._get_variable_list()
         instance_id = 1
         for variable in variable_list:
@@ -280,10 +316,6 @@ class NSeriesEIP(EIP):
                 else:
                     self.user_variables.update({variable: variable_cip_datatype})
             instance_id = instance_id + 1
-
-    def _update_data_type_dictionary(self):
-        for sub_class in CIPDataType.__subclasses__():
-            self.data_type_dictionary.update({sub_class.data_type_code(): sub_class})
 
     def _get_variable_list(self):
         """
