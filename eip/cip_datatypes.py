@@ -389,30 +389,70 @@ class CIPArray(CIPDataType):
         self.size = total_size
         self._local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
         self._list_representation = []
-        for i in range(self.array_dimensions):
-            self._list_representation.append([self._local_cip_data_type_object.value()] * self.number_of_elements[i])
+        # for i in range(self.array_dimensions):
+        #     self._list_representation.append([self._local_cip_data_type_object.value()] * self.number_of_elements[i])
+
+    def _recursive_data_to_array(self, dimension: int, position: int = 0):
+        dimension = self.array_dimensions - dimension
+        local_list = []
+        if dimension == self.array_dimensions - 1:
+            temp_array = []
+            for index in range(self.number_of_elements[self.array_dimensions - 1]):
+                start_bytes = index * self.array_data_type_size + position * self.array_data_type_size
+                self._local_cip_data_type_object.data = \
+                    self.data[start_bytes:start_bytes + self.array_data_type_size]
+                temp_array.append(self._local_cip_data_type_object.value())
+            return temp_array
+        else:
+            for index in range(self.number_of_elements[dimension]):
+                local_list.append(
+                    self._recursive_data_to_array(
+                        dimension + 1, index * self.number_of_elements[dimension + 1]))
+            return local_list
+
+    def _recursive_array_to_data(self, dimension: int, list_data):
+        # ToDo make work
+        dimension = self.array_dimensions - dimension
+        if dimension == self.array_dimensions - 1:
+            data = b''
+            for element in list_data:
+                self._local_cip_data_type_object.from_value(element)
+                data += self._local_cip_data_type_object.data
+            return data
+        else:
+            data = b''
+            for sub_list in list_data:
+                data += self._recursive_array_to_data(dimension + 1, sub_list)
+            return data
 
     @staticmethod
     def data_type_code():
         return b'\xa3'  # (1-byte signed binary) signed char
 
     def value(self):
-        for dimension in range(self.array_dimensions):
-            for index in range(self.number_of_elements[dimension]):
-                start_bytes = dimension + index * self.array_data_type_size
-                self._local_cip_data_type_object.data = \
-                    self.data[start_bytes:start_bytes + self.array_data_type_size]
-                self._list_representation[dimension][index] = self._local_cip_data_type_object.value()
+        self._list_representation = self._recursive_data_to_array(self.array_dimensions)
         return self._list_representation
 
     def from_value(self, value):
-        data = b''
-        for dimension in range(self.array_dimensions):
-            for index in range(self.number_of_elements[dimension]):
-                self._local_cip_data_type_object.from_value(
-                    value[dimension][index])
-                data += self._local_cip_data_type_object.data
-        self.data = data
+        self.data = self._recursive_array_to_data(self.array_dimensions, value)
+
+    # def value(self):
+    #     for dimension in range(self.array_dimensions):
+    #         for index in range(self.number_of_elements[dimension]):
+    #             start_bytes = dimension + index * self.array_data_type_size
+    #             self._local_cip_data_type_object.data = \
+    #                 self.data[start_bytes:start_bytes + self.array_data_type_size]
+    #             self._list_representation[dimension][index] = self._local_cip_data_type_object.value()
+    #     return self._list_representation
+    #
+    # def from_value(self, value):
+    #     data = b''
+    #     for dimension in range(self.array_dimensions):
+    #         for index in range(self.number_of_elements[dimension]):
+    #             self._local_cip_data_type_object.from_value(
+    #                 value[dimension][index])
+    #             data += self._local_cip_data_type_object.data
+    #     self.data = data
 
 
 class CIPDataTypes:

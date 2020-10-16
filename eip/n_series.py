@@ -231,7 +231,6 @@ class NSeriesEIP(EIP):
         simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
         request_path = request_path + simple_data_request_path.bytes()
         response = self.read_tag_service(request_path)
-        # print(response.reply_data)
         return response
 
     def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data):
@@ -286,7 +285,6 @@ class NSeriesEIP(EIP):
         variable_list = self._get_variable_list()
         instance_id = 1
         for variable in variable_list:
-
             request_path = eip.address_request_path_segment(
                 class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
             reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
