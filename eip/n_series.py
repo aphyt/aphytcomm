@@ -278,7 +278,8 @@ class NSeriesEIP(EIP):
 
     def update_variable_dictionary(self):
         """
-
+        Make sure the variable dictionary is populated with the
+        latest variable and datatype information from controller
         :return:
         """
         _update_data_type_dictionary(self.data_type_dictionary)
