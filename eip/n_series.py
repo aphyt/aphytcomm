@@ -176,7 +176,7 @@ class NSeriesEIP(EIP):
     def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0):
         max_read_size = self.MAXIMUM_LENGTH - 8
         data = b''
-        # ToDo this burn character thing is inelegant. Think about it later
+        # ToDo this burn character thing is inelegant. Think about it later, calculate them from Additional Data Bytes
         burn_characters = 0
         if isinstance(cip_datatype_object, CIPString):
             burn_characters = 2
@@ -301,7 +301,7 @@ class NSeriesEIP(EIP):
                 else:
                     variable_cip_datatype = variable_cip_datatype()
                     variable_cip_datatype.size = reply.size
-                variable_cip_datatype.attribute_id = instance_id
+                variable_cip_datatype.instance_id = instance_id
                 variable_cip_datatype.variable_name = variable
                 self.variables.update({variable: variable_cip_datatype})
                 if variable[0:1] == '_':
@@ -309,6 +309,53 @@ class NSeriesEIP(EIP):
                 else:
                     self.user_variables.update({variable: variable_cip_datatype})
             instance_id = instance_id + 1
+
+    def get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
+        # ToDo TESTS
+
+        if isinstance(cip_datatype_instance, CIPArray):
+            variable_type_object_reply = self._get_variable_type_object(cip_datatype_instance.instance_id)
+            cip_datatype_instance.variable_type_name = variable_type_object_reply.variable_type_name
+            variable_type_object_reply = \
+                self._get_variable_type_object(
+                    int.from_bytes(variable_type_object_reply.next_instance_id, 'little'))
+            member_cip_datatype_object = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)
+            cip_datatype_instance = member_cip_datatype_object(
+                variable_type_object_reply.cip_data_type_of_array,
+                variable_type_object_reply.size,
+                variable_type_object_reply.array_dimension,
+                variable_type_object_reply.number_of_elements,
+                variable_type_object_reply.start_array_elements
+            )
+            return cip_datatype_instance
+        elif isinstance(cip_datatype_instance, CIPAbbreviatedStructure):
+            pass
+        elif isinstance(cip_datatype_instance, CIPStructure):
+            variable_type_object_reply = self._get_variable_type_object(cip_datatype_instance.instance_id)
+            cip_datatype_instance.variable_type_name = variable_type_object_reply.variable_type_name
+            cip_datatype_instance.size = variable_type_object_reply.size_in_memory
+            nesting_variable_type_instance_id = \
+                int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
+            member_instance_id = nesting_variable_type_instance_id
+            while member_instance_id != 0:
+                variable_type_object_reply = \
+                    self._get_variable_type_object(member_instance_id)
+                member_cip_datatype_object = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)
+                member_cip_datatype_instance = self.get_data_instance(member_cip_datatype_object)
+                cip_datatype_instance.members.update(
+                    {variable_type_object_reply.variable_type_name:
+                     self.get_data_instance(member_cip_datatype_instance)})
+                member_instance_id = \
+                    int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
+            return cip_datatype_instance
+        else:
+            return cip_datatype_instance
+
+    def _get_variable_type_object(self, instance_id: int) -> VariableTypeObjectReply:
+        request_path = address_request_path_segment(
+            class_id=b'\x6c', instance_id=instance_id.to_bytes(2, 'little'))
+        variable_type_object_reply = VariableTypeObjectReply(self.get_attribute_all_service(request_path).bytes)
+        return variable_type_object_reply
 
     def _get_variable_list(self):
         """

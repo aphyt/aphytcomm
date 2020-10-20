@@ -23,7 +23,7 @@ class CIPDataType(ABC):
         self.additional_info = b''
         self.data = b''
         self.size = 0
-        self.attribute_id = None
+        self.instance_id = None
         self.variable_name = ''
 
     def bytes(self):
@@ -358,6 +358,8 @@ class CIPAbbreviatedStructure(CIPDataType):
 class CIPStructure(CIPDataType):
     def __init__(self):
         super().__init__()
+        self.variable_type_name = ''
+        self.members = {}
 
     @staticmethod
     def data_type_code():
@@ -435,24 +437,6 @@ class CIPArray(CIPDataType):
 
     def from_value(self, value):
         self.data = self._recursive_array_to_data(self.array_dimensions, value)
-
-    # def value(self):
-    #     for dimension in range(self.array_dimensions):
-    #         for index in range(self.number_of_elements[dimension]):
-    #             start_bytes = dimension + index * self.array_data_type_size
-    #             self._local_cip_data_type_object.data = \
-    #                 self.data[start_bytes:start_bytes + self.array_data_type_size]
-    #             self._list_representation[dimension][index] = self._local_cip_data_type_object.value()
-    #     return self._list_representation
-    #
-    # def from_value(self, value):
-    #     data = b''
-    #     for dimension in range(self.array_dimensions):
-    #         for index in range(self.number_of_elements[dimension]):
-    #             self._local_cip_data_type_object.from_value(
-    #                 value[dimension][index])
-    #             data += self._local_cip_data_type_object.data
-    #     self.data = data
 
 
 class CIPDataTypes:
