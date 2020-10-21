@@ -5,6 +5,7 @@ __email__ = "jr@aphyt.com"
 
 from eip import *
 from .cip_datatypes import _update_data_type_dictionary
+from .omron_datatypes import *
 
 
 class VariableTypeObjectReply(CIPReply):
@@ -12,6 +13,7 @@ class VariableTypeObjectReply(CIPReply):
     CIP Reply from the Get Attribute All service to Variable Type Object Class Code 0x6C adding descriptive properties
     Omron Vendor specific
     """
+
     def __init__(self, reply_bytes: bytes):
         super().__init__(reply_bytes=reply_bytes)
 
@@ -36,21 +38,21 @@ class VariableTypeObjectReply(CIPReply):
         """Number of elements in each dimension of  the array"""
         dimension_size_list = []
         for i in range(self.array_dimension):
-            dimension_size = struct.unpack("<L", self.reply_data[8+i*4:8+i*4+4])[0]
+            dimension_size = struct.unpack("<L", self.reply_data[8 + i * 4:8 + i * 4 + 4])[0]
             dimension_size_list.append(dimension_size)
         return dimension_size_list
 
     @property
     def number_of_members(self):
-        return struct.unpack("<H", self.reply_data[8+self.array_dimension*4:10+self.array_dimension*4])[0]
+        return struct.unpack("<H", self.reply_data[8 + self.array_dimension * 4:10 + self.array_dimension * 4])[0]
 
     @property
     def crc_code(self):
-        return struct.unpack("<H", self.reply_data[14+self.array_dimension*4:16+self.array_dimension*4])[0]
+        return struct.unpack("<H", self.reply_data[14 + self.array_dimension * 4:16 + self.array_dimension * 4])[0]
 
     @property
     def variable_type_name_length(self):
-        return struct.unpack("<B", self.reply_data[16+self.array_dimension*4:17+self.array_dimension*4])[0]
+        return struct.unpack("<B", self.reply_data[16 + self.array_dimension * 4:17 + self.array_dimension * 4])[0]
 
     @property
     def padding(self):
@@ -62,14 +64,14 @@ class VariableTypeObjectReply(CIPReply):
     @property
     def variable_type_name(self):
         return \
-            self.reply_data[17+self.array_dimension*4:
-                            17+self.array_dimension*4+self.variable_type_name_length]
+            self.reply_data[17 + self.array_dimension * 4:
+                            17 + self.array_dimension * 4 + self.variable_type_name_length]
 
     @property
     def next_instance_id(self):
         return \
-            self.reply_data[self.padding+17+self.array_dimension*4+self.variable_type_name_length:
-                            self.padding+17+self.array_dimension*4+self.variable_type_name_length+4]
+            self.reply_data[self.padding + 17 + self.array_dimension * 4 + self.variable_type_name_length:
+                            self.padding + 17 + self.array_dimension * 4 + self.variable_type_name_length + 4]
 
     @property
     def nesting_variable_type_instance_id(self):
@@ -99,6 +101,7 @@ class VariableObjectReply(CIPReply):
     CIP Reply from the Get Attribute All service to Variable Object Class Code 0x6B adding descriptive properties
     Omron Vendor specific
     """
+
     def __init__(self, reply_bytes: bytes):
         super().__init__(reply_bytes=reply_bytes)
 
@@ -124,17 +127,17 @@ class VariableObjectReply(CIPReply):
         """Number of elements in each dimension of  the array"""
         dimension_size_list = []
         for i in range(self.array_dimension):
-            dimension_size = struct.unpack("<L", self.reply_data[8+i*4:8+i*4+4])[0]
+            dimension_size = struct.unpack("<L", self.reply_data[8 + i * 4:8 + i * 4 + 4])[0]
             dimension_size_list.append(dimension_size)
         return dimension_size_list
 
     @property
     def bit_number(self):
-        return struct.unpack("<B", self.reply_data[16+self.array_dimension*4:17+self.array_dimension*4])[0]
+        return struct.unpack("<B", self.reply_data[16 + self.array_dimension * 4:17 + self.array_dimension * 4])[0]
 
     @property
     def variable_type_instance_id(self):
-        return self.reply_data[20+self.array_dimension*4:24+self.array_dimension*4]
+        return self.reply_data[20 + self.array_dimension * 4:24 + self.array_dimension * 4]
 
     @property
     def start_array_elements(self):
@@ -143,8 +146,8 @@ class VariableObjectReply(CIPReply):
         for i in range(self.array_dimension):
             array_start = \
                 struct.unpack("<L",
-                              self.reply_data[24+self.array_dimension * 4:
-                                              24+self.array_dimension * 4 + 4])[0]
+                              self.reply_data[24 + self.array_dimension * 4:
+                                              24 + self.array_dimension * 4 + 4])[0]
             array_start_list.append(array_start)
         return array_start_list
 
@@ -186,7 +189,7 @@ class NSeriesEIP(EIP):
             else:
                 read_size = cip_datatype_object.size - offset
             response = self._simple_data_segment_read(cip_datatype_object, offset, read_size)
-            data = data + response.reply_data[2+burn_characters:]
+            data = data + response.reply_data[2 + burn_characters:]
             offset = offset + max_read_size
         cip_datatype_object.data = data
         return cip_datatype_object.value()
@@ -231,6 +234,7 @@ class NSeriesEIP(EIP):
         simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
         request_path = request_path + simple_data_request_path.bytes()
         response = self.read_tag_service(request_path)
+        # print(response)
         return response
 
     def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data):
@@ -289,21 +293,14 @@ class NSeriesEIP(EIP):
             request_path = eip.address_request_path_segment(
                 class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
             reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
-            variable_cip_datatype = self.data_type_dictionary.get(reply.cip_data_type)
+            # print('variable %s type code %s' % (variable, reply.cip_data_type))
+            variable_cip_datatype = self.data_type_dictionary.get(reply.cip_data_type)()
+            # print('variable %s type code %s instance is %s' % (variable, reply.cip_data_type, variable_cip_datatype))
+            variable_cip_datatype.variable_name = variable
+            variable_cip_datatype.instance_id = instance_id
             if not isinstance(variable_cip_datatype, type(None)):
                 # Instantiate the classes into objects
-                if reply.array_dimension != 0:
-                    variable_cip_datatype = \
-                        variable_cip_datatype(reply.cip_data_type_of_array,
-                                              reply.size,
-                                              reply.array_dimension,
-                                              reply.number_of_elements,
-                                              reply.start_array_elements)
-                else:
-                    variable_cip_datatype = variable_cip_datatype()
-                    variable_cip_datatype.size = reply.size
-                variable_cip_datatype.instance_id = instance_id
-                variable_cip_datatype.variable_name = variable
+                variable_cip_datatype = self.get_data_instance(variable_cip_datatype)
                 self.variables.update({variable: variable_cip_datatype})
                 if variable[0:1] == '_':
                     self.system_variables.update({variable: variable_cip_datatype})
@@ -313,39 +310,41 @@ class NSeriesEIP(EIP):
 
     def get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
         # ToDo TESTS
-
+        # print(cip_datatype_instance)
         if isinstance(cip_datatype_instance, CIPArray):
-            variable_type_object_reply = self._get_variable_type_object(cip_datatype_instance.instance_id)
-            cip_datatype_instance.variable_type_name = variable_type_object_reply.variable_type_name
-            variable_type_object_reply = \
-                self._get_variable_type_object(
-                    int.from_bytes(variable_type_object_reply.next_instance_id, 'little'))
-            member_cip_datatype_object = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)
-            cip_datatype_instance = member_cip_datatype_object(
-                variable_type_object_reply.cip_data_type_of_array,
-                variable_type_object_reply.size,
-                variable_type_object_reply.array_dimension,
-                variable_type_object_reply.number_of_elements,
-                variable_type_object_reply.start_array_elements
-            )
+            variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
+            cip_datatype_instance.from_items(variable_object_reply.cip_data_type_of_array,
+                                             variable_object_reply.size,
+                                             variable_object_reply.array_dimension,
+                                             variable_object_reply.number_of_elements,
+                                             variable_object_reply.start_array_elements)
+            return cip_datatype_instance
+        elif isinstance(cip_datatype_instance, CIPString):
+            variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
+            cip_datatype_instance.size = variable_object_reply.size
             return cip_datatype_instance
         elif isinstance(cip_datatype_instance, CIPAbbreviatedStructure):
             pass
         elif isinstance(cip_datatype_instance, CIPStructure):
-            variable_type_object_reply = self._get_variable_type_object(cip_datatype_instance.instance_id)
+            # print('In structure stuff')
+            variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
+            variable_type_instance_id = int.from_bytes(variable_object_reply.variable_type_instance_id, 'little')
+            variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
+            # print(variable_type_object_reply.bytes)
             cip_datatype_instance.variable_type_name = variable_type_object_reply.variable_type_name
             cip_datatype_instance.size = variable_type_object_reply.size_in_memory
             nesting_variable_type_instance_id = \
                 int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
             member_instance_id = nesting_variable_type_instance_id
             while member_instance_id != 0:
+                # print(member_instance_id)
                 variable_type_object_reply = \
                     self._get_variable_type_object(member_instance_id)
                 member_cip_datatype_object = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)
                 member_cip_datatype_instance = self.get_data_instance(member_cip_datatype_object)
                 cip_datatype_instance.members.update(
                     {variable_type_object_reply.variable_type_name:
-                     self.get_data_instance(member_cip_datatype_instance)})
+                        self.get_data_instance(member_cip_datatype_instance)})
                 member_instance_id = \
                     int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
             return cip_datatype_instance
@@ -357,6 +356,12 @@ class NSeriesEIP(EIP):
             class_id=b'\x6c', instance_id=instance_id.to_bytes(2, 'little'))
         variable_type_object_reply = VariableTypeObjectReply(self.get_attribute_all_service(request_path).bytes)
         return variable_type_object_reply
+
+    def _get_variable_object(self, instance_id: int) -> VariableObjectReply:
+        request_path = address_request_path_segment(
+            class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
+        variable_object_reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
+        return variable_object_reply
 
     def _get_variable_list(self):
         """

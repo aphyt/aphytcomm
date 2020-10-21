@@ -373,13 +373,20 @@ class CIPStructure(CIPDataType):
 
 
 class CIPArray(CIPDataType):
-    def __init__(self,
-                 array_data_type,
-                 array_data_size,
-                 array_dimensions,
-                 number_of_elements,
-                 start_array_elements):
+    def __init__(self):
         super().__init__()
+        self.array_data_type = b''
+        self.array_data_type_size = 0
+        self.array_dimensions = 0
+        self.number_of_elements = []
+        self.start_array_elements = []
+        self.size = 0
+        self._local_cip_data_type_object = None
+        self._list_representation = []
+        # for i in range(self.array_dimensions):
+        #     self._list_representation.append([self._local_cip_data_type_object.value()] * self.number_of_elements[i])
+
+    def from_items(self, array_data_type, array_data_size, array_dimensions, number_of_elements, start_array_elements):
         self.array_data_type = array_data_type
         self.array_data_type_size = array_data_size
         self.array_dimensions = array_dimensions
@@ -391,8 +398,6 @@ class CIPArray(CIPDataType):
         self.size = total_size
         self._local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
         self._list_representation = []
-        # for i in range(self.array_dimensions):
-        #     self._list_representation.append([self._local_cip_data_type_object.value()] * self.number_of_elements[i])
 
     def _recursive_data_to_array(self, dimension: int, position: int = 0):
         dimension = self.array_dimensions - dimension
