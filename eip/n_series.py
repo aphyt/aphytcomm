@@ -176,6 +176,53 @@ class NSeriesEIP(EIP):
         get_instance_list_request = CIPRequest(b'\x5f', tag_request_path, data)
         return self.execute_cip_command(get_instance_list_request)
 
+    def update_variable_dictionary(self):
+        """
+        Make sure the variable dictionary is populated with the
+        latest variable and datatype information from controller
+        :return:
+        """
+        _update_data_type_dictionary(self.data_type_dictionary)
+        variable_list = self._get_variable_list()
+        instance_id = 1
+        for variable in variable_list:
+            request_path = eip.address_request_path_segment(
+                class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
+            reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
+            # print('variable %s type code %s' % (variable, reply.cip_data_type))
+            variable_cip_datatype = self.data_type_dictionary.get(reply.cip_data_type)()
+            # print('variable %s type code %s instance is %s' % (variable, reply.cip_data_type, variable_cip_datatype))
+            variable_cip_datatype.variable_name = variable
+            variable_cip_datatype.instance_id = instance_id
+            if not isinstance(variable_cip_datatype, type(None)):
+                # Instantiate the classes into objects
+                variable_cip_datatype = self._get_data_instance(variable_cip_datatype)
+                self.variables.update({variable: variable_cip_datatype})
+                if variable[0:1] == '_':
+                    self.system_variables.update({variable: variable_cip_datatype})
+                else:
+                    self.user_variables.update({variable: variable_cip_datatype})
+            instance_id = instance_id + 1
+
+    def read_variable(self, variable_name: str):
+        request_path = variable_request_path_segment(variable_name)
+        cip_datatype_object = self.variables.get(variable_name)
+        if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
+            return self._multi_message_variable_read(cip_datatype_object)
+        else:
+            response = self.read_tag_service(request_path)
+            cip_datatype_object.from_bytes(response.reply_data)
+            return cip_datatype_object.value()
+
+    def write_variable(self, variable_name: str, data):
+        request_path = variable_request_path_segment(variable_name)
+        cip_datatype_object = self.variables.get(variable_name)
+        cip_datatype_object.from_value(data)
+        if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
+            self._multi_message_variable_write(cip_datatype_object, data)
+        else:
+            self.write_tag_service(request_path, cip_datatype_object.data_type_code(), cip_datatype_object.data)
+
     def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0):
         max_read_size = self.MAXIMUM_LENGTH - 8
         data = b''
@@ -194,15 +241,6 @@ class NSeriesEIP(EIP):
         cip_datatype_object.data = data
         return cip_datatype_object.value()
 
-    def write_variable(self, variable_name: str, data):
-        request_path = variable_request_path_segment(variable_name)
-        cip_datatype_object = self.variables.get(variable_name)
-        cip_datatype_object.from_value(data)
-        if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
-            self._multi_message_variable_write(cip_datatype_object, data)
-        else:
-            self.write_tag_service(request_path, cip_datatype_object.data_type_code(), cip_datatype_object.data)
-
     def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, data, offset=0):
         # 480 is exactly 60 times 8, which is the largest byte size for an elementary data type
         max_write_size = 400
@@ -217,16 +255,6 @@ class NSeriesEIP(EIP):
                 cip_datatype_object.data[offset:offset + write_size])
             # print(response.bytes)
             offset = offset + max_write_size
-
-    def read_variable(self, variable_name: str):
-        request_path = variable_request_path_segment(variable_name)
-        cip_datatype_object = self.variables.get(variable_name)
-        if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
-            return self._multi_message_variable_read(cip_datatype_object)
-        else:
-            response = self.read_tag_service(request_path)
-            cip_datatype_object.from_bytes(response.reply_data)
-            return cip_datatype_object.value()
 
     def _simple_data_segment_read(self, cip_datatype_object: CIPDataType, offset, read_size):
         # ToDo consider the request path should reside with the variable (possibly converted to logical segment)
@@ -249,12 +277,6 @@ class NSeriesEIP(EIP):
             response = self.write_tag_service(
                 request_path, cip_datatype_object.array_data_type, data)
         return response
-
-    def _simple_data_read_data(self, cip_data_type_object: CIPDataType, offset: int, read_size: int) -> bytes:
-        pass
-
-    def _simple_data_write_data(self, cip_data_type_object: CIPDataType, offset: int, write_size: int) -> bytes:
-        pass
 
     def _cip_string_read(self):
         pass
@@ -280,35 +302,7 @@ class NSeriesEIP(EIP):
     def _cip_array_write(self):
         pass
 
-    def update_variable_dictionary(self):
-        """
-        Make sure the variable dictionary is populated with the
-        latest variable and datatype information from controller
-        :return:
-        """
-        _update_data_type_dictionary(self.data_type_dictionary)
-        variable_list = self._get_variable_list()
-        instance_id = 1
-        for variable in variable_list:
-            request_path = eip.address_request_path_segment(
-                class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
-            reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
-            # print('variable %s type code %s' % (variable, reply.cip_data_type))
-            variable_cip_datatype = self.data_type_dictionary.get(reply.cip_data_type)()
-            # print('variable %s type code %s instance is %s' % (variable, reply.cip_data_type, variable_cip_datatype))
-            variable_cip_datatype.variable_name = variable
-            variable_cip_datatype.instance_id = instance_id
-            if not isinstance(variable_cip_datatype, type(None)):
-                # Instantiate the classes into objects
-                variable_cip_datatype = self.get_data_instance(variable_cip_datatype)
-                self.variables.update({variable: variable_cip_datatype})
-                if variable[0:1] == '_':
-                    self.system_variables.update({variable: variable_cip_datatype})
-                else:
-                    self.user_variables.update({variable: variable_cip_datatype})
-            instance_id = instance_id + 1
-
-    def get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
+    def _get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
         # ToDo TESTS
         # print(cip_datatype_instance)
         if isinstance(cip_datatype_instance, CIPArray):
@@ -341,10 +335,10 @@ class NSeriesEIP(EIP):
                 variable_type_object_reply = \
                     self._get_variable_type_object(member_instance_id)
                 member_cip_datatype_object = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)
-                member_cip_datatype_instance = self.get_data_instance(member_cip_datatype_object)
+                member_cip_datatype_instance = self._get_data_instance(member_cip_datatype_object)
                 cip_datatype_instance.members.update(
                     {variable_type_object_reply.variable_type_name:
-                        self.get_data_instance(member_cip_datatype_instance)})
+                        self._get_data_instance(member_cip_datatype_instance)})
                 member_instance_id = \
                     int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
             return cip_datatype_instance
