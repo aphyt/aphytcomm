@@ -193,9 +193,7 @@ class NSeriesEIP(EIP):
             request_path = eip.address_request_path_segment(
                 class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
             reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
-            # print('variable %s type code %s' % (variable, reply.cip_data_type))
             variable_cip_datatype = self.data_type_dictionary.get(reply.cip_data_type)()
-            # print('variable %s type code %s instance is %s' % (variable, reply.cip_data_type, variable_cip_datatype))
             variable_cip_datatype.variable_name = variable
             variable_cip_datatype.instance_id = instance_id
             if not isinstance(variable_cip_datatype, type(None)):
@@ -324,18 +322,15 @@ class NSeriesEIP(EIP):
         elif isinstance(cip_datatype_instance, CIPAbbreviatedStructure):
             pass
         elif isinstance(cip_datatype_instance, CIPStructure):
-            # print('In structure stuff')
             variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
             variable_type_instance_id = int.from_bytes(variable_object_reply.variable_type_instance_id, 'little')
             variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
-            # print(variable_type_object_reply.bytes)
             cip_datatype_instance.variable_type_name = variable_type_object_reply.variable_type_name
             cip_datatype_instance.size = variable_type_object_reply.size_in_memory
             nesting_variable_type_instance_id = \
                 int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
             member_instance_id = nesting_variable_type_instance_id
             while member_instance_id != 0:
-                # print(member_instance_id)
                 variable_type_object_reply = \
                     self._get_variable_type_object(member_instance_id)
                 member_cip_datatype_object = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)

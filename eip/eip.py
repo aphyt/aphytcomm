@@ -8,7 +8,6 @@ from typing import List, Tuple
 
 from eip.cip import CIPRequest, CIPReply, address_request_path_segment, \
     variable_request_path_segment, CIPDispatcher, CIPService
-from eip.cip_datatypes import CIPDataTypes
 
 
 class DataAndAddressItem:
