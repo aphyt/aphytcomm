@@ -9,7 +9,10 @@ from abc import ABC, abstractmethod
 
 class CIPDataType(ABC):
     """
-
+    Abstract Base Class for CIP Data Types. The subclasses will be added to a data type dictionary and
+    based on the data type code, the value method will provide an appropriate representation of the
+    data to the client program when it reads from a CIP device and the the from_value method will format
+    python types to the proper byte representation to send to the CIP device on write operations
     """
 
     @staticmethod
@@ -25,6 +28,16 @@ class CIPDataType(ABC):
         self.size = 0
         self.instance_id = None
         self.variable_name = ''
+
+    def alignment(self) -> int:
+        """
+        Data types have a memory alignment that describe how they are stored in memory which needs to be
+        accounted for when reading or writing structures. Most basic data types align to their size, but
+        strings align to a single byte, arrays to the size of their members (except Booleans), and unions
+        and structures to the largest alignment of their members. Those types will override this method
+        :return:
+        """
+        return self.size
 
     def bytes(self):
         byte_value = self.data_type_code() + \
@@ -400,6 +413,10 @@ class CIPArray(CIPDataType):
         self._list_representation = []
 
     def _recursive_data_to_array(self, dimension: int, position: int = 0):
+        """
+        Takes the dimension value of the array and converts the data bytes
+        returned into lists nested to the dimension depth
+        """
         dimension = self.array_dimensions - dimension
         local_list = []
         if dimension == self.array_dimensions - 1:
@@ -418,7 +435,9 @@ class CIPArray(CIPDataType):
             return local_list
 
     def _recursive_array_to_data(self, dimension: int, list_data):
-        # ToDo make work
+        """
+        This method takes the dimension value of the array object and recursively converts the list into byte data
+        """
         dimension = self.array_dimensions - dimension
         if dimension == self.array_dimensions - 1:
             data = b''

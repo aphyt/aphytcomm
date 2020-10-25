@@ -171,8 +171,12 @@ class NSeriesEIP(EIP):
     def __init__(self):
         super().__init__()
 
-    def get_instance_list_service(self, tag_request_path, data):
-        """Omron specific"""
+    def get_instance_list_service(self, tag_request_path: bytes, data: bytes):
+        """Omron specific CIP service
+        :param tag_request_path:
+        :param data:
+        :return:
+        """
         get_instance_list_request = CIPRequest(b'\x5f', tag_request_path, data)
         return self.execute_cip_command(get_instance_list_request)
 

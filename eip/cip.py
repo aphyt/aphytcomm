@@ -32,7 +32,6 @@ class CIPRequest:
     * Write Tag Service (0x4d)
     * Write Tag Fragmented Service (0x53)
     * Read Modify Write Tag Service (0x4e)
-
     """
 
     def __init__(self,
@@ -112,9 +111,12 @@ class CIPCommonFormat:
 
 class CIPDispatcher(ABC):
     """
-    ToDo Read Tag Fragmented
-    ToDo Write Tag Fragmented
+    CIPDispatcher is an abstract base class that has the basic methods and data required
+    to send and receive CIP messages from a peer that is equipped to communicate using
+    this protocol
 
+    The key method that subclasses need to implement is 'execute_cip_command' which will
+    send a CIPRequest over the CIP network and receive a CIPReply
     """
 
     def __init__(self):
