@@ -422,6 +422,7 @@ class CIPArray(CIPDataType):
         for number in self.number_of_elements:
             total_size = total_size * number
         self.size = total_size
+        # ToDo calling get_class_type_data_code seems weird
         self._local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
         self._list_representation = []
 

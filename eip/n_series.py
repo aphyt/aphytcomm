@@ -314,10 +314,12 @@ class NSeriesEIP(EIP):
                                              variable_object_reply.array_dimension,
                                              variable_object_reply.number_of_elements,
                                              variable_object_reply.start_array_elements)
+            # print(cip_datatype_instance)
             return cip_datatype_instance
         elif isinstance(cip_datatype_instance, CIPString):
             variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
             cip_datatype_instance.size = variable_object_reply.size
+            # print(cip_datatype_instance)
             return cip_datatype_instance
         elif isinstance(cip_datatype_instance, CIPAbbreviatedStructure):
             pass
@@ -337,11 +339,12 @@ class NSeriesEIP(EIP):
                 member_cip_datatype_instance = self._get_data_instance(member_cip_datatype_object)
                 cip_datatype_instance.members.update(
                     {variable_type_object_reply.variable_type_name:
-                        self._get_data_instance(member_cip_datatype_instance)})
+                        member_cip_datatype_instance})
                 member_instance_id = \
                     int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
             return cip_datatype_instance
         else:
+            cip_datatype_instance = self.data_type_dictionary.get(cip_datatype_instance.data_type_code())()
             return cip_datatype_instance
 
     def _get_variable_type_object(self, instance_id: int) -> VariableTypeObjectReply:
