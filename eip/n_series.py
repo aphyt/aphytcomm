@@ -337,6 +337,9 @@ class NSeriesEIP(EIP):
                     self._get_variable_type_object(member_instance_id)
                 member_cip_datatype_object = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)
                 member_cip_datatype_instance = self._get_data_instance(member_cip_datatype_object)
+                # The memory alignment of a structure is the same as the largest aligned member
+                if member_cip_datatype_instance.alignment > cip_datatype_instance.alignment:
+                    cip_datatype_instance.alignment = member_cip_datatype_instance.alignment
                 cip_datatype_instance.members.update(
                     {variable_type_object_reply.variable_type_name:
                         member_cip_datatype_instance})

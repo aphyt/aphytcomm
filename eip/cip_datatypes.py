@@ -29,6 +29,9 @@ class CIPDataType(ABC):
         self.instance_id = None
         self.variable_name = ''
 
+    def __repr__(self):
+        return f'Variable Name: {self.variable_name} | With Data: {self.data}'.format(self)
+
     @property
     def alignment(self) -> int:
         """
@@ -409,6 +412,7 @@ class CIPArray(CIPDataType):
         # for i in range(self.array_dimensions):
         #     self._list_representation.append([self._local_cip_data_type_object.value()] * self.number_of_elements[i])
 
+    @property
     def alignment(self) -> int:
         return self.array_data_type_size
 
