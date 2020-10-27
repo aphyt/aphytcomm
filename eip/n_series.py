@@ -241,6 +241,7 @@ class NSeriesEIP(EIP):
             data = data + response.reply_data[2 + burn_characters:]
             offset = offset + max_read_size
         cip_datatype_object.data = data
+        cip_datatype_object.size = len(data)
         return cip_datatype_object.value()
 
     def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, data, offset=0):
@@ -308,13 +309,14 @@ class NSeriesEIP(EIP):
         # ToDo TESTS
         # print(cip_datatype_instance)
         if isinstance(cip_datatype_instance, CIPArray):
+            # ToDo Not working, the instance of member IDs are never passed.
             variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
             cip_datatype_instance.from_items(variable_object_reply.cip_data_type_of_array,
                                              variable_object_reply.size,
                                              variable_object_reply.array_dimension,
                                              variable_object_reply.number_of_elements,
                                              variable_object_reply.start_array_elements)
-            # print(cip_datatype_instance)
+            print(cip_datatype_instance, cip_datatype_instance.size)
             return cip_datatype_instance
         elif isinstance(cip_datatype_instance, CIPString):
             variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)

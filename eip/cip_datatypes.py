@@ -25,12 +25,12 @@ class CIPDataType(ABC):
         self.addition_info_length = 0
         self.additional_info = b''
         self.data = b''
-        self.size = 0
+        self.size = len(self.data)
         self.instance_id = None
         self.variable_name = ''
 
     def __repr__(self):
-        return f'Variable Name: {self.variable_name} | With Data: {self.data}'.format(self)
+        return 'Variable Name: %s | With Data: %s' % (self.variable_name, self.data)
 
     @property
     def alignment(self) -> int:
@@ -80,6 +80,7 @@ class CIPBoolean(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = struct.pack("<h", 0)
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -103,6 +104,7 @@ class CIPShortInteger(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -119,6 +121,7 @@ class CIPInteger(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -135,6 +138,7 @@ class CIPDoubleInteger(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -151,6 +155,7 @@ class CIPLongInteger(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -167,6 +172,7 @@ class CIPUnsignedShortInteger(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -183,6 +189,7 @@ class CIPUnsignedInteger(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -199,6 +206,7 @@ class CIPUnsignedDoubleInteger(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -215,6 +223,7 @@ class CIPUnsignedLongInteger(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -231,6 +240,7 @@ class CIPReal(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -247,6 +257,7 @@ class CIPLongReal(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -276,12 +287,14 @@ class CIPString(CIPDataType):
         length_difference = self.size - len(byte_value)
         byte_value += length_difference * b'\x00'
         self.data = byte_value
+        self.size = len(self.data)
 
 
 class CIPByte(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -298,6 +311,7 @@ class CIPWord(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -314,6 +328,7 @@ class CIPDoubleWord(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -330,6 +345,7 @@ class CIPLongWord(CIPDataType):
     def __init__(self):
         super().__init__()
         self.data = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.size = len(self.data)
 
     @staticmethod
     def data_type_code():
@@ -391,11 +407,29 @@ class CIPStructure(CIPDataType):
     def alignment(self, new_alignment):
         self._alignment = new_alignment
 
+    def __repr__(self):
+        return 'Variable Name: %s | With members: %s' % (self.variable_name, self.data)
+
     def value(self):
-        return self.data
+        offset = 0
+        structure_data = self.data[2:]
+        for member in self.members:
+            member_value = self.members[member]
+            if member_value.alignment != 0 and offset % member_value.alignment != 0:
+                offset = offset + (member_value.alignment - offset % member_value.alignment)
+            end_byte = offset + member_value.size
+            member_value.data = structure_data[offset:end_byte]
+            offset = end_byte
+        return self.members
 
     def from_value(self, value):
-        self.data = value
+        offset = 0
+        for member in value.members:
+            if offset % member.alignment != 0:
+                offset = offset + (member.alignment - offset % member.alignment)
+            end_byte = offset + member.size
+            self.data[offset:end_byte] = member.data
+            offset = end_byte
 
 
 class CIPArray(CIPDataType):
