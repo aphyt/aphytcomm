@@ -134,7 +134,20 @@ class CIPDispatcher(ABC):
             CIPRequest(CIPService.READ_TAG_SERVICE, tag_request_path, number_of_elements.to_bytes(2, 'little'))
         return self.execute_cip_command(read_tag_request)
 
-    def write_tag_service(self, tag_request_path, cip_datatype_code, data, number_of_elements=1):
+    def write_tag_service(self, tag_request_path, request_service_data: CIPCommonFormat, number_of_elements=1):
+        data = request_service_data.data_type + \
+               int(request_service_data.additional_info_length).to_bytes(1, 'little') + \
+               request_service_data.additional_info + number_of_elements.to_bytes(2, 'little') + \
+               request_service_data.data
+        write_tag_request = CIPRequest(CIPService.WRITE_TAG_SERVICE, tag_request_path, data)
+        return self.execute_cip_command(write_tag_request)
+
+    def read_tag_service_back(self, tag_request_path, number_of_elements=1):
+        read_tag_request = \
+            CIPRequest(CIPService.READ_TAG_SERVICE, tag_request_path, number_of_elements.to_bytes(2, 'little'))
+        return self.execute_cip_command(read_tag_request)
+
+    def write_tag_service_back(self, tag_request_path, cip_datatype_code, data, number_of_elements=1):
         data = cip_datatype_code + b'\x00' + number_of_elements.to_bytes(2, 'little') + data
         write_tag_request = CIPRequest(CIPService.WRITE_TAG_SERVICE, tag_request_path, data)
         return self.execute_cip_command(write_tag_request)

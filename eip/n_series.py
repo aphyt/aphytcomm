@@ -295,7 +295,6 @@ class NSeriesEIP(EIP):
             # cip_datatype_instance = self.data_type_dictionary.get(cip_datatype_instance.data_type_code())()
             return cip_datatype_instance
 
-
     def read_variable(self, variable_name: str):
         request_path = variable_request_path_segment(variable_name)
         cip_datatype_object = self.variables.get(variable_name)
@@ -313,7 +312,8 @@ class NSeriesEIP(EIP):
         if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
             self._multi_message_variable_write(cip_datatype_object, data)
         else:
-            self.write_tag_service(request_path, cip_datatype_object.data_type_code(), cip_datatype_object.data)
+            request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=cip_datatype_object.data)
+            self.write_tag_service(request_path, request_data)
 
     def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0):
         max_read_size = self.MAXIMUM_LENGTH - 8
@@ -338,14 +338,15 @@ class NSeriesEIP(EIP):
         # 480 is exactly 60 times 8, which is the largest byte size for an elementary data type
         max_write_size = 400
         cip_datatype_object.from_value(data)
+        write_size = max_write_size
         while offset < cip_datatype_object.size:
             if cip_datatype_object.size - offset > max_write_size:
                 write_size = max_write_size
             else:
                 write_size = cip_datatype_object.size - offset
-                response = self._simple_data_segment_write(
-                    cip_datatype_object, offset, write_size,
-                    cip_datatype_object.data[offset:offset + write_size])
+            response = self._simple_data_segment_write(
+                cip_datatype_object, offset, write_size,
+                cip_datatype_object.data[offset:offset + write_size])
             # print(response.bytes)
             offset = offset + max_write_size
 
@@ -355,7 +356,6 @@ class NSeriesEIP(EIP):
         simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
         request_path = request_path + simple_data_request_path.bytes()
         response = self.read_tag_service(request_path)
-        # print(response)
         return response
 
     def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data):
@@ -366,13 +366,17 @@ class NSeriesEIP(EIP):
         response = None
         if cip_datatype_object.data_type_code() == CIPString.data_type_code():
             data = struct.pack("<H", len(data)) + data
-            response = self.write_tag_service(request_path, cip_datatype_object.data_type_code(), data)
+            request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
+            response = self.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
-            response = self.write_tag_service(
-                request_path, cip_datatype_object.array_data_type, data)
+            request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
+            response = self.write_tag_service(request_path, request_data)
+        else:
+            request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
+            response = self.write_tag_service(request_path, request_data)
         return response
 
-    def _cip_string_read(self):
+    def _cip_string_read(self, request_path):
         pass
 
     def _cip_string_write(self):

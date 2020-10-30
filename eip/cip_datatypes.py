@@ -30,7 +30,7 @@ class CIPDataType(ABC):
         self.variable_name = ''
 
     def __repr__(self):
-        return str(self.value())
+        return str(self.data)
 
     @property
     def alignment(self) -> int:
@@ -394,6 +394,7 @@ class CIPStructure(CIPDataType):
         self.variable_type_name = ''
         self.members = {}
         self._alignment = 0
+        self.crc_code = b''
 
     @staticmethod
     def data_type_code():
@@ -424,17 +425,20 @@ class CIPStructure(CIPDataType):
 
     def from_value(self, value):
         # ToDo lookup data check
-        offset = 2
-        mutable_data = bytearray(self.data)
+        offset = 0
+        mutable_data = bytearray(self.data[2:])
         for member_key in value.members:
             member = value.members.get(member_key)
-            if offset % member.alignment != 0 and offset % member.alignment != 0:
+            if member.alignment != 0 and offset % member.alignment != 0:
                 print('Ever happen?')
                 offset = offset + (member.alignment - offset % member.alignment)
             end_byte = offset + member.size
-            mutable_data[offset:] = member.data
+            mutable_data[offset:offset+member.size] = member.data
             offset = end_byte
+        mutable_data = self.data[0:2] + mutable_data
         self.data = bytes(mutable_data)
+        self = self.value()
+        print('did 1')
         print(self.data)
 
 
