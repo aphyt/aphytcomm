@@ -24,13 +24,13 @@ class CIPDataType(ABC):
         self._data_type_code = self.data_type_code()
         self.addition_info_length = 0
         self.additional_info = b''
-        self.data = b''
+        self.data = bytearray()
         self.size = len(self.data)
         self.instance_id = None
         self.variable_name = ''
 
     def __repr__(self):
-        return 'Variable Name: %s | With Data: %s' % (self.variable_name, self.data)
+        return str(self.value())
 
     @property
     def alignment(self) -> int:
@@ -408,7 +408,7 @@ class CIPStructure(CIPDataType):
         self._alignment = new_alignment
 
     def __repr__(self):
-        return 'Variable Name: %s | With members: %s' % (self.variable_name, self.data)
+        return 'Variable Name: %s | With members: %s' % (self.variable_name, self.members)
 
     def value(self):
         offset = 0
@@ -420,16 +420,22 @@ class CIPStructure(CIPDataType):
             end_byte = offset + member_value.size
             member_value.data = structure_data[offset:end_byte]
             offset = end_byte
-        return self.variable_name, self.members
+        return self
 
     def from_value(self, value):
-        offset = 0
-        for member in value.members:
-            if offset % member.alignment != 0:
+        # ToDo lookup data check
+        offset = 2
+        mutable_data = bytearray(self.data)
+        for member_key in value.members:
+            member = value.members.get(member_key)
+            if offset % member.alignment != 0 and offset % member.alignment != 0:
+                print('Ever happen?')
                 offset = offset + (member.alignment - offset % member.alignment)
             end_byte = offset + member.size
-            self.data[offset:end_byte] = member.data
+            mutable_data[offset:] = member.data
             offset = end_byte
+        self.data = bytes(mutable_data)
+        print(self.data)
 
 
 class CIPArray(CIPDataType):

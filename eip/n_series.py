@@ -207,7 +207,6 @@ class NSeriesEIP(EIP):
     def _get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
         # ToDo TESTS
         if isinstance(cip_datatype_instance, CIPArray):
-            # ToDo Not working, the instance of member IDs are never passed.
             variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
             cip_datatype_instance.from_items(variable_object_reply.cip_data_type_of_array,
                                              variable_object_reply.size,
@@ -235,13 +234,7 @@ class NSeriesEIP(EIP):
                 int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
             member_instance_id = nesting_variable_type_instance_id
             while member_instance_id != 0:
-                # variable_type_object_reply = self._get_variable_type_object(member_instance_id)
-                # member_cip_datatype_instance = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)()
                 member_cip_datatype_instance = self._get_member_instance(member_instance_id)
-                print(member_cip_datatype_instance.variable_name)
-                # The memory alignment of a structure is the same as the largest aligned member
-                # if member_cip_datatype_instance.alignment > cip_datatype_instance.alignment:
-                #     cip_datatype_instance.alignment = member_cip_datatype_instance.alignment
                 cip_datatype_instance.members.update(
                     {member_cip_datatype_instance.variable_name: member_cip_datatype_instance})
                 member_instance_id = \
@@ -259,7 +252,6 @@ class NSeriesEIP(EIP):
         cip_datatype_instance.nesting_variable_type_instance_id = \
             variable_type_object_reply.nesting_variable_type_instance_id
         if isinstance(cip_datatype_instance, CIPArray):
-            # ToDo Not working, the instance of member IDs are never passed.
             array_start_list = []
             for i in range(variable_type_object_reply.array_dimension):
                 array_start = 0
@@ -351,9 +343,9 @@ class NSeriesEIP(EIP):
                 write_size = max_write_size
             else:
                 write_size = cip_datatype_object.size - offset
-            response = self._simple_data_segment_write(
-                cip_datatype_object, offset, write_size,
-                cip_datatype_object.data[offset:offset + write_size])
+                response = self._simple_data_segment_write(
+                    cip_datatype_object, offset, write_size,
+                    cip_datatype_object.data[offset:offset + write_size])
             # print(response.bytes)
             offset = offset + max_write_size
 
@@ -371,6 +363,7 @@ class NSeriesEIP(EIP):
         simple_data_request_path = SimpleDataSegmentRequest(offset, write_size)
         request_path = request_path + simple_data_request_path.bytes()
         # ToDo how to prevent testing type code here. Function is doing too much
+        response = None
         if cip_datatype_object.data_type_code() == CIPString.data_type_code():
             data = struct.pack("<H", len(data)) + data
             response = self.write_tag_service(request_path, cip_datatype_object.data_type_code(), data)
