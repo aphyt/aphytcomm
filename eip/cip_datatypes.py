@@ -420,7 +420,7 @@ class CIPStructure(CIPDataType):
             end_byte = offset + member_value.size
             member_value.data = structure_data[offset:end_byte]
             offset = end_byte
-        return self.members
+        return self.variable_name, self.members
 
     def from_value(self, value):
         offset = 0
