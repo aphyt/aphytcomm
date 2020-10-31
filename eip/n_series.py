@@ -213,7 +213,6 @@ class NSeriesEIP(EIP):
                                              variable_object_reply.array_dimension,
                                              variable_object_reply.number_of_elements,
                                              variable_object_reply.start_array_elements)
-            # print(cip_datatype_instance, cip_datatype_instance.size)
             return cip_datatype_instance
 
         elif isinstance(cip_datatype_instance, CIPString):

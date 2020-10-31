@@ -431,7 +431,6 @@ class CIPStructure(CIPDataType):
         for member_key in value.members:
             member = value.members.get(member_key)
             if member.alignment != 0 and offset % member.alignment != 0:
-                print('Ever happen?')
                 offset = offset + (member.alignment - offset % member.alignment)
             end_byte = offset + member.size
             mutable_data[offset:offset+member.size] = member.data
