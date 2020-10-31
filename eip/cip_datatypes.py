@@ -408,8 +408,13 @@ class CIPStructure(CIPDataType):
     def alignment(self, new_alignment):
         self._alignment = new_alignment
 
+    def __setitem__(self, key, value):
+        current_type = self.members.get(key)
+        current_type.from_value(value)
+        self.members[key] = current_type
+
     def __repr__(self):
-        return 'Variable Name: %s | With members: %s' % (self.variable_name, self.members)
+        return 'name: %s | members: %s' % (self.variable_name, self.members)
 
     def value(self):
         offset = 0
@@ -436,6 +441,7 @@ class CIPStructure(CIPDataType):
             mutable_data[offset:offset+member.size] = member.data
             offset = end_byte
         self.data = bytes(mutable_data)
+        self.value()
 
 
 class CIPArray(CIPDataType):
