@@ -318,24 +318,29 @@ class NSeriesEIP(EIP):
     def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0):
         max_read_size = self.MAXIMUM_LENGTH - 8
         data = b''
-        # ToDo this burn character thing is inelegant. Think about it later, calculate them from Additional Data Bytes
-        burn_characters = 0
-        if isinstance(cip_datatype_object, CIPString):
-            burn_characters = 2
         while offset < cip_datatype_object.size:
             if cip_datatype_object.size - offset > max_read_size:
                 read_size = max_read_size
             else:
                 read_size = cip_datatype_object.size - offset
             response = self._simple_data_segment_read(cip_datatype_object, offset, read_size)
-            data = data + response.reply_data[2 + burn_characters:]
+            reply_bytes = response.reply_data
+            cip_common_format = CIPCommonFormat()
+            cip_common_format.from_bytes(reply_bytes)
+            if isinstance(cip_datatype_object, CIPString):
+                # First two characters of the string seem to be how many characters were read
+                data = data + cip_common_format.data[2:]
+            elif isinstance(cip_datatype_object, CIPStructure):
+                cip_datatype_object.crc_code = cip_common_format.additional_info
+                data = data + cip_common_format.data
+            else:
+                data = data + cip_common_format.data
             offset = offset + max_read_size
         cip_datatype_object.data = data
         cip_datatype_object.size = len(data)
         return cip_datatype_object.value()
 
     def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, data, offset=0):
-        # 480 is exactly 60 times 8, which is the largest byte size for an elementary data type
         max_write_size = 400
         cip_datatype_object.from_value(data)
         write_size = max_write_size
@@ -347,7 +352,6 @@ class NSeriesEIP(EIP):
             response = self._simple_data_segment_write(
                 cip_datatype_object, offset, write_size,
                 cip_datatype_object.data[offset:offset + write_size])
-            # print(response.bytes)
             offset = offset + max_write_size
 
     def _simple_data_segment_read(self, cip_datatype_object: CIPDataType, offset, read_size):
@@ -369,10 +373,11 @@ class NSeriesEIP(EIP):
             request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
             response = self.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
-            request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
+            request_data = CIPCommonFormat(cip_datatype_object.array_data_type, data=data)
             response = self.write_tag_service(request_path, request_data)
-        else:
-            request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
+        elif cip_datatype_object.data_type_code() == CIPStructure.data_type_code():
+            request_data = CIPCommonFormat(CIPAbbreviatedStructure.data_type_code(), additional_info_length=2,
+                                           additional_info=cip_datatype_object.crc_code, data=data)
             response = self.write_tag_service(request_path, request_data)
         return response
 

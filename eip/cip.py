@@ -77,7 +77,7 @@ class CIPReply:
         self.reply_data = reply_bytes[4 + extended_status_byte_offset:]
 
     @property
-    def bytes(self):
+    def bytes(self) -> bytes:
         """
         The bytes in the CIP reply
         :return:
@@ -102,10 +102,13 @@ class CIPCommonFormat:
         self.additional_info = additional_info
         self.data = data
 
+    def __repr__(self):
+        return str(self.data_type + self.additional_info_length.to_bytes(1, 'little') + self.additional_info + self.data)
+
     def from_bytes(self, bytes_cip_common_format):
-        self.data_type = bytes_cip_common_format.reply_data[0:1]
-        self.additional_info_length = int.from_bytes(bytes_cip_common_format.reply_data[1:2], 'little')
-        self.additional_info = bytes_cip_common_format.reply_data[2:2 + self.additional_info_length]
+        self.data_type = bytes_cip_common_format[0:1]
+        self.additional_info_length = int.from_bytes(bytes_cip_common_format[1:2], 'little')
+        self.additional_info = bytes_cip_common_format[2:2 + self.additional_info_length]
         self.data = bytes_cip_common_format[2 + self.additional_info_length:]
 
 
@@ -129,9 +132,10 @@ class CIPDispatcher(ABC):
     def execute_cip_command(self, request: CIPRequest) -> CIPReply:
         pass
 
-    def read_tag_service(self, tag_request_path, number_of_elements=1):
+    def read_tag_service(self, tag_request_path, number_of_elements=1) -> CIPReply:
         read_tag_request = \
             CIPRequest(CIPService.READ_TAG_SERVICE, tag_request_path, number_of_elements.to_bytes(2, 'little'))
+        # print(read_tag_request.bytes)
         return self.execute_cip_command(read_tag_request)
 
     def write_tag_service(self, tag_request_path, request_service_data: CIPCommonFormat, number_of_elements=1):
@@ -140,6 +144,7 @@ class CIPDispatcher(ABC):
                request_service_data.additional_info + number_of_elements.to_bytes(2, 'little') + \
                request_service_data.data
         write_tag_request = CIPRequest(CIPService.WRITE_TAG_SERVICE, tag_request_path, data)
+        # print(write_tag_request.bytes)
         return self.execute_cip_command(write_tag_request)
 
     def read_tag_service_back(self, tag_request_path, number_of_elements=1):
