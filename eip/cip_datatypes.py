@@ -427,6 +427,9 @@ class CIPStructure(CIPDataType):
         current_type.from_value(value)
         self.members[key] = current_type
 
+    def __getitem__(self, item):
+        return self.members[item]
+
     def __repr__(self):
         return 'name: %s | members: %s' % (self.variable_name, self.members)
 
