@@ -67,11 +67,24 @@ class CIPDataType(ABC):
 
 
 def _update_data_type_dictionary(data_type_dictionary):
+    """
+    This function creates a datatype dictionary from all of the subclasses that inherit from the
+    CIP datatype abstract base class
+
+    :param data_type_dictionary:
+    :return:
+    """
     for sub_class in CIPDataType.__subclasses__():
         data_type_dictionary.update({sub_class.data_type_code(): sub_class})
 
 
 def _get_class_data_type_code(data_type: bytes) -> CIPDataType:
+    """
+    This function will return a CIP datatype instance from a datatype code
+
+    :param data_type:
+    :return:
+    """
     for sub_class in CIPDataType.__subclasses__():
         if sub_class.data_type_code() == data_type:
             return sub_class()
@@ -446,6 +459,7 @@ class CIPStructure(CIPDataType):
 
 
 class CIPArray(CIPDataType):
+    # ToDo arrays of Boolean data types are a special case as they can pack 16 bits in their alignment
     def __init__(self):
         super().__init__()
         self.array_data_type = b''

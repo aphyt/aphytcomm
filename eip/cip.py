@@ -89,6 +89,7 @@ class CIPReply:
 
 class CIPCommonFormat:
     """
+    CIP common format is a format that is used to pack data to be used in CIP messages
     Look at W506 page 341 of 570 for definition
     """
 
@@ -162,6 +163,8 @@ class CIPDispatcher(ABC):
 def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,
                                  attribute_id: bytes = None, element_id: bytes = None) -> bytes:
     """
+    This function is to create a request path using the class, instance, attribute and element values
+    of the data that the programmer will access
 
     :param class_id: class id with low byte first
     :param instance_id:
@@ -202,7 +205,8 @@ def address_request_path_segment(class_id: bytes = None, instance_id: bytes = No
 
 def variable_request_path_segment(variable_name: str) -> bytes:
     """
-    This static method returns a variable name to a symbolic segment request path.
+    This function is to create a request path using the variable name of the data that the programmer will access
+
     :param variable_name: The name of the variable for the request path
     :return: Request path as a bytes object
     """

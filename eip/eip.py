@@ -11,7 +11,10 @@ from eip.cip import CIPRequest, CIPReply, address_request_path_segment, \
 
 
 class DataAndAddressItem:
-    """EIP-CIP-V2-1.0.pdf Table 2-7.2 – Data and Address item format"""
+    """
+    Data and address items store the data used in common packet format
+    EIP-CIP-V2-1.0.pdf Table 2-7.2 – Data and Address item format
+    """
     NULL_ADDRESS_ITEM = b'\x00\x00'
     CONNECTED_TRANSPORT_PACKET = b'\xb1\x00'
     UNCONNECTED_MESSAGE = b'\xb2\x00'
@@ -21,30 +24,16 @@ class DataAndAddressItem:
     SEQUENCED_ADDRESS_ITEM = b'\x02\x80'
 
     def __init__(self, type_id, data: bytes):
-        """
-
-        :param type_id:
-        :param data:
-        """
         self.type_id = type_id
         self.length = len(data).to_bytes(2, 'little')
         self.data = data
 
     def from_bytes(self, bytes_data_address_item: bytes):
-        """
-
-        :param bytes_data_address_item:
-        :return:
-        """
         self.type_id = bytes_data_address_item[0:2]
         self.length = bytes_data_address_item[2:4]
         self.data = bytes_data_address_item[4:]
 
     def bytes(self):
-        """
-
-        :return:
-        """
         return self.type_id + self.length + self.data
 
 
@@ -54,10 +43,6 @@ class CommonPacketFormat:
     """
 
     def __init__(self, packets: List[DataAndAddressItem]):
-        """
-
-        :param packets:
-        """
         self.packets = [DataAndAddressItem(DataAndAddressItem.NULL_ADDRESS_ITEM, b''),
                         DataAndAddressItem(DataAndAddressItem.NULL_ADDRESS_ITEM, b'')]
         if len(packets) < 1:
@@ -72,11 +57,6 @@ class CommonPacketFormat:
             self.packet_bytes += packet.bytes()
 
     def from_bytes(self, bytes_common_packet_format: bytes):
-        """
-
-        :param bytes_common_packet_format:
-        :return:
-        """
         self.item_count = int.from_bytes(bytes_common_packet_format[0:2], 'little')
         self.packet_bytes = bytes_common_packet_format[2:]
         packet_offset = 0
@@ -90,10 +70,6 @@ class CommonPacketFormat:
             packet_index = packet_index + 1
 
     def bytes(self):
-        """
-
-        :return:
-        """
         return self.item_count.to_bytes(2, 'little') + self.packet_bytes
 
 
@@ -105,36 +81,22 @@ class CommandSpecificData:
     def __init__(self, interface_handle: bytes = b'\x00\x00\x00\x00',
                  timeout: bytes = b'\x08\x00',
                  encapsulated_packet: bytes = b''):
-        """
-
-        :param interface_handle:
-        :param timeout:
-        :param encapsulated_packet:
-        """
         self.interface_handle = interface_handle
         self.timeout = timeout
         self.encapsulated_packet = encapsulated_packet
 
     def from_bytes(self, bytes_command_specific_data: bytes):
-        """
-
-        :param bytes_command_specific_data:
-        :return:
-        """
         self.interface_handle = bytes_command_specific_data[0:4]
         self.timeout = bytes_command_specific_data[4:6]
         self.encapsulated_packet = bytes_command_specific_data[6:]
 
     def bytes(self):
-        """
-
-        :return:
-        """
         return self.interface_handle + self.timeout + self.encapsulated_packet
 
 
 class EIPMessage:
     """
+    Class for creating or parsing Ethernet/IP messages
 
     EIP Message::
         |-Command Specific Data
@@ -165,20 +127,11 @@ class EIPMessage:
         self.command_data = command_data
 
     def bytes(self) -> bytes:
-        """
-
-        :return:
-        """
         return \
             self.command + self.length + self.session_handle_id + self.status + \
             self.sender_context_data + self.command_options + self.command_data
 
     def from_bytes(self, eip_message_bytes: bytes):
-        """
-
-        :param eip_message_bytes:
-        :return:
-        """
         self.command = eip_message_bytes[0:2]
         self.length = eip_message_bytes[2:4]
         self.session_handle_id = eip_message_bytes[4:8]
@@ -210,7 +163,7 @@ class EIP(CIPDispatcher):
 
     def connect_explicit(self, host):
         """
-
+        Create and explicit Ethernet/IP connection
         :param host:
         """
         try:
@@ -223,7 +176,7 @@ class EIP(CIPDispatcher):
 
     def close_explicit(self):
         """
-
+        Close the explicit Ethernet/IP connection
         :return:
         """
         self.is_connected_explicit = False
@@ -240,6 +193,11 @@ class EIP(CIPDispatcher):
         return len(eip_message.bytes()), len(command_specific_data.bytes())
 
     def execute_cip_command(self, request: CIPRequest) -> CIPReply:
+        """
+        Implements the abstract method in order to become a concrete CIPDispatcher class
+        :param request:
+        :return:
+        """
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, request.bytes)
         packets = [data_address_item]
         common_packet_format = CommonPacketFormat(packets)
@@ -254,7 +212,7 @@ class EIP(CIPDispatcher):
     @staticmethod
     def command_specific_data_from_eip_message_bytes(eip_message_bytes: bytes):
         """
-
+        Extracts command specific data from Ethernet/IP reply bytes
         :param eip_message_bytes:
         :return:
         """
@@ -265,7 +223,7 @@ class EIP(CIPDispatcher):
     @staticmethod
     def command_specific_data_from_eip_message(eip_message: EIPMessage) -> CommandSpecificData:
         """
-
+        Extracts the command specific data from an Ethernet/IP message
         :param eip_message:
         :return:
         """
@@ -275,7 +233,7 @@ class EIP(CIPDispatcher):
 
     def send_command(self, eip_command: EIPMessage) -> EIPMessage:
         """
-
+        Used to send and receive Ethernet/IP messages
         :param eip_command:
         :return:
         """

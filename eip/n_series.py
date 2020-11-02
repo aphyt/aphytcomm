@@ -153,6 +153,10 @@ class VariableObjectReply(CIPReply):
 
 
 class SimpleDataSegmentRequest:
+    """
+    A simple data segment request is the Omron specific format for requesting data that will not fit
+    in a single CIP message. This is used for strings, arrays and structures
+    """
     def __init__(self, offset, size):
         self.simple_data_type_code = b'\x80'
         self.segment_length = b'\x03'  # Fixed and in words
@@ -166,13 +170,19 @@ class SimpleDataSegmentRequest:
 
 
 class NSeriesEIP(EIP):
+    """
+    Concrete implementation of EIP abstract base class that implements Omron specific Ethernet/IP
+    services in addition to the common Ethernet/IP services of the parent class and the CIP specific
+    items in the grandparent class
+    """
     MAXIMUM_LENGTH = 502  # UCMM maximum length is 502 bytes
 
     def __init__(self):
         super().__init__()
 
     def get_instance_list_service(self, tag_request_path: bytes, data: bytes):
-        """Omron specific CIP service
+        """
+        Omron specific CIP service
         :param tag_request_path:
         :param data:
         :return:
@@ -205,6 +215,11 @@ class NSeriesEIP(EIP):
             instance_id = instance_id + 1
 
     def _get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
+        """
+        This method is to get an instance of a CIP data type from its type definition.
+        :param cip_datatype_instance:
+        :return:
+        """
         # ToDo TESTS
         if isinstance(cip_datatype_instance, CIPArray):
             variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
@@ -253,6 +268,12 @@ class NSeriesEIP(EIP):
             return cip_datatype_instance
 
     def _get_member_instance(self, member_instance_id: int) -> CIPDataType:
+        """
+        This method returns a CIP datatype instance from a member ID. This is how the driver can
+        build instances of derived data types like structures and arrays of structures
+        :param member_instance_id:
+        :return:
+        """
         variable_type_object_reply = self._get_variable_type_object(member_instance_id)
         cip_datatype_instance = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)()
         cip_datatype_instance.variable_name = variable_type_object_reply.variable_type_name
@@ -297,6 +318,12 @@ class NSeriesEIP(EIP):
             return cip_datatype_instance
 
     def read_variable(self, variable_name: str):
+        """
+        This method will read the variable name from the controller and return it in the corresponding
+        Python datatype
+        :param variable_name:
+        :return:
+        """
         request_path = variable_request_path_segment(variable_name)
         cip_datatype_object = self.variables.get(variable_name)
         if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
@@ -307,6 +334,13 @@ class NSeriesEIP(EIP):
             return cip_datatype_object.value()
 
     def write_variable(self, variable_name: str, data):
+        """
+        This method takes a variable name and formats the Python datatype into the correct CIP datatype
+        and writes it to the controller
+        :param variable_name:
+        :param data:
+        :return:
+        """
         request_path = variable_request_path_segment(variable_name)
         cip_datatype_object = self.variables.get(variable_name)
         cip_datatype_object.from_value(data)
@@ -317,6 +351,12 @@ class NSeriesEIP(EIP):
             self.write_tag_service(request_path, request_data)
 
     def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0):
+        """
+        This method is to read data that does not fit into a single CIP message
+        :param cip_datatype_object:
+        :param offset:
+        :return:
+        """
         max_read_size = self.MAXIMUM_LENGTH - 8
         data = b''
         while offset < cip_datatype_object.size:
@@ -342,6 +382,13 @@ class NSeriesEIP(EIP):
         return cip_datatype_object.value()
 
     def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, data, offset=0):
+        """
+        This method is to write data that does not fit into a single CIP message
+        :param cip_datatype_object:
+        :param data:
+        :param offset:
+        :return:
+        """
         max_write_size = 400
         cip_datatype_object.from_value(data)
         write_size = max_write_size
@@ -356,6 +403,13 @@ class NSeriesEIP(EIP):
             offset = offset + max_write_size
 
     def _simple_data_segment_read(self, cip_datatype_object: CIPDataType, offset, read_size):
+        """
+        This method formats as request path to be used with simple_data_segment reading operations
+        :param cip_datatype_object:
+        :param offset:
+        :param read_size:
+        :return:
+        """
         # ToDo consider the request path should reside with the variable (possibly converted to logical segment)
         request_path = variable_request_path_segment(cip_datatype_object.variable_name)
         simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
@@ -364,6 +418,14 @@ class NSeriesEIP(EIP):
         return response
 
     def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data):
+        """
+        This method formats as request path to be used with simple_data_segment writing operations
+        :param cip_datatype_object:
+        :param offset:
+        :param write_size:
+        :param data:
+        :return:
+        """
         request_path = variable_request_path_segment(cip_datatype_object.variable_name)
         simple_data_request_path = SimpleDataSegmentRequest(offset, write_size)
         request_path = request_path + simple_data_request_path.bytes()
@@ -381,6 +443,53 @@ class NSeriesEIP(EIP):
                                            additional_info=cip_datatype_object.crc_code, data=data)
             response = self.write_tag_service(request_path, request_data)
         return response
+
+    def _get_variable_type_object(self, instance_id: int) -> VariableTypeObjectReply:
+        """
+        Omron specific CIP class that is used to describe variable types. This is where derived data types
+        will have their member definitions
+        :param instance_id:
+        :return:
+        """
+        request_path = address_request_path_segment(
+            class_id=b'\x6c', instance_id=instance_id.to_bytes(2, 'little'))
+        variable_type_object_reply = VariableTypeObjectReply(self.get_attribute_all_service(request_path).bytes)
+        return variable_type_object_reply
+
+    def _get_variable_object(self, instance_id: int) -> VariableObjectReply:
+        """
+        Omron specific CIP class that is used to describe variables. This contains critical information if the
+        variable is an array type
+        :param instance_id:
+        :return:
+        """
+        request_path = address_request_path_segment(
+            class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
+        variable_object_reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
+        return variable_object_reply
+
+    def _get_variable_list(self):
+        """
+        Omron specific method for creating a list of variables that are published in the controller.
+        :return:
+        """
+        tag_list = []
+        for tag_index in range(self._get_number_of_variables()):
+            offset = tag_index + 1
+            request_path = address_request_path_segment(b'\x6a', offset.to_bytes(2, 'little'))
+            reply = self.get_attribute_all_service(request_path)
+            tag = str(reply.reply_data[5:5 + int.from_bytes(reply.reply_data[4:5], 'little')], 'utf-8')
+            tag_list.append(tag)
+        return tag_list
+
+    def _get_number_of_variables(self) -> int:
+        """
+        Omron specific method to find number of variables from Tag Name Server
+        :return:
+        """
+        request_path = address_request_path_segment(b'\x6a', b'\x00\x00')
+        reply = self.get_attribute_all_service(request_path)
+        return int.from_bytes(reply.reply_data[2:4], 'little')
 
     def _cip_string_read(self, request_path):
         pass
@@ -405,38 +514,3 @@ class NSeriesEIP(EIP):
 
     def _cip_array_write(self):
         pass
-
-    def _get_variable_type_object(self, instance_id: int) -> VariableTypeObjectReply:
-        request_path = address_request_path_segment(
-            class_id=b'\x6c', instance_id=instance_id.to_bytes(2, 'little'))
-        variable_type_object_reply = VariableTypeObjectReply(self.get_attribute_all_service(request_path).bytes)
-        return variable_type_object_reply
-
-    def _get_variable_object(self, instance_id: int) -> VariableObjectReply:
-        request_path = address_request_path_segment(
-            class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
-        variable_object_reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
-        return variable_object_reply
-
-    def _get_variable_list(self):
-        """
-
-        :return:
-        """
-        tag_list = []
-        for tag_index in range(self._get_number_of_variables()):
-            offset = tag_index + 1
-            request_path = address_request_path_segment(b'\x6a', offset.to_bytes(2, 'little'))
-            reply = self.get_attribute_all_service(request_path)
-            tag = str(reply.reply_data[5:5 + int.from_bytes(reply.reply_data[4:5], 'little')], 'utf-8')
-            tag_list.append(tag)
-        return tag_list
-
-    def _get_number_of_variables(self) -> int:
-        """
-        Find number of variables from Tag Name Server
-        :return:
-        """
-        request_path = address_request_path_segment(b'\x6a', b'\x00\x00')
-        reply = self.get_attribute_all_service(request_path)
-        return int.from_bytes(reply.reply_data[2:4], 'little')
