@@ -4,6 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import struct
+import copy
 from abc import ABC, abstractmethod
 
 
@@ -419,12 +420,14 @@ class CIPStructure(CIPDataType):
     def value(self):
         offset = 0
         structure_data = self.data
+        # print(structure_data)
         for member in self.members:
             member_value = self.members[member]
             if member_value.alignment != 0 and offset % member_value.alignment != 0:
                 offset = offset + (member_value.alignment - offset % member_value.alignment)
             end_byte = offset + member_value.size
             member_value.data = structure_data[offset:end_byte]
+            # print('name %s member %s alignment %s size %s' % (member_value.variable_name, member_value, member_value.alignment, member_value.size))
             offset = end_byte
         return self
 
@@ -455,12 +458,13 @@ class CIPArray(CIPDataType):
         self.size = 0
         self._local_cip_data_type_object = None
         self._list_representation = []
+        self._alignment = 0
         # for i in range(self.array_dimensions):
         #     self._list_representation.append([self._local_cip_data_type_object.value()] * self.number_of_elements[i])
 
     @property
     def alignment(self) -> int:
-        return self.array_data_type_size
+        return self._alignment
 
     def from_items(self, array_data_type, array_data_size, array_dimensions, number_of_elements, start_array_elements):
         self.array_data_type = array_data_type
@@ -474,7 +478,22 @@ class CIPArray(CIPDataType):
         self.size = total_size
         # ToDo calling get_class_type_data_code seems weird
         self._local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
-        self._list_representation = []
+        self._alignment = self._local_cip_data_type_object.alignment
+
+    def from_instance(self, cip_instance: CIPDataType, array_data_size, array_dimensions, number_of_elements, start_array_elements):
+        self.array_data_type = cip_instance.data_type_code()
+        self.array_data_type_size = array_data_size
+        # print(array_data_size)
+        self.array_dimensions = array_dimensions
+        self.number_of_elements = number_of_elements
+        self.start_array_elements = start_array_elements
+        total_size = self.array_data_type_size
+        for number in self.number_of_elements:
+            total_size = total_size * number
+        self.size = total_size
+        # ToDo calling get_class_type_data_code seems weird
+        self._local_cip_data_type_object = cip_instance
+        self._alignment = self._local_cip_data_type_object.alignment
 
     def _recursive_data_to_array(self, dimension: int, position: int = 0):
         """
@@ -489,7 +508,9 @@ class CIPArray(CIPDataType):
                 start_bytes = index * self.array_data_type_size + position * self.array_data_type_size
                 self._local_cip_data_type_object.data = \
                     self.data[start_bytes:start_bytes + self.array_data_type_size]
-                temp_array.append(self._local_cip_data_type_object.value())
+                temp_value = copy.deepcopy(self._local_cip_data_type_object)
+                temp_array.append(temp_value.value())
+                # temp_array[index] = self._local_cip_data_type_object.value()
             return temp_array
         else:
             for index in range(self.number_of_elements[dimension]):
