@@ -4,6 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from .cip_datatypes import CIPDataType
+import datetime
 
 
 class OmronDateAndTime(CIPDataType):
@@ -13,7 +14,9 @@ class OmronDateAndTime(CIPDataType):
         return b'\x0a'  #
 
     def value(self):
-        return self.data
+        unix_timestamp = int.from_bytes(self.data, 'little') / 10 ** 9
+        datetime.datetime.fromtimestamp(unix_timestamp)
+        return datetime.datetime.fromtimestamp(unix_timestamp, datetime.timezone.utc)
 
     def from_value(self, value):
         self.data = value
