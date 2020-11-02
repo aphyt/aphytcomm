@@ -420,14 +420,12 @@ class CIPStructure(CIPDataType):
     def value(self):
         offset = 0
         structure_data = self.data
-        # print(structure_data)
         for member in self.members:
             member_value = self.members[member]
             if member_value.alignment != 0 and offset % member_value.alignment != 0:
                 offset = offset + (member_value.alignment - offset % member_value.alignment)
             end_byte = offset + member_value.size
             member_value.data = structure_data[offset:end_byte]
-            # print('name %s member %s alignment %s size %s' % (member_value.variable_name, member_value, member_value.alignment, member_value.size))
             offset = end_byte
         return self
 
@@ -483,7 +481,6 @@ class CIPArray(CIPDataType):
     def from_instance(self, cip_instance: CIPDataType, array_data_size, array_dimensions, number_of_elements, start_array_elements):
         self.array_data_type = cip_instance.data_type_code()
         self.array_data_type_size = array_data_size
-        # print(array_data_size)
         self.array_dimensions = array_dimensions
         self.number_of_elements = number_of_elements
         self.start_array_elements = start_array_elements

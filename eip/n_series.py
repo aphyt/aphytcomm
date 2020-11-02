@@ -216,7 +216,6 @@ class NSeriesEIP(EIP):
                                                  variable_object_reply.start_array_elements)
             else:
                 member_instance_id = int.from_bytes(variable_object_reply.variable_type_instance_id, 'little')
-                # print('mem inst id %s' % member_instance_id)
                 member_instance = self._get_member_instance(member_instance_id)
                 cip_datatype_instance.from_instance(member_instance,
                                                     variable_object_reply.size,
@@ -275,25 +274,15 @@ class NSeriesEIP(EIP):
 
         elif isinstance(cip_datatype_instance, CIPString):
             cip_datatype_instance.size = variable_type_object_reply.size_in_memory
-            # print('name %s cip string size %s' % (cip_datatype_instance.variable_name, cip_datatype_instance.size))
             return cip_datatype_instance
 
         elif isinstance(cip_datatype_instance, CIPAbbreviatedStructure):
-            print("in here")
+            pass
 
         elif isinstance(cip_datatype_instance, CIPStructure):
-            # variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
-            # variable_type_instance_id = int.from_bytes(variable_object_reply.variable_type_instance_id, 'little')
-            # variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
-            # cip_datatype_instance.variable_type_name = variable_type_object_reply.variable_type_name
-            # cip_datatype_instance.size = variable_type_object_reply.size_in_memory
-            # nesting_variable_type_instance_id = \
-            #     int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
-            # member_instance_id = nesting_variable_type_instance_id
             member_instance_id = int.from_bytes(cip_datatype_instance.nesting_variable_type_instance_id, 'little')
             while member_instance_id != 0:
                 variable_type_object_reply = self._get_variable_type_object(member_instance_id)
-                # member_cip_datatype_instance = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)()
                 member_cip_datatype_instance = self._get_member_instance(member_instance_id)
                 # The memory alignment of a structure is the same as the largest aligned member
                 if member_cip_datatype_instance.alignment > cip_datatype_instance.alignment:
