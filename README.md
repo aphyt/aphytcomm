@@ -143,38 +143,38 @@ The update variable dictionary method creates a dictionary that maps variable na
     reply = fake_eip_instance.read_variable('TestStruct1')
     print(reply)
     
-    reply[b'Bool2'] = False
+    reply['Bool2'] = False
     reply = fake_eip_instance.write_variable('TestStruct1', reply)
     reply = fake_eip_instance.read_variable('TestStruct1')
     print(reply)
     
-    reply[b'Bool2'] = True
+    reply['Bool2'] = True
     reply = fake_eip_instance.write_variable('TestStruct1', reply)
     reply = fake_eip_instance.read_variable('TestStruct1')
     print(reply)
     
-    reply[b'LintMember'] = 7000
+    reply['LintMember'] = 7000
     reply = fake_eip_instance.write_variable('TestStruct1', reply)
     reply = fake_eip_instance.read_variable('TestStruct1')
     print(reply)
     
-    reply[b'LintMember'] = 14000
+    reply['LintMember'] = 14000
     reply = fake_eip_instance.write_variable('TestStruct1', reply)
     reply = fake_eip_instance.read_variable('TestStruct1')
     print(reply)
     
     reply = fake_eip_instance.read_variable('PartArray')
     print(reply)
-    reply[2][b'part_name'] = 'ThirdItem'
+    reply[2]['part_name'] = 'ThirdItem'
     reply = fake_eip_instance.write_variable('PartArray', reply)
     reply = fake_eip_instance.read_variable('PartArray')
     print(reply)
-    reply[2][b'part_name'] = 'BackItem'
+    reply[2]['part_name'] = 'BackItem'
     reply = fake_eip_instance.write_variable('PartArray', reply)
     reply = fake_eip_instance.read_variable('PartArray')
     print(reply)
     # Demonstrate getitem
-    print(reply[0][b'part_name'])
+    print(reply[0]['part_name'])
     
     reply = fake_eip_instance.read_variable('_CurrentTime')
     print(reply)
