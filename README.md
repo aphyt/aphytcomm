@@ -22,13 +22,26 @@ Currently Supported Data Types
     REAL 2-word floating point)
     LREAL (4-word floating point)
     STRING
+    CIP_BYTE = b'\xd1'  # (1-byte hexadecimal)
+    CIP_WORD = b'\xd2'  # (1-word hexadecimal)
+    CIP_DWORD = b'\xd3'  # (2-word hexadecimal)
+    CIP_TIME = b'\xdb'  # (8-byte data)
+    CIP_LWORD = b'\xd4'  # (4-word hexadecimal)
+    CIP_ABBREVIATED_STRUCT = b'\xa0'
+    CIP_STRUCT = b'\xa2'
+    CIP_ARRAY = b'\xa3'
 
 ## Future Development
 
 The plan is to support all CIP and Omron specific data types, including derived data types like arrays and structures. From there, development efforts will go to reading and writing to logical segments and supporting additional devices transparently.
-Example Code
 
 ## Example Use
+
+### Getting Started
+
+In order to use and explicit connection the programmer should import the n_series file from the eip module to give the program access to the classes to connect to the controller. The programmer should: instantiate an instance from the NSeriesEIP object, connect to the IP address of the controller, register a session and then update the variable dictionary.
+
+The update variable dictionary method creates a dictionary that maps variable names to variable types so that the read_variable and write_variable methods can encode and decode data that is sent to and received from the controller so the programmer can easily interact with controller data 
 
     import eip.n_series
     
@@ -108,6 +121,62 @@ Example Code
     print(reply)
     fake_eip_instance.write_variable('TestString_Copy', tale_of_two_cities_string_1)
     reply = fake_eip_instance.read_variable('TestString_Copy')
+    print(reply)
+    
+    reply = fake_eip_instance.read_variable('ArrayOfStuff')
+    print(reply)
+    reply[4] = 17.3
+    # print(reply)
+    fake_eip_instance.write_variable('ArrayOfStuff', reply)
+    reply = fake_eip_instance.read_variable('ArrayOfStuff')
+    print(reply)
+    reply[4] = 0.0
+    fake_eip_instance.write_variable('ArrayOfStuff', reply)
+    reply = fake_eip_instance.read_variable('ArrayOfStuff')
+    print(reply)
+    reply = fake_eip_instance.read_variable('ThreeDimLrealArray')
+    print(reply)
+    
+    reply = fake_eip_instance.read_variable('Axis5Segment')
+    print(reply)
+    
+    reply = fake_eip_instance.read_variable('TestStruct1')
+    print(reply)
+    
+    reply[b'Bool2'] = False
+    reply = fake_eip_instance.write_variable('TestStruct1', reply)
+    reply = fake_eip_instance.read_variable('TestStruct1')
+    print(reply)
+    
+    reply[b'Bool2'] = True
+    reply = fake_eip_instance.write_variable('TestStruct1', reply)
+    reply = fake_eip_instance.read_variable('TestStruct1')
+    print(reply)
+    
+    reply[b'LintMember'] = 7000
+    reply = fake_eip_instance.write_variable('TestStruct1', reply)
+    reply = fake_eip_instance.read_variable('TestStruct1')
+    print(reply)
+    
+    reply[b'LintMember'] = 14000
+    reply = fake_eip_instance.write_variable('TestStruct1', reply)
+    reply = fake_eip_instance.read_variable('TestStruct1')
+    print(reply)
+    
+    reply = fake_eip_instance.read_variable('PartArray')
+    print(reply)
+    reply[2][b'part_name'] = 'ThirdItem'
+    reply = fake_eip_instance.write_variable('PartArray', reply)
+    reply = fake_eip_instance.read_variable('PartArray')
+    print(reply)
+    reply[2][b'part_name'] = 'BackItem'
+    reply = fake_eip_instance.write_variable('PartArray', reply)
+    reply = fake_eip_instance.read_variable('PartArray')
+    print(reply)
+    # Demonstrate getitem
+    print(reply[0][b'part_name'])
+    
+    reply = fake_eip_instance.read_variable('_CurrentTime')
     print(reply)
     
     fake_eip_instance.close_explicit()
