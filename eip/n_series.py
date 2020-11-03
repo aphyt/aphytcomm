@@ -391,7 +391,9 @@ class NSeriesEIP(EIP):
         """
         max_write_size = 400
         cip_datatype_object.from_value(data)
-        write_size = max_write_size
+        if isinstance(cip_datatype_object, CIPArray):
+            max_write_size = max_write_size // cip_datatype_object.array_data_type_size * \
+                             cip_datatype_object.array_data_type_size
         while offset < cip_datatype_object.size:
             if cip_datatype_object.size - offset > max_write_size:
                 write_size = max_write_size
@@ -436,7 +438,18 @@ class NSeriesEIP(EIP):
             request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
             response = self.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
-            request_data = CIPCommonFormat(cip_datatype_object.array_data_type, data=data)
+            # ToDo Test String array. Probably have to put the length
+            if cip_datatype_object.array_data_type == CIPStructure.data_type_code():
+                array_variable_object = self._get_variable_object(cip_datatype_object.instance_id)
+                structure_variable_type_object = \
+                    self._get_variable_type_object(
+                        int.from_bytes(array_variable_object.variable_type_instance_id, 'little'))
+                crc_code = structure_variable_type_object.crc_code.to_bytes(2, 'little')
+                request_data = CIPCommonFormat(CIPAbbreviatedStructure.data_type_code(), additional_info_length=2,
+                                               additional_info=crc_code,
+                                               data=data)
+            else:
+                request_data = CIPCommonFormat(cip_datatype_object.array_data_type, data=data)
             response = self.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPStructure.data_type_code():
             request_data = CIPCommonFormat(CIPAbbreviatedStructure.data_type_code(), additional_info_length=2,
