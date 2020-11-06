@@ -70,7 +70,7 @@ class WxNxMessageDemo(wx.Frame):
                 name = self.dispatcher.read_nx_object(unit=i+1, index=0x1000, sub_index=2, control_field=0).data[2:]
                 self.write_line(name.decode('ascii').strip())
         except socket.error:
-            print("SHIT")
+            print("Socket error")
         try:
             self.dispatcher.disconnect()
         except socket.error:
