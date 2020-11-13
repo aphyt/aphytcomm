@@ -152,7 +152,7 @@ class EIP(CIPDispatcher):
 
     def __init__(self):
         super().__init__()
-        self.explicit_message_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.explicit_message_socket = None
         self.session_handle_id = b'\x00\x00\x00\x00\x00\x00\x00\x00'
         self.is_connected_explicit = False
         self.has_session_handle = False
@@ -167,6 +167,7 @@ class EIP(CIPDispatcher):
         :param host:
         """
         try:
+            self.explicit_message_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.explicit_message_socket.connect((host, self.explicit_message_port))
             self.is_connected_explicit = True
         except socket.error as err:
