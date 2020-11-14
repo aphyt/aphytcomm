@@ -6,6 +6,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import socket
+import queue
 
 import wx
 import asyncio
@@ -25,35 +26,36 @@ class NSeriesDispatcher:
     def __init__(self):
         self.instance = n_series.NSeriesEIP()
         self.controller_time = None
-        self.message_queue = []
+        self.message_queue = queue.Queue()
         self.message_timeout = 0.5
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.futures = []
 
     def connect(self, connect_string: str, parent_frame=None):
         self.instance.connect_explicit(connect_string)
         if self.instance.is_connected_explicit:
-            self.instance.register_session()
-            self.instance.is_connected_explicit
-            self.instance.update_variable_dictionary()
-            self.start_time_poll()
-            # print(self.instance.read_variable('_CurrentTime'))
+            self.executor.submit(self.instance.register_session)
+            self.executor.submit(self.instance.update_variable_dictionary)
+            # self.executor.submit(self.instance.register_session)
+            # self.executor.submit(self.instance.register_session)
+            self.message_queue_sender()
         else:
             wx.MessageBox('Check if the IP address is correct and the device is accessible', 'Failed to connect',
                           wx.OK | wx.ICON_INFORMATION)
 
-    def start_time_poll(self):
+    def message_queue_sender(self):
         if self.instance.is_connected_explicit:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(self.instance.read_variable, '_CurrentTime')
-                self.controller_time = future.result()
-                print(self.controller_time)
-                delay = threading.Timer(0.5, self.start_time_poll)
-                delay.start()
-                # future = executor.submit(time.sleep(0.5))
+            future = self.executor.submit(self.instance.read_variable, '_CurrentTime')
+            self.controller_time = future.result()
+            # print(self.controller_time)
+            delay = threading.Timer(0.05, self.message_queue_sender)
+            delay.start()
 
 
 class IPAddressBox(wx.Panel):
     def __init__(self, parent, message_dispatcher):
         super().__init__(parent)
+        self.parent = parent
         self.message_dispatcher = message_dispatcher
         self.static_box = wx.StaticBox(self, wx.ID_ANY, 'Connection')
         self.box_sizer = wx.StaticBoxSizer(self.static_box, wx.VERTICAL)
@@ -78,8 +80,12 @@ class IPAddressBox(wx.Panel):
     def connect_down(self, event):
         if not self.message_dispatcher.instance.is_connected_explicit:
             ip_address = self.ip_address_field.GetLineText(0)
+            self.parent.GetParent().status_bar.SetStatusText('Connecting')
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 executor.submit(self.message_dispatcher.connect(ip_address))
+                self.parent.GetParent().status_bar.SetStatusText('Connected')
+                self.parent.GetParent().control_box.Enable()
+
         event.Skip()
 
     def connect_up(self, event):
@@ -89,6 +95,8 @@ class IPAddressBox(wx.Panel):
         if self.message_dispatcher.instance.is_connected_explicit:
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 executor.submit(self.message_dispatcher.instance.close_explicit())
+                self.parent.GetParent().status_bar.SetStatusText('Not Connected')
+                self.parent.GetParent().control_box.Disable()
         event.Skip()
 
     def disconnect_up(self, event):
@@ -196,12 +204,18 @@ class SystemControlBox(wx.Panel):
         event.Skip()
 
     def export_down(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(self.message_dispatcher.instance.read_variable, 'measurement_samples')
-            self.measurement_data = future.result()
-            print(type(self.measurement_data))
-            for variable in self.measurement_data:
-                print(variable)
+        # self.message_dispatcher.message_queue.put(
+        #     [self.message_dispatcher.instance.read_variable, 'measurement_samples'])
+        future = \
+            self.message_dispatcher.executor.submit(
+                self.message_dispatcher.instance.read_variable, 'measurement_samples')
+        print(future.result())
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        #     future = executor.submit(self.message_dispatcher.instance.read_variable, 'measurement_samples')
+        #     self.measurement_data = future.result()
+        #     print(type(self.measurement_data))
+        #     for variable in self.measurement_data:
+        #         print(variable)
         event.Skip()
 
     def export_up(self, event):
@@ -215,6 +229,9 @@ class WxEIP(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.on_close)
         self.message_dispatcher = NSeriesDispatcher()
         self.SetTitle("Height Scan Command Utility")
+        self.status_bar = self.CreateStatusBar()
+
+        self.status_bar.SetStatusText('Not Connected')
         self.panel = wx.Panel(self)
         self.main_layout = wx.BoxSizer(wx.VERTICAL)
         self.connection_box = IPAddressBox(self.panel, self.message_dispatcher)
@@ -223,8 +240,10 @@ class WxEIP(wx.Frame):
         self.main_layout.Add(self.connection_box, proportion=0, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=4)
         self.main_layout.Add(self.control_box, proportion=0, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border=4)
 
+        self.SetMinSize((300, 100))
         self.panel.SetSizer(self.main_layout)
         self.main_layout.Fit(self)
+        self.control_box.Disable()
         self.Centre()
         # asyncio.create_task(self.print_time())
 
