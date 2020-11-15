@@ -10,7 +10,7 @@ import queue
 
 import wx
 import asyncio
-import binascii
+import xlsxwriter
 from eip import n_series
 import concurrent.futures
 import time
@@ -204,18 +204,22 @@ class SystemControlBox(wx.Panel):
         event.Skip()
 
     def export_down(self, event):
-        # self.message_dispatcher.message_queue.put(
-        #     [self.message_dispatcher.instance.read_variable, 'measurement_samples'])
         future = \
             self.message_dispatcher.executor.submit(
                 self.message_dispatcher.instance.read_variable, 'measurement_samples')
-        print(future.result())
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        #     future = executor.submit(self.message_dispatcher.instance.read_variable, 'measurement_samples')
-        #     self.measurement_data = future.result()
-        #     print(type(self.measurement_data))
-        #     for variable in self.measurement_data:
-        #         print(variable)
+        structure_array = future.result()
+        time_string = self.message_dispatcher.controller_time.strftime("%Y_%m_%d_%H_%M_%S")
+        file_string = time_string + '-scan_data.xlsx'
+        workbook = xlsxwriter.Workbook(file_string)
+        scan_data_worksheet = workbook.add_worksheet()
+        row = 0
+        column = 0
+
+        for sample in structure_array:
+            scan_data_worksheet.write(row, column, sample['position'].value())
+            scan_data_worksheet.write(row, column + 1, sample['measurement'].value())
+            row += 1
+        workbook.close()
         event.Skip()
 
     def export_up(self, event):
