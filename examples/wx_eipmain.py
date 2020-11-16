@@ -194,33 +194,45 @@ class SystemControlBox(wx.Panel):
         event.Skip()
 
     def run_down(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_run', True))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable('hmi_data_available', False))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable('hmi_run', True))
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        #     executor.submit(self.message_dispatcher.instance.write_variable('hmi_run', True))
         event.Skip()
 
     def run_up(self, event):
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             executor.submit(self.message_dispatcher.instance.write_variable('hmi_run', False))
         event.Skip()
 
     def export_down(self, event):
-        future = \
-            self.message_dispatcher.executor.submit(
-                self.message_dispatcher.instance.read_variable, 'measurement_samples')
-        structure_array = future.result()
-        time_string = self.message_dispatcher.controller_time.strftime("%Y_%m_%d_%H_%M_%S")
-        file_string = time_string + '-scan_data.xlsx'
-        workbook = xlsxwriter.Workbook(file_string)
-        scan_data_worksheet = workbook.add_worksheet()
-        row = 0
-        column = 0
-
-        for sample in structure_array:
-            scan_data_worksheet.write(row, column, sample['position'].value())
-            scan_data_worksheet.write(row, column + 1, sample['measurement'].value())
-            row += 1
-        workbook.close()
-        event.Skip()
+        future = self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.read_variable, 'hmi_data_available')
+        data_available = future.result()
+        if data_available:
+            future = \
+                self.message_dispatcher.executor.submit(
+                    self.message_dispatcher.instance.read_variable, 'measurement_samples')
+            structure_array = future.result()
+            time_string = self.message_dispatcher.controller_time.strftime("%Y_%m_%d_%H_%M_%S")
+            file_string = time_string + '-scan_data.xlsx'
+            workbook = xlsxwriter.Workbook(file_string)
+            scan_data_worksheet = workbook.add_worksheet()
+            row = 0
+            column = 0
+            for sample in structure_array:
+                scan_data_worksheet.write(row, column, sample['position'].value())
+                scan_data_worksheet.write(row, column + 1, sample['measurement'].value())
+                row += 1
+            workbook.close()
+            event.Skip()
+        else:
+            wx.MessageBox('Controller does not have measurement data. rerun the scan or wait until completion',
+                          'Failed to export',
+                          wx.OK | wx.ICON_INFORMATION)
 
     def export_up(self, event):
         event.Skip()
@@ -253,6 +265,7 @@ class WxEIP(wx.Frame):
 
     def on_close(self, event):
         if self.message_dispatcher.instance.is_connected_explicit:
+            self.message_dispatcher.executor.shutdown()
             self.message_dispatcher.instance.close_explicit()
         event.Skip()
 
