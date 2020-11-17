@@ -90,8 +90,9 @@ class IPAddressBox(wx.Panel):
         if self.message_dispatcher.instance.is_connected_explicit:
             # with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             #     executor.submit(self.message_dispatcher.instance.close_explicit())
-            self.message_dispatcher.executor.submit(
-                self.message_dispatcher.instance.close_explicit())
+            self.message_dispatcher.executor.shutdown()
+            self.message_dispatcher.instance.close_explicit()
+            self.message_dispatcher.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
             self.parent.GetParent().status_bar.SetStatusText('Not Connected')
             self.parent.GetParent().control_box.Disable()
         event.Skip()
