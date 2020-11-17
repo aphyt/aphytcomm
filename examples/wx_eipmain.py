@@ -13,13 +13,7 @@ import asyncio
 import xlsxwriter
 from eip import n_series
 import concurrent.futures
-import time
 import threading
-
-
-# async def async_runner(function):
-#     response = function
-#     return response
 
 
 class NSeriesDispatcher:
@@ -203,7 +197,6 @@ class SystemControlBox(wx.Panel):
         event.Skip()
 
     def run_up(self, event):
-
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             executor.submit(self.message_dispatcher.instance.write_variable('hmi_run', False))
         event.Skip()
