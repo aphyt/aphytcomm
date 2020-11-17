@@ -1,17 +1,14 @@
-import math
-
 __author__ = 'Joseph Ryan'
 __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
-import socket
 import queue
 
 import wx
 import asyncio
 import xlsxwriter
-from eip import n_series
+from omron import n_series
 import concurrent.futures
 import threading
 

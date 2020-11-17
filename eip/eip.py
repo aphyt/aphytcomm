@@ -6,8 +6,7 @@ __email__ = "jr@aphyt.com"
 import socket
 from typing import List, Tuple
 
-from eip.cip import CIPRequest, CIPReply, address_request_path_segment, \
-    variable_request_path_segment, CIPDispatcher, CIPService
+from cip import *
 
 
 class DataAndAddressItem:

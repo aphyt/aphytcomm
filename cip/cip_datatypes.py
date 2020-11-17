@@ -66,7 +66,7 @@ class CIPDataType(ABC):
         pass
 
 
-def _update_data_type_dictionary(data_type_dictionary):
+def update_data_type_dictionary(data_type_dictionary):
     """
     This function creates a datatype dictionary from all of the subclasses that inherit from the
     CIP datatype abstract base class

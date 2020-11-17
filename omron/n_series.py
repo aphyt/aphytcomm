@@ -4,8 +4,6 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from eip import *
-from .cip_datatypes import _update_data_type_dictionary
-from .omron_datatypes import *
 
 
 class VariableTypeObjectReply(CIPReply):
@@ -196,7 +194,7 @@ class NSeriesEIP(EIP):
         latest variable and datatype information from controller
         :return:
         """
-        _update_data_type_dictionary(self.data_type_dictionary)
+        update_data_type_dictionary(self.data_type_dictionary)
         variable_list = self._get_variable_list()
         instance_id = 1
         for variable in variable_list:
