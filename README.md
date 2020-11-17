@@ -43,9 +43,9 @@ In order to use and explicit connection the programmer should import the n_serie
 
 The update variable dictionary method creates a dictionary that maps variable names to variable types so that the read_variable and write_variable methods can encode and decode data that is sent to and received from the controller so the programmer can easily interact with controller data 
 
-    import eip.n_series
+    import omron
     
-    fake_eip_instance = eip.n_series.NSeriesEIP()
+    fake_eip_instance = omron.n_series.NSeriesEIP()
     fake_eip_instance.connect_explicit('192.168.250.13')
     fake_eip_instance.register_session()
     fake_eip_instance.update_variable_dictionary()
