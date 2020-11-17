@@ -4,7 +4,8 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import queue
-
+import os
+from pathlib import Path
 import wx
 import asyncio
 import xlsxwriter
@@ -210,8 +211,12 @@ class SystemControlBox(wx.Panel):
                     self.message_dispatcher.instance.read_variable, 'measurement_samples')
             structure_array = future.result()
             time_string = self.message_dispatcher.controller_time.strftime("%Y_%m_%d_%H_%M_%S")
+            home_directory = Path.home()
+            save_directory = os.path.join(home_directory, 'Documents', 'ScanData')
+            os.makedirs(save_directory, exist_ok=True)
             file_string = time_string + '-scan_data.xlsx'
-            workbook = xlsxwriter.Workbook(file_string)
+            storage_string = os.path.join(save_directory, file_string)
+            workbook = xlsxwriter.Workbook(storage_string)
             scan_data_worksheet = workbook.add_worksheet()
             row = 0
             column = 0
