@@ -75,11 +75,12 @@ class IPAddressBox(wx.Panel):
         if not self.message_dispatcher.instance.is_connected_explicit:
             ip_address = self.ip_address_field.GetLineText(0)
             self.parent.GetParent().status_bar.SetStatusText('Connecting')
+            # Create a separate executor so the connect function can use the
+            # message_dispatcher executor to do the other connection stuff
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 executor.submit(self.message_dispatcher.connect(ip_address))
                 self.parent.GetParent().status_bar.SetStatusText('Connected')
                 self.parent.GetParent().control_box.Enable()
-
         event.Skip()
 
     def connect_up(self, event):
@@ -87,10 +88,12 @@ class IPAddressBox(wx.Panel):
 
     def disconnect_down(self, event):
         if self.message_dispatcher.instance.is_connected_explicit:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                executor.submit(self.message_dispatcher.instance.close_explicit())
-                self.parent.GetParent().status_bar.SetStatusText('Not Connected')
-                self.parent.GetParent().control_box.Disable()
+            # with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            #     executor.submit(self.message_dispatcher.instance.close_explicit())
+            self.message_dispatcher.executor.submit(
+                self.message_dispatcher.instance.close_explicit())
+            self.parent.GetParent().status_bar.SetStatusText('Not Connected')
+            self.parent.GetParent().control_box.Disable()
         event.Skip()
 
     def disconnect_up(self, event):
@@ -148,57 +151,55 @@ class SystemControlBox(wx.Panel):
         self.SetSizer(self.box_sizer)
 
     def power_down(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_power', True))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_power', True)
         event.Skip()
 
     def power_up(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_power', False))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_power', False)
         event.Skip()
 
     def home_down(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_home', True))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_home', True)
         event.Skip()
 
     def home_up(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_home', False))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_home', False)
         event.Skip()
 
     def reverse_jog_down(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_reverse', True))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_reverse', True)
         event.Skip()
 
     def reverse_jog_up(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_reverse', False))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_reverse', False)
         event.Skip()
 
     def forward_jog_down(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_forward', True))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_forward', True)
         event.Skip()
 
     def forward_jog_up(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_forward', False))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_forward', False)
         event.Skip()
 
     def run_down(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable('hmi_data_available', False))
+            self.message_dispatcher.instance.write_variable, 'hmi_data_available', False)
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable('hmi_run', True))
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        #     executor.submit(self.message_dispatcher.instance.write_variable('hmi_run', True))
+            self.message_dispatcher.instance.write_variable, 'hmi_run', True)
         event.Skip()
 
     def run_up(self, event):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(self.message_dispatcher.instance.write_variable('hmi_run', False))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_run', False)
         event.Skip()
 
     def export_down(self, event):
