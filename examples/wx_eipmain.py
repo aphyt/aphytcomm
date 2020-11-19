@@ -24,28 +24,6 @@ class NSeriesDispatcher:
         self.futures = []
         self.status_integer = 0
 
-    def connect(self, connect_string: str):
-        self.instance.connect_explicit(connect_string)
-        if self.instance.is_connected_explicit:
-            self.executor.submit(self.instance.register_session)
-            self.executor.submit(self.instance.update_variable_dictionary)
-            # self.executor.submit(self.instance.register_session)
-            # self.executor.submit(self.instance.register_session)
-            self.message_queue_sender()
-        else:
-            wx.MessageBox('Check if the IP address is correct and the device is accessible', 'Failed to connect',
-                          wx.OK | wx.ICON_INFORMATION)
-
-    def message_queue_sender(self):
-        if self.instance.is_connected_explicit:
-            future = self.executor.submit(self.instance.read_variable, '_CurrentTime')
-            self.controller_time = future.result()
-            future = self.executor.submit(self.instance.read_variable, 'status_integer')
-            self.controller_time = future.result()
-            # print(self.controller_time)
-            delay = threading.Timer(0.05, self.message_queue_sender)
-            delay.start()
-
 
 class IPAddressBox(wx.Panel):
     def __init__(self, parent, message_dispatcher):
@@ -78,8 +56,11 @@ class IPAddressBox(wx.Panel):
             self.parent.GetParent().status_bar.SetStatusText('Connecting')
             # Create a separate executor so the connect function can use the
             # message_dispatcher executor to do the other connection stuff
+            # with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            #     executor.submit(self.message_dispatcher.connect(ip_address))
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                executor.submit(self.message_dispatcher.connect(ip_address))
+                executor.submit(self.parent.GetParent().control_box.connect(ip_address))
+                # self.parent.GetParent().control_box.connect(ip_address)
                 self.parent.GetParent().status_bar.SetStatusText('Connected')
                 self.parent.GetParent().control_box.Enable()
         event.Skip()
@@ -111,6 +92,12 @@ class SystemControlBox(wx.Panel):
         self.box_sizer = wx.StaticBoxSizer(self.static_box, wx.VERTICAL)
         self.resolution_label = wx.StaticText(self, label='Sampling Motion Size (mm)')
         self.resolution = wx.TextCtrl(self, value='.5', size=(120, -1))
+        self.velocity_label = wx.StaticText(self, label='Sampling Motion Velocity (mm/s)')
+        self.velocity = wx.TextCtrl(self, value='10', size=(120, -1))
+        self.acceleration_label = wx.StaticText(self, label='Sampling Motion Acceleration (mm/s^2)')
+        self.acceleration = wx.TextCtrl(self, value='100', size=(120, -1))
+        self.deceleration_label = wx.StaticText(self, label='Sampling Motion Deceleration (mm/s^2)')
+        self.deceleration = wx.TextCtrl(self, value='100', size=(120, -1))
 
         self.power = wx.Button(self, wx.ID_ANY, 'Power')
         self.power.Bind(wx.EVT_LEFT_DOWN, self.power_down, id=self.power.GetId())
@@ -127,6 +114,10 @@ class SystemControlBox(wx.Panel):
         self.forward = wx.Button(self, wx.ID_ANY, 'Forward')
         self.forward.Bind(wx.EVT_LEFT_DOWN, self.forward_jog_down, id=self.forward.GetId())
         self.forward.Bind(wx.EVT_LEFT_UP, self.forward_jog_up, id=self.forward.GetId())
+
+        self.send = wx.Button(self, wx.ID_ANY, 'Send Parameters')
+        self.send.Bind(wx.EVT_LEFT_DOWN, self.send_down, id=self.send.GetId())
+        self.send.Bind(wx.EVT_LEFT_UP, self.send_up, id=self.send.GetId())
 
         self.run = wx.Button(self, wx.ID_ANY, 'Run')
         self.run.Bind(wx.EVT_LEFT_DOWN, self.run_down, id=self.run.GetId())
@@ -148,9 +139,64 @@ class SystemControlBox(wx.Panel):
         self.box_sizer.Add(horizontal_sizer_2, flag=wx.EXPAND | wx.TOP, border=4)
         self.box_sizer.Add(self.resolution_label, flag=wx.EXPAND | wx.TOP, border=4)
         self.box_sizer.Add(self.resolution, flag=wx.EXPAND | wx.TOP, border=4)
+        self.box_sizer.Add(self.velocity_label, flag=wx.EXPAND | wx.TOP, border=4)
+        self.box_sizer.Add(self.velocity, flag=wx.EXPAND | wx.TOP, border=4)
+        self.box_sizer.Add(self.acceleration_label, flag=wx.EXPAND | wx.TOP, border=4)
+        self.box_sizer.Add(self.acceleration, flag=wx.EXPAND | wx.TOP, border=4)
+        self.box_sizer.Add(self.deceleration_label, flag=wx.EXPAND | wx.TOP, border=4)
+        self.box_sizer.Add(self.deceleration, flag=wx.EXPAND | wx.TOP, border=4)
+        self.box_sizer.Add(self.send, flag=wx.EXPAND | wx.TOP, border=4)
         self.box_sizer.Add(self.run, flag=wx.EXPAND | wx.TOP, border=4)
         self.box_sizer.Add(self.export, flag=wx.EXPAND | wx.TOP | wx.BOTTOM, border=4)
         self.SetSizer(self.box_sizer)
+
+    def connect(self, connect_string: str):
+        self.message_dispatcher.instance.connect_explicit(connect_string)
+        if self.message_dispatcher.instance.is_connected_explicit:
+            self.message_dispatcher.executor.submit(self.message_dispatcher.instance.register_session)
+            self.message_dispatcher.executor.submit(self.message_dispatcher.instance.update_variable_dictionary)
+            self.message_queue_sender()
+        else:
+            wx.MessageBox('Check if the IP address is correct and the device is accessible', 'Failed to connect',
+                          wx.OK | wx.ICON_INFORMATION)
+
+    def message_queue_sender(self):
+        if self.message_dispatcher.instance.is_connected_explicit:
+            future = self.message_dispatcher.executor.submit(
+                self.message_dispatcher.instance.read_variable, '_CurrentTime')
+            self.message_dispatcher.controller_time = future.result()
+            future = self.message_dispatcher.executor.submit(
+                self.message_dispatcher.instance.read_variable, 'status_integer')
+            self.message_dispatcher.status_integer = future.result()
+            # print(self.controller_time)
+            self.set_enabled_fields()
+            delay = threading.Timer(0.05, self.message_queue_sender)
+            delay.start()
+
+    def set_enabled_fields(self):
+        if self.message_dispatcher.status_integer == 2:
+            # Ready, not homed
+            self.power.Enable()
+            self.run.Disable()
+            self.home.Enable()
+            self.forward.Enable()
+            self.reverse.Enable()
+        elif self.message_dispatcher.status_integer == 4:
+            # Ready, homed
+            self.run.Enable()
+        elif self.message_dispatcher.status_integer == 6:
+            # Sampling
+            self.run.Disable()
+            self.export.Disable()
+        elif self.message_dispatcher.status_integer == 8:
+            # sampling done
+            self.export.Enable()
+        else:
+            self.run.Disable()
+            self.home.Disable()
+            self.forward.Disable()
+            self.reverse.Disable()
+            self.export.Disable()
 
     def power_down(self, event):
         self.message_dispatcher.executor.submit(
@@ -190,6 +236,25 @@ class SystemControlBox(wx.Panel):
     def forward_jog_up(self, event):
         self.message_dispatcher.executor.submit(
             self.message_dispatcher.instance.write_variable, 'hmi_forward', False)
+        event.Skip()
+
+    def send_down(self, event):
+        resolution_value = float(self.resolution.GetLineText(0))
+        velocity_value = float(self.velocity.GetLineText(0))
+        print(velocity_value)
+        acceleration_value = float(self.acceleration.GetLineText(0))
+        deceleration_value = float(self.deceleration.GetLineText(0))
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'hmi_resolution_value', resolution_value)
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'velocity', velocity_value)
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'acceleration', acceleration_value)
+        self.message_dispatcher.executor.submit(
+            self.message_dispatcher.instance.write_variable, 'deceleration', deceleration_value)
+        event.Skip()
+
+    def send_up(self, event):
         event.Skip()
 
     def run_down(self, event):
@@ -276,6 +341,8 @@ class WxEIP(wx.Frame):
     def write_line(self, line):
         line = str(line)+'\n'
         self.status_window.write(line)
+
+
 
 
 async def main():
