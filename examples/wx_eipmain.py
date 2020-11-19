@@ -22,8 +22,9 @@ class NSeriesDispatcher:
         self.message_timeout = 0.5
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.futures = []
+        self.status_integer = 0
 
-    def connect(self, connect_string: str, parent_frame=None):
+    def connect(self, connect_string: str):
         self.instance.connect_explicit(connect_string)
         if self.instance.is_connected_explicit:
             self.executor.submit(self.instance.register_session)
@@ -38,6 +39,8 @@ class NSeriesDispatcher:
     def message_queue_sender(self):
         if self.instance.is_connected_explicit:
             future = self.executor.submit(self.instance.read_variable, '_CurrentTime')
+            self.controller_time = future.result()
+            future = self.executor.submit(self.instance.read_variable, 'status_integer')
             self.controller_time = future.result()
             # print(self.controller_time)
             delay = threading.Timer(0.05, self.message_queue_sender)
