@@ -87,6 +87,7 @@ class SystemControlBox(wx.Panel):
     def __init__(self, parent, message_dispatcher):
         super().__init__(parent)
         self.message_dispatcher = message_dispatcher
+        self.parent = parent
         self.measurement_data = None
         self.static_box = wx.StaticBox(self, wx.ID_ANY, 'System Control')
         self.box_sizer = wx.StaticBoxSizer(self.static_box, wx.VERTICAL)
@@ -161,7 +162,7 @@ class SystemControlBox(wx.Panel):
                           wx.OK | wx.ICON_INFORMATION)
 
     def message_queue_sender(self):
-        if self.message_dispatcher.instance.is_connected_explicit:
+        if self.message_dispatcher.instance.is_connected_explicit and not self.parent.GetParent().done:
             future = self.message_dispatcher.executor.submit(
                 self.message_dispatcher.instance.read_variable, '_CurrentTime')
             self.message_dispatcher.controller_time = future.result()
@@ -307,6 +308,7 @@ class WxEIP(wx.Frame):
 
     def __init__(self, *args, **kw):
         super(WxEIP, self).__init__(*args, **kw)
+        self.done = False
         self.Bind(wx.EVT_CLOSE, self.on_close)
         self.message_dispatcher = NSeriesDispatcher()
         self.SetTitle("Height Scan Command Utility")
@@ -330,6 +332,7 @@ class WxEIP(wx.Frame):
 
     def on_close(self, event):
         if self.message_dispatcher.instance.is_connected_explicit:
+            self.done = True
             self.message_dispatcher.executor.shutdown()
             self.message_dispatcher.instance.close_explicit()
         event.Skip()
@@ -341,8 +344,6 @@ class WxEIP(wx.Frame):
     def write_line(self, line):
         line = str(line)+'\n'
         self.status_window.write(line)
-
-
 
 
 async def main():
