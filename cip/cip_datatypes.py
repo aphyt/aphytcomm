@@ -293,6 +293,10 @@ class CIPString(CIPDataType):
     def data_type_code():
         return b'\xd0'  #
 
+    @property
+    def alignment(self) -> int:
+        return 0
+
     def value(self):
         return str(self.data, 'utf-8')
 
