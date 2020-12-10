@@ -59,7 +59,7 @@ class NXMessageDispatcher:
         return response
 
     def set_output_data(self, data):
-        response = self.execute_command(b'\x10', b'\x04\x00', b'\x94\x00', b'\x03\x00')
+        response = self.execute_command(b'\x10', b'\x04\x00', b'\x94\x00', b'\x03\x00', data=data)
         return response
 
     def clear_nx_error_status(self):
