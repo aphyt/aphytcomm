@@ -4,7 +4,10 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from cip.cip_datatypes import *
+from eip import *
 import unittest
+from unittest.mock import Mock
+from unittest.mock import patch
 
 
 class TestCipDataTypes(unittest.TestCase):
@@ -122,3 +125,13 @@ class TestCipDataTypes(unittest.TestCase):
         cip_real = CIPReal()
         cip_real.data = b'\xff\xff\x7f\x7f'
         self.assertAlmostEqual(cip_real.value(), 3.4028234663852886e+38)
+
+    def test_eip_commands(self):
+        eip_test = EIP()
+        eip_test.send_command = Mock()
+        eip_test.list_services()
+        args = eip_test.send_command.call_args
+        self.assertEqual(args.args[0].bytes(),
+                         b'\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' +
+                         b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+

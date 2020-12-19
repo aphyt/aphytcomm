@@ -184,14 +184,6 @@ class EIP(CIPDispatcher):
         if self.explicit_message_socket:
             self.explicit_message_socket.close()
 
-    def get_eip_command_size(self, request: CIPRequest) -> Tuple[int, int]:
-        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, request.bytes)
-        packets = [data_address_item]
-        common_packet_format = CommonPacketFormat(packets)
-        command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
-        eip_message = EIPMessage(b'\x6f\x00', command_specific_data.bytes(), self.session_handle_id)
-        return len(eip_message.bytes()), len(command_specific_data.bytes())
-
     def execute_cip_command(self, request: CIPRequest) -> CIPReply:
         """
         Implements the abstract method in order to become a concrete CIPDispatcher class
@@ -200,6 +192,7 @@ class EIP(CIPDispatcher):
         """
         data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, request.bytes)
         packets = [data_address_item]
+        # ToDo add interface handle to track responses?
         common_packet_format = CommonPacketFormat(packets)
         command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
         response = self.send_rr_data(command_specific_data.bytes()).packets[1].bytes()
