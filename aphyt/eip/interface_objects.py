@@ -3,7 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
-from cip.cip import *
+from aphyt.cip import *
 
 
 class TCPInterfaceObject(CIPDispatcher):

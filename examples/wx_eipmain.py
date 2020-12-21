@@ -9,7 +9,7 @@ from pathlib import Path
 import wx
 import asyncio
 import xlsxwriter
-from omron import n_series
+from aphyt.omron import n_series
 import concurrent.futures
 import threading
 

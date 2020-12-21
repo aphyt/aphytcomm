@@ -3,7 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
-from cip.cip_datatypes import CIPDataType
+from aphyt.cip.cip_datatypes import CIPDataType
 import datetime
 
 

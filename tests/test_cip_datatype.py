@@ -3,8 +3,8 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
-from cip.cip_datatypes import *
-from eip import *
+from aphyt.cip.cip_datatypes import *
+from aphyt.eip import *
 import unittest
 from unittest.mock import Mock
 from unittest.mock import patch

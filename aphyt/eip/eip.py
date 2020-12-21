@@ -6,7 +6,7 @@ __email__ = "jr@aphyt.com"
 import socket
 from typing import List, Tuple
 
-from cip import *
+from aphyt.cip import *
 
 
 class DataAndAddressItem:
