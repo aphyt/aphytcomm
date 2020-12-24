@@ -137,10 +137,16 @@ class TestCipDataTypes(unittest.TestCase):
 
     def test_structure(self):
         cip_structure = CIPStructure()
+        cip_structure.variable_name = "Yes"
         cip_structure.variable_type_name = 'LREALisREAL'
         cip_structure.add_member('lreal_member', CIPLongReal())
         cip_structure['lreal_member'] = 34.12121212
-        print(cip_structure['lreal_member'])
-        print(type(cip_structure['lreal_member']))
-        print(cip_structure.data)
-        print(cip_structure.value())
+        self.assertEqual(cip_structure.data, b'\xb1\xa3\xf5\xe0\x83\x0fA@')
+
+    def test_structure2(self):
+        cip_structure = CIPStructure()
+        cip_structure.variable_name = "Yes"
+        cip_structure.variable_type_name = 'LREALisREAL'
+        cip_structure.add_member('lreal_member', CIPLongReal())
+        cip_structure['lreal_member'].data = b'\xb1\xa3\xf5\xe0\x83\x0fA@'
+        self.assertAlmostEqual(cip_structure['lreal_member'].value(), 34.12121212)
