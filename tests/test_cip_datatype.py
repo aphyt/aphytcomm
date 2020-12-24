@@ -135,3 +135,12 @@ class TestCipDataTypes(unittest.TestCase):
                          b'\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' +
                          b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
+    def test_structure(self):
+        cip_structure = CIPStructure()
+        cip_structure.variable_type_name = 'LREALisREAL'
+        cip_structure.add_member('lreal_member', CIPLongReal())
+        cip_structure['lreal_member'] = 34.12121212
+        print(cip_structure['lreal_member'])
+        print(type(cip_structure['lreal_member']))
+        print(cip_structure.data)
+        print(cip_structure.value())

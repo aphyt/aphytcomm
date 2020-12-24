@@ -430,17 +430,24 @@ class CIPStructure(CIPDataType):
         current_type = self.members.get(key)
         current_type.from_value(value)
         self.members[key] = current_type
+        self.from_value(self)
 
     def __getitem__(self, item):
         return self.members[item]
 
     def __repr__(self):
-        return 'name: %s | members: %s' % (self.variable_name, self.members)
+        return 'name: %s| type: %s | members: %s' % (self.variable_name, self.variable_type_name, self.members)
 
-    def add_member(self, member_name: str, member: CIPDataType):
         self.members[member_name] = member
         if member.alignment > self.alignment:
             self.alignment = member.alignment
+        alignment_offset = len(self.data) % member.alignment
+        print(alignment_offset)
+        alignment_padding = 0
+        if alignment_offset != 0:
+            alignment_padding = member.alignment - alignment_offset
+        self.data += b'\x00' * alignment_padding + member.data
+        print(self.members)
 
     def value(self):
         offset = 0

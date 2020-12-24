@@ -204,7 +204,8 @@ class NSeriesEIP(EIP):
                 variable_cip_datatype.instance_id = instance_id
                 # Instantiate the classes into objects
                 variable_cip_datatype = self._get_data_instance(variable_cip_datatype)
-                variable_cip_datatype.variable_name = variable
+                variable_cip_datatype.variable_name = str(variable)
+                # print(variable)
                 self.variables.update({variable: variable_cip_datatype})
                 if variable[0:1] == '_':
                     self.system_variables.update({variable: variable_cip_datatype})
@@ -249,7 +250,7 @@ class NSeriesEIP(EIP):
             variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
             variable_type_instance_id = int.from_bytes(variable_object_reply.variable_type_instance_id, 'little')
             variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
-            cip_datatype_instance.variable_type_name = variable_type_object_reply.variable_type_name
+            cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
             cip_datatype_instance.size = variable_type_object_reply.size_in_memory
             nesting_variable_type_instance_id = \
                 int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
@@ -257,7 +258,7 @@ class NSeriesEIP(EIP):
             while member_instance_id != 0:
                 member_cip_datatype_instance = self._get_member_instance(member_instance_id)
                 cip_datatype_instance.members.update(
-                    {member_cip_datatype_instance.variable_name: member_cip_datatype_instance})
+                    {member_cip_datatype_instance.variable_type_name: member_cip_datatype_instance})
                 member_instance_id = \
                     int.from_bytes(member_cip_datatype_instance.next_instance_id, 'little')
             return cip_datatype_instance
@@ -274,7 +275,7 @@ class NSeriesEIP(EIP):
         """
         variable_type_object_reply = self._get_variable_type_object(member_instance_id)
         cip_datatype_instance = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)()
-        cip_datatype_instance.variable_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
+        cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
         cip_datatype_instance.size = variable_type_object_reply.size_in_memory
         cip_datatype_instance.next_instance_id = variable_type_object_reply.next_instance_id
         cip_datatype_instance.nesting_variable_type_instance_id = \
@@ -303,11 +304,10 @@ class NSeriesEIP(EIP):
             while member_instance_id != 0:
                 variable_type_object_reply = self._get_variable_type_object(member_instance_id)
                 member_cip_datatype_instance = self._get_member_instance(member_instance_id)
-                # The memory alignment of a structure is the same as the largest aligned member
                 if member_cip_datatype_instance.alignment > cip_datatype_instance.alignment:
                     cip_datatype_instance.alignment = member_cip_datatype_instance.alignment
                 cip_datatype_instance.members.update(
-                    {str(variable_type_object_reply.variable_type_name, 'utf-8'): member_cip_datatype_instance})
+                    {member_cip_datatype_instance.variable_type_name: member_cip_datatype_instance})
                 member_instance_id = \
                     int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
             return cip_datatype_instance
