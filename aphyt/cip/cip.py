@@ -7,6 +7,19 @@ from abc import ABC, abstractmethod
 import binascii
 
 
+def cip_crc16(data: bytes, poly=0xa001) -> bytes:
+    data = bytearray(data)
+    crc = 0x0000
+    for byte in data:
+        crc = crc ^ byte
+        for _ in range(0, 8):
+            carry = crc & 1
+            crc >>= 1
+            if carry:
+                crc = crc ^ poly
+    return crc.to_bytes(2, 'little')
+
+
 class CIPService:
     READ_TAG_SERVICE = b'\x4c'
     READ_TAG_FRAGMENTED_SERVICE = b'\x52'

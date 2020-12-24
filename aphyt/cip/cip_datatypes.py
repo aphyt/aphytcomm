@@ -437,6 +437,11 @@ class CIPStructure(CIPDataType):
     def __repr__(self):
         return 'name: %s | members: %s' % (self.variable_name, self.members)
 
+    def add_member(self, member_name: str, member: CIPDataType):
+        self.members[member_name] = member
+        if member.alignment > self.alignment:
+            self.alignment = member.alignment
+
     def value(self):
         offset = 0
         structure_data = self.data
