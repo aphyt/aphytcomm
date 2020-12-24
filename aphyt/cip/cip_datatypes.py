@@ -449,6 +449,11 @@ class CIPStructure(CIPDataType):
         self.data += b'\x00' * alignment_padding + member.data
         print(self.members)
 
+    def add_member(self, member_name: str, member: CIPDataType):
+        self.members[member_name] = member
+        if member.alignment > self.alignment:
+            self.alignment = member.alignment
+
     def value(self):
         offset = 0
         structure_data = self.data
