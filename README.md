@@ -1,4 +1,4 @@
-# aphytcomm
+# aphyt
 This is a library for communicating with industrial devices using Python.
 
 Consider to be pre-alpha
@@ -41,9 +41,9 @@ The plan is to support all CIP and Omron specific data types, including derived 
 
 In order to use and explicit connection the programmer should import the n_series file from the eip module to give the program access to the classes to connect to the controller. The programmer should: instantiate an instance from the NSeriesEIP object, connect to the IP address of the controller, register a session and then update the variable dictionary.
 
-The update variable dictionary method creates a dictionary that maps variable names to variable types so that the read_variable and write_variable methods can encode and decode data that is sent to and received from the controller so the programmer can easily interact with controller data 
+The update variable dictionary method creates a dictionary that maps variable names to variable types so that the read_variable and write_variable methods can encode and decode data that is sent to and received from the controller, so the programmer can easily interact with controller data 
 
-    import omron
+    from aphyt import omron
     
     fake_eip_instance = omron.n_series.NSeriesEIP()
     fake_eip_instance.connect_explicit('192.168.250.13')
