@@ -436,18 +436,15 @@ class CIPStructure(CIPDataType):
         return self.members[item]
 
     def __repr__(self):
-        return 'name: %s| type: %s | members: %s' % (self.variable_name, self.variable_type_name, self.members)
+        return 'name: %s | type: %s | members: %s' % (self.variable_name, self.variable_type_name, self.members)
 
-        self.members[member_name] = member
         if member.alignment > self.alignment:
             self.alignment = member.alignment
         alignment_offset = len(self.data) % member.alignment
-        print(alignment_offset)
         alignment_padding = 0
         if alignment_offset != 0:
             alignment_padding = member.alignment - alignment_offset
         self.data += b'\x00' * alignment_padding + member.data
-        print(self.members)
 
     def add_member(self, member_name: str, member: CIPDataType):
         self.members[member_name] = member
@@ -516,7 +513,8 @@ class CIPArray(CIPDataType):
         self._local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
         self._alignment = self._local_cip_data_type_object.alignment
 
-    def from_instance(self, cip_instance: CIPDataType, array_data_size, array_dimensions, number_of_elements, start_array_elements):
+    def from_instance(self, cip_instance: CIPDataType, array_data_size,
+                      array_dimensions, number_of_elements, start_array_elements):
         self.array_data_type = cip_instance.data_type_code()
         self.array_data_type_size = array_data_size
         self.array_dimensions = array_dimensions

@@ -37,6 +37,12 @@ The plan is to support all CIP and Omron specific data types, including derived 
 
 ## Example Use
 
+### Installation
+
+This package is on PyPI so the user can install using:
+
+    pip install aphyt
+
 ### Getting Started
 
 In order to use and explicit connection the programmer should import the n_series file from the eip module to give the program access to the classes to connect to the controller. The programmer should: instantiate an instance from the NSeriesEIP object, connect to the IP address of the controller, register a session and then update the variable dictionary.
@@ -45,39 +51,39 @@ The update variable dictionary method creates a dictionary that maps variable na
 
     from aphyt import omron
     
-    fake_eip_instance = omron.n_series.NSeriesEIP()
-    fake_eip_instance.connect_explicit('192.168.250.13')
-    fake_eip_instance.register_session()
-    fake_eip_instance.update_variable_dictionary()
+    eip_instance = omron.n_series.NSeriesEIP()
+    eip_instance.connect_explicit('192.168.250.13')
+    eip_instance.register_session()
+    eip_instance.update_variable_dictionary()
     
-    reply = fake_eip_instance.read_variable('TestBoolFalse')
+    reply = eip_instance.read_variable('TestBoolFalse')
     print("TestBoolFalse: " + str(reply))
-    reply = fake_eip_instance.write_variable('TestBoolFalse', True)
-    reply = fake_eip_instance.read_variable('TestBoolFalse')
+    reply = eip_instance.write_variable('TestBoolFalse', True)
+    reply = eip_instance.read_variable('TestBoolFalse')
     print("TestBoolFalse: " + str(reply))
-    reply = fake_eip_instance.write_variable('TestBoolFalse', False)
-    reply = fake_eip_instance.read_variable('TestBoolFalse')
+    reply = eip_instance.write_variable('TestBoolFalse', False)
+    reply = eip_instance.read_variable('TestBoolFalse')
     print("TestBoolFalse: " + str(reply))
     
-    reply = fake_eip_instance.read_variable('TestBoolTrue')
+    reply = eip_instance.read_variable('TestBoolTrue')
     print("TestBoolTrue: " + str(reply))
     
-    reply = fake_eip_instance.read_variable('TestInt1')
+    reply = eip_instance.read_variable('TestInt1')
     print("TestInt1: " + str(reply))
-    reply = fake_eip_instance.write_variable('TestInt1', 2)
-    reply = fake_eip_instance.read_variable('TestInt1')
+    reply = eip_instance.write_variable('TestInt1', 2)
+    reply = eip_instance.read_variable('TestInt1')
     print("TestInt1: " + str(reply))
-    reply = fake_eip_instance.write_variable('TestInt1', 1)
-    reply = fake_eip_instance.read_variable('TestInt1')
+    reply = eip_instance.write_variable('TestInt1', 1)
+    reply = eip_instance.read_variable('TestInt1')
     print("TestInt1: " + str(reply))
     
-    reply = fake_eip_instance.read_variable('TestLREAL')
+    reply = eip_instance.read_variable('TestLREAL')
     print("TestLREAL: " + str(reply))
-    reply = fake_eip_instance.write_variable('TestLREAL', 63.12)
-    reply = fake_eip_instance.read_variable('TestLREAL')
+    reply = eip_instance.write_variable('TestLREAL', 63.12)
+    reply = eip_instance.read_variable('TestLREAL')
     print("TestLREAL: " + str(reply))
-    reply = fake_eip_instance.write_variable('TestLREAL', 3.4)
-    reply = fake_eip_instance.read_variable('TestLREAL')
+    reply = eip_instance.write_variable('TestLREAL', 3.4)
+    reply = eip_instance.read_variable('TestLREAL')
     print("TestLREAL: " + str(reply))
     
     tale_of_two_cities_string_1 = \
@@ -114,69 +120,69 @@ The update variable dictionary method creates a dictionary that maps variable na
         'him, where a loaded blunderbuss lay at the top of six or eight loaded horse-pistols, deposited on a substratum ' \
         'of cutlass.'
     
-    reply = fake_eip_instance.read_variable('TestString_Copy')
+    reply = eip_instance.read_variable('TestString_Copy')
     print(reply)
-    fake_eip_instance.write_variable('TestString_Copy', tale_of_two_cities_string_2)
-    reply = fake_eip_instance.read_variable('TestString_Copy')
+    eip_instance.write_variable('TestString_Copy', tale_of_two_cities_string_2)
+    reply = eip_instance.read_variable('TestString_Copy')
     print(reply)
-    fake_eip_instance.write_variable('TestString_Copy', tale_of_two_cities_string_1)
-    reply = fake_eip_instance.read_variable('TestString_Copy')
+    eip_instance.write_variable('TestString_Copy', tale_of_two_cities_string_1)
+    reply = eip_instance.read_variable('TestString_Copy')
     print(reply)
     
-    reply = fake_eip_instance.read_variable('ArrayOfStuff')
+    reply = eip_instance.read_variable('ArrayOfStuff')
     print(reply)
     reply[4] = 17.3
     # print(reply)
-    fake_eip_instance.write_variable('ArrayOfStuff', reply)
-    reply = fake_eip_instance.read_variable('ArrayOfStuff')
+    eip_instance.write_variable('ArrayOfStuff', reply)
+    reply = eip_instance.read_variable('ArrayOfStuff')
     print(reply)
     reply[4] = 0.0
-    fake_eip_instance.write_variable('ArrayOfStuff', reply)
-    reply = fake_eip_instance.read_variable('ArrayOfStuff')
+    eip_instance.write_variable('ArrayOfStuff', reply)
+    reply = eip_instance.read_variable('ArrayOfStuff')
     print(reply)
-    reply = fake_eip_instance.read_variable('ThreeDimLrealArray')
-    print(reply)
-    
-    reply = fake_eip_instance.read_variable('Axis5Segment')
+    reply = eip_instance.read_variable('ThreeDimLrealArray')
     print(reply)
     
-    reply = fake_eip_instance.read_variable('TestStruct1')
+    reply = eip_instance.read_variable('Axis5Segment')
+    print(reply)
+    
+    reply = eip_instance.read_variable('TestStruct1')
     print(reply)
     
     reply['Bool2'] = False
-    reply = fake_eip_instance.write_variable('TestStruct1', reply)
-    reply = fake_eip_instance.read_variable('TestStruct1')
+    reply = eip_instance.write_variable('TestStruct1', reply)
+    reply = eip_instance.read_variable('TestStruct1')
     print(reply)
     
     reply['Bool2'] = True
-    reply = fake_eip_instance.write_variable('TestStruct1', reply)
-    reply = fake_eip_instance.read_variable('TestStruct1')
+    reply = eip_instance.write_variable('TestStruct1', reply)
+    reply = eip_instance.read_variable('TestStruct1')
     print(reply)
     
     reply['LintMember'] = 7000
-    reply = fake_eip_instance.write_variable('TestStruct1', reply)
-    reply = fake_eip_instance.read_variable('TestStruct1')
+    reply = eip_instance.write_variable('TestStruct1', reply)
+    reply = eip_instance.read_variable('TestStruct1')
     print(reply)
     
     reply['LintMember'] = 14000
-    reply = fake_eip_instance.write_variable('TestStruct1', reply)
-    reply = fake_eip_instance.read_variable('TestStruct1')
+    reply = eip_instance.write_variable('TestStruct1', reply)
+    reply = eip_instance.read_variable('TestStruct1')
     print(reply)
     
-    reply = fake_eip_instance.read_variable('PartArray')
+    reply = eip_instance.read_variable('PartArray')
     print(reply)
     reply[2]['part_name'] = 'ThirdItem'
-    reply = fake_eip_instance.write_variable('PartArray', reply)
-    reply = fake_eip_instance.read_variable('PartArray')
+    reply = eip_instance.write_variable('PartArray', reply)
+    reply = eip_instance.read_variable('PartArray')
     print(reply)
     reply[2]['part_name'] = 'BackItem'
-    reply = fake_eip_instance.write_variable('PartArray', reply)
-    reply = fake_eip_instance.read_variable('PartArray')
+    reply = eip_instance.write_variable('PartArray', reply)
+    reply = eip_instance.read_variable('PartArray')
     print(reply)
     # Demonstrate getitem
     print(reply[0]['part_name'])
     
-    reply = fake_eip_instance.read_variable('_CurrentTime')
+    reply = eip_instance.read_variable('_CurrentTime')
     print(reply)
     
-    fake_eip_instance.close_explicit()
+    eip_instance.close_explicit()

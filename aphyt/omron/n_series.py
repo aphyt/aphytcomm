@@ -205,7 +205,6 @@ class NSeriesEIP(EIP):
                 # Instantiate the classes into objects
                 variable_cip_datatype = self._get_data_instance(variable_cip_datatype)
                 variable_cip_datatype.variable_name = str(variable)
-                # print(variable)
                 self.variables.update({variable: variable_cip_datatype})
                 if variable[0:1] == '_':
                     self.system_variables.update({variable: variable_cip_datatype})
