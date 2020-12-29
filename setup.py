@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aphyt",
-    version="0.1.3",
+    version="0.1.4",
     author="Joseph Ryan",
     author_email="jr@aphyt.com",
     description="A library to communicate with Omron NX and NJ PLC and motion controllers",
