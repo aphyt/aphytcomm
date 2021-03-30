@@ -6,6 +6,7 @@ __email__ = "jr@aphyt.com"
 import struct
 import copy
 from abc import ABC, abstractmethod
+import binascii
 
 
 class CIPDataType(ABC):
@@ -298,7 +299,8 @@ class CIPString(CIPDataType):
         return 0
 
     def value(self):
-        return str(self.data, 'utf-8')
+
+        return str(self.data, 'utf-8').strip('\0')
 
     def from_value(self, value):
         byte_value = value.encode('utf-8')
