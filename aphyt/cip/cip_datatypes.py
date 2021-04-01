@@ -554,6 +554,32 @@ class CIPArray(CIPDataType):
                         dimension + 1, index * self.number_of_elements[dimension + 1]))
             return local_list
 
+    # def _recursive_data_to_array(self, dimension: int, position: int = 0):
+    #     """
+    #     Takes the dimension value of the array and converts the data bytes
+    #     returned into lists nested to the dimension depth
+    #     """
+    #     dimension = self.array_dimensions - dimension
+    #     local_list = []
+    #     if dimension == self.array_dimensions - 1:
+    #         temp_array = []
+    #         for index in range(self.number_of_elements[self.array_dimensions - 1]):
+    #             print(index)
+    #             start_bytes = index * self.array_data_type_size + position * self.array_data_type_size
+    #             self._local_cip_data_type_object.data = \
+    #                 self.data[start_bytes:start_bytes + self.array_data_type_size]
+    #             temp_value = copy.deepcopy(self._local_cip_data_type_object)
+    #             temp_array.append(temp_value.value())
+    #             # temp_array[index] = self._local_cip_data_type_object.value()
+    #         return temp_array
+    #     else:
+    #         for index in range(self.number_of_elements[dimension]):
+    #             print(index)
+    #             local_list.append(
+    #                 self._recursive_data_to_array(
+    #                     dimension + 1, index * self.number_of_elements[dimension + 1]))
+    #         return local_list
+
     def _recursive_array_to_data(self, dimension: int, list_data):
         """
         This method takes the dimension value of the array object and recursively converts the list into byte data

@@ -177,6 +177,7 @@ class NSeriesEIP(EIP):
 
     def __init__(self):
         super().__init__()
+        self.derived_data_type_dictionary = {}
 
     def get_instance_list_service(self, tag_request_path: bytes, data: bytes):
         """
@@ -187,6 +188,41 @@ class NSeriesEIP(EIP):
         """
         get_instance_list_request = CIPRequest(b'\x5f', tag_request_path, data)
         return self.execute_cip_command(get_instance_list_request)
+
+    def update_derived_data_type_dictionary(self):
+        # ToDo get the derived data types in such  a way they are easy to use
+        number_of_entries = self._get_number_of_derived_data_types()
+        for index in range(1, number_of_entries+1):
+            request_path = eip.address_request_path_segment(class_id=b'\x6c', instance_id=index.to_bytes(2, 'little'))
+            reply = VariableTypeObjectReply(
+                self.get_attribute_all_service(request_path).bytes)
+            print('index: %s '
+                  'size: %s '
+                  'type: %s '
+                  'array type: %s '
+                  'dimensions: %s '
+                  'elements: %s '
+                  'number of members: %s '
+                  'crc: %s '
+                  'variable name length: %s '
+                  'variable type name: %s '
+                  'next instance id: %s '
+                  'nesting variable type instance id %s '
+                  'start array elements %s' %
+                  (str(index),
+                   str(reply.size_in_memory),
+                   str(reply.cip_data_type),
+                   str(reply.cip_data_type_of_array),
+                   str(reply.array_dimension),
+                   str(reply.number_of_elements),
+                   str(reply.number_of_members),
+                   str(reply.crc_code),
+                   str(reply.variable_type_name_length),
+                   str(reply.variable_type_name),
+                   str(reply.next_instance_id),
+                   str(reply.nesting_variable_type_instance_id),
+                   str(reply.start_array_elements)
+                   ))
 
     def update_variable_dictionary(self):
         """
@@ -465,6 +501,12 @@ class NSeriesEIP(EIP):
             class_id=b'\x6c', instance_id=instance_id.to_bytes(2, 'little'))
         variable_type_object_reply = VariableTypeObjectReply(self.get_attribute_all_service(request_path).bytes)
         return variable_type_object_reply
+
+    def _get_number_of_derived_data_types(self) -> int:
+        request_path = eip.address_request_path_segment(class_id=b'\x6c', instance_id=int(0).to_bytes(2, 'little'))
+        reply = self.get_attribute_all_service(request_path)
+        max_instance = struct.unpack("<H", reply.reply_data[2:4])[0]
+        return max_instance
 
     def _get_variable_object(self, instance_id: int) -> VariableObjectReply:
         """
