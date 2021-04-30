@@ -27,9 +27,7 @@ class CipMessage:
         """
         self.reserved_byte_1 = b'\x00\x00'
         self.reserved_byte_2 = b'\x00'
-        self.command = self.reserved_byte_2 + service_code + class_id + instance_id
-        if attribute_id != b'\x00\x00':
-            self.command += attribute_id
+        self.command = self.reserved_byte_2 + service_code + class_id + instance_id + attribute_id
         self.command += data
         self.command_length_bytes = len(self.command).to_bytes(2, 'little')
         self.command = sequence_number.to_bytes(2, 'little') + self.reserved_byte_1 + \

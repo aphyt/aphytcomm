@@ -72,7 +72,8 @@ class NXMessageDispatcher:
         else:
             data = b'\x04'
 
-        data += b'\00'+int.to_bytes(output_watchdog_timeout, 4, 'little')
+        data += b'\x00'+int.to_bytes(output_watchdog_timeout, 4, 'little')
+        print("data is %s", data)
         response = self.execute_command(b'\x39', b'\x74\x00', b'\x01\x00', b'\x00\x00', data)
         return response
 
@@ -81,5 +82,5 @@ class NXMessageDispatcher:
         data += int.to_bytes(index, 2, 'little')
         data += int.to_bytes(sub_index, 1, 'little')
         data += int.to_bytes(control_field, 1, 'little')
-        response = self.execute_command(b'\x33', b'\x74\x00', b'\x01\x00', b'\x00\x00', data)
+        response = self.execute_command(b'\x33', b'\x74\x00', b'\x01\x00', b'', data)
         return response
