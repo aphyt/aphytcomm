@@ -44,7 +44,6 @@ class SensorMonitorObject:
         self.internal_predicted_arrival_time = \
             two_bytes_to_fixed_point_temperature(sensor_monitor_attributes_bytes[10:12])
         for i in range(16):
-            print(i)
             t_start = i*2 + self._temp_list_offset
             mt_start = i*2 + self._max_temp_list_offset
             pt_start = i*2 + self._predicted_temp_list_offset
