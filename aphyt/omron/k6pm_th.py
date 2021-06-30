@@ -19,6 +19,11 @@ def two_bytes_to_uint(two_bytes: bytes):
     return uint_instance
 
 
+def unsigned_integer_to_temp(unsigned: int):
+    temperature = Decimal(unsigned) / Decimal(10.0)
+    return temperature
+
+
 class SensorMonitorObject:
     def __init__(self):
         self.sensor_version = None
@@ -157,3 +162,31 @@ class K6PMTHEIP(EIP):
         read_address = address_request_path_segment(
             class_id=b'\x75\x03', instance_id=instance_id, attribute_id=attribute_id)
         return self.get_attribute_single_as_temp(read_address)
+
+    def segment_temp_max(self, sensor_number: int, segment_number: int):
+        instance_id = struct.pack("<B", sensor_number)
+        attribute_id = struct.pack("<B", segment_number + 0x7a)
+        read_address = address_request_path_segment(
+            class_id=b'\x75\x03', instance_id=instance_id, attribute_id=attribute_id)
+        return self.get_attribute_single_as_temp(read_address)
+
+    def segment_temp_predicted(self, sensor_number: int, segment_number: int):
+        instance_id = struct.pack("<B", sensor_number)
+        attribute_id = struct.pack("<B", segment_number + 0x8a)
+        read_address = address_request_path_segment(
+            class_id=b'\x75\x03', instance_id=instance_id, attribute_id=attribute_id)
+        return self.get_attribute_single_as_temp(read_address)
+
+    def pixel_temperatures(self, sensor_number: int):
+        instance_id = struct.pack("<B", sensor_number)
+        temporary_array = CIPArray()
+        temp_instance = CIPUnsignedInteger()
+        temporary_array.from_instance(temp_instance, temp_instance.size, 1, [64], [0])
+        result_array = []
+        for i in range(12):
+            attribute_id = struct.pack("<B", i + 0x64)
+            read_address = address_request_path_segment(
+                class_id=b'\x76\x03', instance_id=instance_id, attribute_id=attribute_id)
+            temporary_array.data = self.get_attribute_single_service(read_address).reply_data
+            result_array.append(temporary_array.value())
+        return result_array

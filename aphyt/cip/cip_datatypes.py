@@ -494,6 +494,7 @@ class CIPArray(CIPDataType):
         self._local_cip_data_type_object = None
         self._list_representation = []
         self._alignment = 0
+        self.data = b''
         # for i in range(self.array_dimensions):
         #     self._list_representation.append([self._local_cip_data_type_object.value()] * self.number_of_elements[i])
 
@@ -558,8 +559,7 @@ class CIPArray(CIPDataType):
         """
         This method takes the dimension value of the array object and recursively converts the list into byte data
         """
-        dimension = self.array_dimensions - dimension
-        if dimension == self.array_dimensions - 1:
+        if dimension == 1:
             data = b''
             for element in list_data:
                 self._local_cip_data_type_object.from_value(element)
@@ -568,7 +568,7 @@ class CIPArray(CIPDataType):
         else:
             data = b''
             for sub_list in list_data:
-                data += self._recursive_array_to_data(dimension + 1, sub_list)
+                data += self._recursive_array_to_data(dimension - 1, sub_list)
             return data
 
     @staticmethod

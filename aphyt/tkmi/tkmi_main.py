@@ -8,24 +8,6 @@ from tkinter import ttk
 from aphyt.tkmi import helper
 
 
-# class Segment(ttk.Frame):
-#     def __init__(self, master):
-#         super().__init__(master)
-#         # Get the current screen width and height
-#         screen_width = self.winfo_screenwidth()
-#         screen_height = self.winfo_screenheight()
-#         if screen_height > screen_width:
-#             max_dimension = screen_height
-#         else:
-#             max_dimension = screen_width
-#         self.segment_color = ttk.Style(self)
-#         self.segment_color.configure('st.TFrame', background='blue')
-#         self.configure(width=max_dimension * .025, height=max_dimension * .025, style='st.TFrame')
-#
-#     def set_color(self, color: str):
-#         self.segment_color.configure('st.TFrame', background=color)
-
-
 class Segment(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
@@ -58,6 +40,17 @@ class SegmentViewer(ttk.Frame):
             self.box_grid[i].grid(row=row, column=column)
         for child in self.winfo_children():
             child.grid_configure(padx=1, pady=1)
+
+
+class ConnectFrame(ttk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.connect_string=StringVar()
+        self.connect_button = ttk.Button(self, text="Connect",
+                                         command=self.connect()).grid(column=3, row=3, sticky=W)
+
+    def connect(self):
+        pass
 
 
 class Screen(Tk):
