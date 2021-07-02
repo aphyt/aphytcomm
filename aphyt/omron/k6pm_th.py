@@ -183,7 +183,7 @@ class K6PMTHEIP(EIP):
         temp_instance = CIPUnsignedInteger()
         temporary_array.from_instance(temp_instance, temp_instance.size, 1, [64], [0])
         result_array = []
-        for i in range(12):
+        for i in range(16):
             attribute_id = struct.pack("<B", i + 0x64)
             read_address = address_request_path_segment(
                 class_id=b'\x76\x03', instance_id=instance_id, attribute_id=attribute_id)
