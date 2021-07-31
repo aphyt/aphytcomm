@@ -109,7 +109,7 @@ class TemperatureCanvas(ttk.Frame):
         self.width = screen_width * square
         self.canvas = tkinter.Canvas(master, width=self.width, height=self.width, bg="white")
         self.next_canvas = tkinter.Canvas(master, width=self.width, height=self.width, bg="white")
-        self.pad = 2.0
+        self.pad = 0.5
         self.pixel_size = self.width/32
         self.canvas.configure(highlightthickness=0, borderwidth=0)
         self.next_canvas.configure(highlightthickness=0, borderwidth=0)
@@ -125,16 +125,16 @@ class TemperatureCanvas(ttk.Frame):
             y1 = pos_y * self.pixel_size + self.pad
             x2 = x1 + self.pixel_size - 2 * self.pad
             y2 = y1 + self.pixel_size - 2 * self.pad
-            self.rectangles.append(self.canvas.create_rectangle(x1, y1, x2, y2, fill=color_string))
-            self.next_rectangles.append(self.next_canvas.create_rectangle(x1, y1, x2, y2, fill=color_string))
+            self.rectangles.append(self.canvas.create_rectangle(x1, y1, x2, y2, width=0, fill=color_string))
+            self.next_rectangles.append(self.next_canvas.create_rectangle(x1, y1, x2, y2, width=0, fill=color_string))
 
         self.next_canvas.grid_remove()
         for child in self.winfo_children():
             child.grid_configure(pady=10, padx=10)
 
     def set_color_data(self, color_list: list):
-        min = 60.0
-        max = 80.0
+        min = 23.0
+        max = 31.0
         # print(color_list)
         # self.canvas.delete(tkinter.ALL)
         for i in range(1024):
@@ -170,13 +170,16 @@ class ConnectFrame(ttk.Frame):
             child.grid_configure(pady=1)
 
     def connect(self):
-        self.eip_thread_dispatcher.instance.connect_explicit(self.connect_string.get())
-        self.eip_thread_dispatcher.instance.register_session()
-        self.eip_thread_dispatcher.start_keep_alive()
-        self.connect_function()
+        if not self.eip_thread_dispatcher.instance.is_connected_explicit:
+            self.eip_thread_dispatcher.instance.connect_explicit(self.connect_string.get())
+            self.eip_thread_dispatcher.instance.register_session()
+            self.eip_thread_dispatcher.start_keep_alive()
+            self.connect_function()
 
     def disconnect(self):
-        self.eip_thread_dispatcher.instance.close_explicit()
+        self.eip_thread_dispatcher.executor.submit(
+                self.eip_thread_dispatcher.instance.close_explicit)
+        # self.eip_thread_dispatcher.instance.close_explicit()
 
 
 class Screen(Tk):
@@ -202,6 +205,8 @@ class Screen(Tk):
         for child in self.mainframe.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
+        self.protocol("WM_DELETE_WINDOW", self.clean_up)
+
         self.mainloop()
 
     def calculate(self):
@@ -222,6 +227,10 @@ class Screen(Tk):
             self.temp_canvas.set_color_data(self.colors)
             delay = threading.Timer(period, self.periodic_task)
             delay.start()
+
+    def clean_up(self):
+        self.connect_box.disconnect()
+        self.after_idle(self.destroy)
 
 
 if __name__ == "__main__":
