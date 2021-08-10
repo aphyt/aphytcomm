@@ -4,4 +4,4 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from .eip import *
-from .interface_objects import *
+from .eip_cip_objects import *

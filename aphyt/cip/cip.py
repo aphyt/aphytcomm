@@ -21,6 +21,9 @@ def cip_crc16(data: bytes, poly=0xa001) -> bytes:
 
 
 class CIPService:
+    """
+    ToDo make each service an object that inherits from CIPService
+    """
     READ_TAG_SERVICE = b'\x4c'
     READ_TAG_FRAGMENTED_SERVICE = b'\x52'
     WRITE_TAG_SERVICE = b'\x4d'

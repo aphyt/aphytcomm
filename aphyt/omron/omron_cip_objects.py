@@ -6,6 +6,8 @@ __email__ = "jr@aphyt.com"
 from aphyt.cip import *
 
 
-class TCPInterfaceObject(CIPDispatcher):
+class TCPIPInterfaceObject:
+    class_id = b'\xf5'
+
     def __init__(self):
-        super().__init__()
+        pass

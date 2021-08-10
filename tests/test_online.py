@@ -13,16 +13,18 @@ from aphyt import omron
 class TestOnline(unittest.TestCase):
 
     # def __init__(self):
-    #     self.eip_instance = None
+    eip_instance = None
 
-    def setUp(self) -> None:
-        self.eip_instance = omron.n_series.NSeriesEIP()
-        self.eip_instance.connect_explicit('192.168.250.13')
-        self.eip_instance.register_session()
-        self.eip_instance.update_variable_dictionary()
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.eip_instance = omron.n_series.NSeriesEIP()
+        cls.eip_instance.connect_explicit('192.168.250.13')
+        cls.eip_instance.register_session()
+        cls.eip_instance.update_variable_dictionary()
 
-    def tearDown(self) -> None:
-        self.eip_instance.close_explicit()
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.eip_instance.close_explicit()
 
     def test_boolean_read_write(self):
         variable_string = 'TestBoolFalse'
