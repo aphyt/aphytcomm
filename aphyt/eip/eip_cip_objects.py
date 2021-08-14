@@ -3,8 +3,8 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
-from aphyt.eip import *
 from aphyt.cip import *
+from .eip import *
 
 
 class InstanceAttribute:
@@ -39,7 +39,7 @@ class TCPInterfaceObject:
         self.interface_configuration.add_member('Domain Name', CIPUnsignedInteger())
         self.interface_configuration = InstanceAttribute(b'\x05', self.interface_configuration, True)
         self.hostname = InstanceAttribute(b'\x06', CIPUnsignedInteger(), True)
-        self.encapsulation_inactivity_timeout= InstanceAttribute(b'\x0d', CIPUnsignedInteger(), True)
+        self.encapsulation_inactivity_timeout = InstanceAttribute(b'\x0d', CIPUnsignedInteger(), True)
 
     def from_bytes(self):
         pass

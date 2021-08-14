@@ -18,7 +18,7 @@ class TestOnline(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.eip_instance = omron.n_series.NSeriesEIP()
-        cls.eip_instance.connect_explicit('192.168.250.13')
+        cls.eip_instance.connect_explicit('192.168.250.9')
         cls.eip_instance.register_session()
         cls.eip_instance.update_variable_dictionary()
 
