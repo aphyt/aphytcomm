@@ -18,7 +18,7 @@ class InstanceAttribute:
 
 
 class TCPInterfaceObject:
-    def __init__(self, dispatcher: EIP):
+    def __init__(self, dispatcher: EIPConnectedCIPDispatcher):
         super().__init__()
         self.dispatcher = dispatcher
         self.class_id = b'\xf5'

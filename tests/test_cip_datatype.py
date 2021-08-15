@@ -127,9 +127,9 @@ class TestCipDataTypes(unittest.TestCase):
         self.assertAlmostEqual(cip_real.value(), 3.4028234663852886e+38)
 
     def test_eip_commands(self):
-        eip_test = EIP()
+        eip_test = EIPConnectedCIPDispatcher()
         eip_test.send_command = Mock()
-        eip_test.list_services()
+        eip_test.list_services('')
         args = eip_test.send_command.call_args
         self.assertEqual(args.args[0].bytes(),
                          b'\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' +

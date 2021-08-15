@@ -63,7 +63,7 @@ class SensorMonitorObject:
             self.segment_predicted_temperature[i] = two_bytes_to_fixed_point_temperature(predict_bytes)
 
 
-class K6PMTHEIP(EIP):
+class K6PMTHEIP(EIPConnectedCIPDispatcher):
     """
     CIP Class ID
 

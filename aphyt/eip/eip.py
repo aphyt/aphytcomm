@@ -4,8 +4,8 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import socket
+import time
 from typing import List, Tuple
-
 from aphyt.cip import *
 
 
@@ -140,15 +140,43 @@ class EIPMessage:
         self.command_data = eip_message_bytes[24:]
 
 
-class EIP(CIPDispatcher):
-    """
-    EIP is an encapsulation protocol for CIP (common industrial protocol) messages
-    """
-
+class EIPDispatcher(ABC):
     explicit_message_port = 44818
-    null_address_item = b'\x00\x00\x00\x00'
-    cip_handle = b'\x00\x00\x00\x00'
 
+    def __init__(self):
+        super().__init__()
+        self.socket = None
+
+    @abstractmethod
+    def send_command(self, eip_command: EIPMessage, host: str) -> EIPMessage:
+        pass
+
+    def list_identity(self, host):
+        """
+        Used by an originator to locate possible targets
+        :return:
+        """
+        eip_message = EIPMessage(b'\x63\x00')
+        return self.send_command(eip_message, host).command_data
+
+    def list_services(self, host):
+        """
+        Find which services a target supports
+        :return:
+        """
+        eip_message = EIPMessage(b'\x04\x00')
+        return self.send_command(eip_message, host).command_data
+
+    def list_interfaces(self, host):
+        """
+        Used by an originator to identify possible non-CIP interfaces on the target
+        :return:
+        """
+        eip_message = EIPMessage(b'\x64\x00')
+        return self.send_command(eip_message, host).command_data
+
+
+class EIPConnectedCommandMixin(EIPDispatcher):
     def __init__(self):
         super().__init__()
         self.explicit_message_socket = None
@@ -156,9 +184,24 @@ class EIP(CIPDispatcher):
         self.is_connected_explicit = False
         self.has_session_handle = False
         self.BUFFER_SIZE = 4096
+        self.host = None
 
     def __del__(self):
         self.close_explicit()
+
+    def send_command(self, eip_command: EIPMessage, host) -> EIPMessage:
+        """
+        Used to send and receive Ethernet/IP messages
+        :param host:
+        :param eip_command:
+        :return:
+        """
+        received_eip_message = EIPMessage()
+        if self.is_connected_explicit:
+            self.explicit_message_socket.send(eip_command.bytes())
+            received_data = self.explicit_message_socket.recv(self.BUFFER_SIZE)
+            received_eip_message.from_bytes(received_data)
+        return received_eip_message
 
     def connect_explicit(self, host):
         """
@@ -168,6 +211,7 @@ class EIP(CIPDispatcher):
         try:
             self.explicit_message_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.explicit_message_socket.connect((host, self.explicit_message_port))
+            self.host = host
             self.is_connected_explicit = True
         except socket.error as err:
             if self.explicit_message_socket:
@@ -181,8 +225,54 @@ class EIP(CIPDispatcher):
         """
         self.is_connected_explicit = False
         self.has_session_handle = False
+        self.host = None
         if self.explicit_message_socket:
             self.explicit_message_socket.close()
+
+    def register_session(self, command_data=b'\x01\x00\x00\x00'):
+        """
+        Used by an originator to establish a session. It is required before sending CIP messages
+        :param command_data:
+        :return:
+        """
+        eip_message = EIPMessage(b'\x65\x00', command_data)
+        response = self.send_command(eip_message, self.host)
+        self.has_session_handle = True
+        self.session_handle_id = response.session_handle_id
+        return response
+
+
+class EIPUnconnectedCommandMixin(EIPDispatcher):
+    def __init__(self):
+        super().__init__()
+
+    def send_command(self, eip_command: EIPMessage, host: str) -> EIPMessage:
+        received_eip_message = EIPMessage()
+        try:
+            udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            udp_socket.bind(('0.0.0.0', self.explicit_message_port))
+            udp_socket.sendto(eip_command.bytes(), (host, self.explicit_message_port))
+            received_data = udp_socket.recvfrom(502)[0]
+            received_eip_message.from_bytes(received_data)
+        except socket.error as e:
+            print('Failed to create socket')
+            print(e)
+
+        return received_eip_message
+
+
+class EIPConnectedCIPDispatcher(EIPConnectedCommandMixin, CIPDispatcher):
+    """
+    EIP is an encapsulation protocol for CIP (common industrial protocol) messages
+    """
+
+    null_address_item = b'\x00\x00\x00\x00'
+    cip_handle = b'\x00\x00\x00\x00'
+
+    def __init__(self):
+        super().__init__()
 
     def execute_cip_command(self, request: CIPRequest) -> CIPReply:
         """
@@ -202,40 +292,27 @@ class EIP(CIPDispatcher):
         cip_reply = CIPReply(reply_data_and_address_item.data)
         return cip_reply
 
-    @staticmethod
-    def command_specific_data_from_eip_message_bytes(eip_message_bytes: bytes):
-        """
-        Extracts command specific data from Ethernet/IP reply bytes
-        :param eip_message_bytes:
-        :return:
-        """
-        eip_message = EIPMessage()
-        eip_message.from_bytes(eip_message_bytes)
-        return EIP.command_specific_data_from_eip_message(eip_message)
-
-    @staticmethod
-    def command_specific_data_from_eip_message(eip_message: EIPMessage) -> CommandSpecificData:
-        """
-        Extracts the command specific data from an Ethernet/IP message
-        :param eip_message:
-        :return:
-        """
-        command_specific_data = CommandSpecificData()
-        command_specific_data.from_bytes(eip_message.bytes())
-        return command_specific_data
-
-    def send_command(self, eip_command: EIPMessage) -> EIPMessage:
-        """
-        Used to send and receive Ethernet/IP messages
-        :param eip_command:
-        :return:
-        """
-        received_eip_message = EIPMessage()
-        if self.is_connected_explicit:
-            self.explicit_message_socket.send(eip_command.bytes())
-            received_data = self.explicit_message_socket.recv(self.BUFFER_SIZE)
-            received_eip_message.from_bytes(received_data)
-        return received_eip_message
+    # @staticmethod
+    # def command_specific_data_from_eip_message_bytes(eip_message_bytes: bytes):
+    #     """
+    #     Extracts command specific data from Ethernet/IP reply bytes
+    #     :param eip_message_bytes:
+    #     :return:
+    #     """
+    #     eip_message = EIPMessage()
+    #     eip_message.from_bytes(eip_message_bytes)
+    #     return EIPConnectedCIPDispatcher.command_specific_data_from_eip_message(eip_message)
+    #
+    # @staticmethod
+    # def command_specific_data_from_eip_message(eip_message: EIPMessage) -> CommandSpecificData:
+    #     """
+    #     Extracts the command specific data from an Ethernet/IP message
+    #     :param eip_message:
+    #     :return:
+    #     """
+    #     command_specific_data = CommandSpecificData()
+    #     command_specific_data.from_bytes(eip_message.bytes())
+    #     return command_specific_data
 
     def send_rr_data(self, command_specific_data: bytes) -> CommonPacketFormat:
         """
@@ -244,48 +321,12 @@ class EIP(CIPDispatcher):
         :return:
         """
         eip_message = EIPMessage(b'\x6f\x00', command_specific_data, self.session_handle_id)
-        reply = self.send_command(eip_message)
+        reply = self.send_command(eip_message, self.host)
         reply_command_specific_data = CommandSpecificData()
         reply_command_specific_data.from_bytes(reply.command_data)
         reply_packet = CommonPacketFormat([])
         reply_packet.from_bytes(reply_command_specific_data.encapsulated_packet)
         return reply_packet
-
-    def list_services(self):
-        """
-        Find which services a target supports
-        :return:
-        """
-        eip_message = EIPMessage(b'\x04\x00')
-        return self.send_command(eip_message).command_data
-
-    def list_identity(self):
-        """
-        Used by an originator to locate possible targets
-        :return:
-        """
-        eip_message = EIPMessage(b'\x63\x00')
-        return self.send_command(eip_message).command_data
-
-    def list_interfaces(self):
-        """
-        Used by an originator to identify possible non-CIP interfaces on the target
-        :return:
-        """
-        eip_message = EIPMessage(b'\x64\x00')
-        return self.send_command(eip_message).command_data
-
-    def register_session(self, command_data=b'\x01\x00\x00\x00'):
-        """
-        Used by an originator to establish a session. It is required before sending CIP messages
-        :param command_data:
-        :return:
-        """
-        eip_message = EIPMessage(b'\x65\x00', command_data)
-        response = self.send_command(eip_message)
-        self.has_session_handle = True
-        self.session_handle_id = response.session_handle_id
-        return response
 
     def get_attribute_all_service(self, tag_request_path):
         get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_request_path)

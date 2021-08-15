@@ -167,7 +167,7 @@ class SimpleDataSegmentRequest:
             struct.pack("<L", self.offset) + struct.pack("<H", self.size)
 
 
-class NSeriesEIP(EIP):
+class NSeriesEIP(EIPConnectedCIPDispatcher):
     """
     Concrete implementation of EIP abstract base class that implements Omron specific Ethernet/IP
     services in addition to the common Ethernet/IP services of the parent class and the CIP specific

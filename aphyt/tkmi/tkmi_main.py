@@ -8,7 +8,7 @@ import tkinter
 from tkinter import *
 from tkinter import ttk
 from aphyt.tkmi import helper
-from aphyt.eip import EIP
+from aphyt.eip import EIPConnectedCIPDispatcher
 from aphyt.omron import k6pm_th
 import concurrent.futures
 import threading
@@ -17,7 +17,7 @@ import copy
 
 
 class EIPThreadDispatcher:
-    def __init__(self, instance: EIP):
+    def __init__(self, instance: EIPConnectedCIPDispatcher):
         self.instance = instance
         self.message_queue = queue.Queue()
         self.message_timeout = 0.5
