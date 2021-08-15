@@ -16,7 +16,7 @@ import threading
 
 class NSeriesDispatcher:
     def __init__(self):
-        self.instance = n_series.NSeriesEIP()
+        self.instance = n_series.NSeries()
         self.controller_time = None
         self.message_queue = queue.Queue()
         self.message_timeout = 0.5

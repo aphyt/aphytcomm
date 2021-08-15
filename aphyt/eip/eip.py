@@ -151,7 +151,7 @@ class EIPDispatcher(ABC):
     def send_command(self, eip_command: EIPMessage, host: str) -> EIPMessage:
         pass
 
-    def list_identity(self, host):
+    def list_identity(self, host=''):
         """
         Used by an originator to locate possible targets
         :return:
@@ -159,7 +159,7 @@ class EIPDispatcher(ABC):
         eip_message = EIPMessage(b'\x63\x00')
         return self.send_command(eip_message, host).command_data
 
-    def list_services(self, host):
+    def list_services(self, host=''):
         """
         Find which services a target supports
         :return:
@@ -167,7 +167,7 @@ class EIPDispatcher(ABC):
         eip_message = EIPMessage(b'\x04\x00')
         return self.send_command(eip_message, host).command_data
 
-    def list_interfaces(self, host):
+    def list_interfaces(self, host=''):
         """
         Used by an originator to identify possible non-CIP interfaces on the target
         :return:

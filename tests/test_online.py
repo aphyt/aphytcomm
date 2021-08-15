@@ -17,14 +17,14 @@ class TestOnline(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.eip_instance = omron.n_series.NSeriesEIP()
-        cls.eip_instance.connect_explicit('192.168.250.9')
-        cls.eip_instance.register_session()
+        cls.eip_instance = omron.n_series.NSeries()
+        cls.eip_instance.connected_cip_dispatcher.connect_explicit('192.168.250.9')
+        cls.eip_instance.connected_cip_dispatcher.register_session()
         cls.eip_instance.update_variable_dictionary()
 
     @classmethod
     def tearDownClass(cls) -> None:
-        cls.eip_instance.close_explicit()
+        cls.eip_instance.connected_cip_dispatcher.close_explicit()
 
     def test_boolean_read_write(self):
         variable_string = 'TestBoolFalse'

@@ -167,7 +167,7 @@ class SimpleDataSegmentRequest:
             struct.pack("<L", self.offset) + struct.pack("<H", self.size)
 
 
-class NSeriesEIP(EIPConnectedCIPDispatcher):
+class NSeries:
     """
     Concrete implementation of EIP abstract base class that implements Omron specific Ethernet/IP
     services in addition to the common Ethernet/IP services of the parent class and the CIP specific
@@ -178,7 +178,16 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
     def __init__(self):
         super().__init__()
         self.derived_data_type_dictionary = {}
-        self.dispatcher = EIPConnectedCIPDispatcher()
+        self.connected_cip_dispatcher = EIPConnectedCIPDispatcher()
+
+    def connect_explicit(self, host):
+        self.connected_cip_dispatcher.connect_explicit(host)
+
+    def close_explicit(self):
+        self.connected_cip_dispatcher.close_explicit()
+
+    def register_session(self):
+        self.connected_cip_dispatcher.register_session()
 
     def get_instance_list_service(self, tag_request_path: bytes, data: bytes):
         """
@@ -188,7 +197,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         :return:
         """
         get_instance_list_request = CIPRequest(b'\x5f', tag_request_path, data)
-        return self.execute_cip_command(get_instance_list_request)
+        return self.connected_cip_dispatcher.execute_cip_command(get_instance_list_request)
 
     def update_derived_data_type_dictionary(self):
         # ToDo get the derived data types in such  a way they are easy to use
@@ -196,7 +205,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         for index in range(1, number_of_entries+1):
             request_path = eip.address_request_path_segment(class_id=b'\x6c', instance_id=index.to_bytes(2, 'little'))
             reply = VariableTypeObjectReply(
-                self.get_attribute_all_service(request_path).bytes)
+                self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
             print('index: %s '
                   'size: %s '
                   'type: %s '
@@ -231,22 +240,22 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         latest variable and datatype information from controller
         :return:
         """
-        update_data_type_dictionary(self.data_type_dictionary)
+        update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
         variable_list = self._get_variable_list()
         instance_id = 1
         for variable in variable_list:
             reply = self._get_variable_object(instance_id)
-            variable_cip_datatype = self.data_type_dictionary.get(reply.cip_data_type)()
+            variable_cip_datatype = self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
             if not isinstance(variable_cip_datatype, type(None)):
                 variable_cip_datatype.instance_id = instance_id
                 # Instantiate the classes into objects
                 variable_cip_datatype = self._get_data_instance(variable_cip_datatype)
                 variable_cip_datatype.variable_name = str(variable)
-                self.variables.update({variable: variable_cip_datatype})
+                self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
                 if variable[0:1] == '_':
-                    self.system_variables.update({variable: variable_cip_datatype})
+                    self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
                 else:
-                    self.user_variables.update({variable: variable_cip_datatype})
+                    self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
             instance_id = instance_id + 1
 
     def _get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
@@ -299,7 +308,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
                     int.from_bytes(member_cip_datatype_instance.next_instance_id, 'little')
             return cip_datatype_instance
         else:
-            cip_datatype_instance = self.data_type_dictionary.get(cip_datatype_instance.data_type_code())()
+            cip_datatype_instance = self.connected_cip_dispatcher.data_type_dictionary.get(cip_datatype_instance.data_type_code())()
             return cip_datatype_instance
 
     def _get_member_instance(self, member_instance_id: int) -> CIPDataType:
@@ -310,7 +319,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         :return:
         """
         variable_type_object_reply = self._get_variable_type_object(member_instance_id)
-        cip_datatype_instance = self.data_type_dictionary.get(variable_type_object_reply.cip_data_type)()
+        cip_datatype_instance = self.connected_cip_dispatcher.data_type_dictionary.get(variable_type_object_reply.cip_data_type)()
         cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
         cip_datatype_instance.size = variable_type_object_reply.size_in_memory
         cip_datatype_instance.next_instance_id = variable_type_object_reply.next_instance_id
@@ -359,11 +368,11 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         :return:
         """
         request_path = variable_request_path_segment(variable_name)
-        cip_datatype_object = self.variables.get(variable_name)
+        cip_datatype_object = self.connected_cip_dispatcher.variables.get(variable_name)
         if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
             return self._multi_message_variable_read(cip_datatype_object)
         else:
-            response = self.read_tag_service(request_path)
+            response = self.connected_cip_dispatcher.read_tag_service(request_path)
             cip_datatype_object.from_bytes(response.reply_data)
             return cip_datatype_object.value()
 
@@ -376,13 +385,13 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         :return:
         """
         request_path = variable_request_path_segment(variable_name)
-        cip_datatype_object = self.variables.get(variable_name)
+        cip_datatype_object = self.connected_cip_dispatcher.variables.get(variable_name)
         cip_datatype_object.from_value(data)
         if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
             self._multi_message_variable_write(cip_datatype_object, data)
         else:
             request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=cip_datatype_object.data)
-            self.write_tag_service(request_path, request_data)
+            self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
 
     def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0):
         """
@@ -450,7 +459,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         request_path = variable_request_path_segment(cip_datatype_object.variable_name)
         simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
         request_path = request_path + simple_data_request_path.bytes()
-        response = self.read_tag_service(request_path)
+        response = self.connected_cip_dispatcher.read_tag_service(request_path)
         return response
 
     def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data):
@@ -470,7 +479,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         if cip_datatype_object.data_type_code() == CIPString.data_type_code():
             data = struct.pack("<H", len(data)) + data
             request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
-            response = self.write_tag_service(request_path, request_data)
+            response = self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
             # ToDo Test String array. Probably have to put the length
             if cip_datatype_object.array_data_type == CIPStructure.data_type_code():
@@ -484,11 +493,11 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
                                                data=data)
             else:
                 request_data = CIPCommonFormat(cip_datatype_object.array_data_type, data=data)
-            response = self.write_tag_service(request_path, request_data)
+            response = self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPStructure.data_type_code():
             request_data = CIPCommonFormat(CIPAbbreviatedStructure.data_type_code(), additional_info_length=2,
                                            additional_info=cip_datatype_object.crc_code, data=data)
-            response = self.write_tag_service(request_path, request_data)
+            response = self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
         return response
 
     def _get_variable_type_object(self, instance_id: int) -> VariableTypeObjectReply:
@@ -500,12 +509,12 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         """
         request_path = address_request_path_segment(
             class_id=b'\x6c', instance_id=instance_id.to_bytes(2, 'little'))
-        variable_type_object_reply = VariableTypeObjectReply(self.get_attribute_all_service(request_path).bytes)
+        variable_type_object_reply = VariableTypeObjectReply(self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
         return variable_type_object_reply
 
     def _get_number_of_derived_data_types(self) -> int:
         request_path = eip.address_request_path_segment(class_id=b'\x6c', instance_id=int(0).to_bytes(2, 'little'))
-        reply = self.get_attribute_all_service(request_path)
+        reply = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
         max_instance = struct.unpack("<H", reply.reply_data[2:4])[0]
         return max_instance
 
@@ -518,7 +527,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         """
         request_path = address_request_path_segment(
             class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
-        variable_object_reply = VariableObjectReply(self.get_attribute_all_service(request_path).bytes)
+        variable_object_reply = VariableObjectReply(self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
         return variable_object_reply
 
     def _get_variable_list(self):
@@ -530,7 +539,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         for tag_index in range(self._get_number_of_variables()):
             offset = tag_index + 1
             request_path = address_request_path_segment(b'\x6a', offset.to_bytes(2, 'little'))
-            reply = self.get_attribute_all_service(request_path)
+            reply = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
             tag = str(reply.reply_data[5:5 + int.from_bytes(reply.reply_data[4:5], 'little')], 'utf-8')
             tag_list.append(tag)
         return tag_list
@@ -541,7 +550,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
         :return:
         """
         request_path = address_request_path_segment(b'\x6a', b'\x00\x00')
-        reply = self.get_attribute_all_service(request_path)
+        reply = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
         return int.from_bytes(reply.reply_data[2:4], 'little')
 
     def _cip_string_read(self, request_path):
