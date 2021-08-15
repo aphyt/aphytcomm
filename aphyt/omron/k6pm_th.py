@@ -63,7 +63,7 @@ class SensorMonitorObject:
             self.segment_predicted_temperature[i] = two_bytes_to_fixed_point_temperature(predict_bytes)
 
 
-class K6PMTHEIP(EIPConnectedCIPDispatcher):
+class K6PMTH:
     """
     CIP Class ID
 
@@ -71,74 +71,75 @@ class K6PMTHEIP(EIPConnectedCIPDispatcher):
     """
     def __init__(self):
         super().__init__()
+        self.dispatcher = EIPConnectedCIPDispatcher()
 
     def get_attribute_single_as_uint(self, read_address: address_request_path_segment):
         cip_unsigned_integer = CIPUnsignedInteger()
-        cip_unsigned_integer.data = self.get_attribute_single_service(read_address).reply_data
+        cip_unsigned_integer.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         return cip_unsigned_integer.value()
 
     def get_attribute_single_as_temp(self, read_address: address_request_path_segment):
         cip_unsigned_integer = CIPUnsignedInteger()
-        cip_unsigned_integer.data = self.get_attribute_single_service(read_address).reply_data
+        cip_unsigned_integer.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         temperature = Decimal(cip_unsigned_integer.value()) / Decimal(10.0)
         return temperature
 
     def main_unit_status(self):
         read_address = address_request_path_segment(class_id=b'\x74\x03', instance_id=b'\x01', attribute_id=b'\x64')
         main_unit_status = CIPUnsignedInteger()
-        main_unit_status.data = self.get_attribute_single_service(read_address).reply_data
+        main_unit_status.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         return main_unit_status
 
     def running_time(self):
         read_address = address_request_path_segment(class_id=b'\x74\x03', instance_id=b'\x01', attribute_id=b'\x65')
         running_time = CIPUnsignedInteger()
-        running_time.data = self.get_attribute_single_service(read_address).reply_data
+        running_time.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         return running_time
 
     def software_version(self):
         read_address = address_request_path_segment(class_id=b'\x74\x03', instance_id=b'\x01', attribute_id=b'\x66')
         software_version = CIPUnsignedInteger()
-        software_version.data = self.get_attribute_single_service(read_address).reply_data
+        software_version.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         return software_version
 
     def number_of_connected_sensors(self):
         read_address = address_request_path_segment(class_id=b'\x74\x03', instance_id=b'\x01', attribute_id=b'\x67')
         sensor_count = CIPUnsignedInteger()
-        sensor_count.data = self.get_attribute_single_service(read_address).reply_data
+        sensor_count.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         return sensor_count
     
     def sensor_in_position_adjustment_mode(self):
         read_address = address_request_path_segment(class_id=b'\x74\x03', instance_id=b'\x01', attribute_id=b'\x68')
         sensor_in_position_adjustment_mode = CIPUnsignedInteger()
-        sensor_in_position_adjustment_mode.data = self.get_attribute_single_service(read_address).reply_data
+        sensor_in_position_adjustment_mode.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         return sensor_in_position_adjustment_mode
 
     def sensor_monitor_object(self, sensor_number: int):
         instance_id = struct.pack("<B", sensor_number)
         read_address = address_request_path_segment(class_id=b'\x75\x03', instance_id=instance_id)
         sensor_monitor_object = SensorMonitorObject()
-        sensor_monitor_object.from_bytes(self.get_attribute_all_service(read_address).reply_data)
+        sensor_monitor_object.from_bytes(self.dispatcher.get_attribute_all_service(read_address).reply_data)
         return sensor_monitor_object
 
     def sensor_version(self, sensor_number: int):
         instance_id = struct.pack("<B", sensor_number)
         read_address = address_request_path_segment(class_id=b'\x75\x03', instance_id=instance_id, attribute_id=b'\x64')
         sensor_version = CIPUnsignedInteger()
-        sensor_version.data = self.get_attribute_single_service(read_address).reply_data
+        sensor_version.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         return sensor_version
 
     def sensor_status(self, sensor_number: int):
         instance_id = struct.pack("<B", sensor_number)
         read_address = address_request_path_segment(class_id=b'\x75\x03', instance_id=instance_id, attribute_id=b'\x65')
         sensor_status = CIPUnsignedInteger()
-        sensor_status.data = self.get_attribute_single_service(read_address).reply_data
+        sensor_status.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         return sensor_status
 
     def sensor_alarm_status(self, sensor_number: int):
         instance_id = struct.pack("<B", sensor_number)
         read_address = address_request_path_segment(class_id=b'\x75\x03', instance_id=instance_id, attribute_id=b'\x66')
         sensor_alarm_status = CIPUnsignedInteger()
-        sensor_alarm_status.data = self.get_attribute_single_service(read_address).reply_data
+        sensor_alarm_status.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
         return sensor_alarm_status
 
     def internal_temperature(self, sensor_number: int):
@@ -187,6 +188,6 @@ class K6PMTHEIP(EIPConnectedCIPDispatcher):
             attribute_id = struct.pack("<B", i + 0x64)
             read_address = address_request_path_segment(
                 class_id=b'\x76\x03', instance_id=instance_id, attribute_id=attribute_id)
-            temporary_array.data = self.get_attribute_single_service(read_address).reply_data
+            temporary_array.data = self.dispatcher.get_attribute_single_service(read_address).reply_data
             result_array.append(temporary_array.value())
         return result_array

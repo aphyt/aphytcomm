@@ -178,6 +178,7 @@ class NSeriesEIP(EIPConnectedCIPDispatcher):
     def __init__(self):
         super().__init__()
         self.derived_data_type_dictionary = {}
+        self.dispatcher = EIPConnectedCIPDispatcher()
 
     def get_instance_list_service(self, tag_request_path: bytes, data: bytes):
         """

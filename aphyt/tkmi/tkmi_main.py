@@ -29,7 +29,7 @@ class EIPThreadDispatcher:
     def start_keep_alive(self):
         if self.instance.is_connected_explicit:
             future = self.executor.submit(
-                self.instance.list_services)
+                self.instance.list_services, '')
             self.services = future.result()
             delay = threading.Timer(0.05, self.start_keep_alive)
             delay.start()
@@ -190,8 +190,8 @@ class Screen(Tk):
         self.mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-        self.k6pm_instance = k6pm_th.K6PMTHEIP()
-        self.k6pm_thread_dispatcher = EIPThreadDispatcher(self.k6pm_instance)
+        self.k6pm_instance = k6pm_th.K6PMTH()
+        self.k6pm_thread_dispatcher = EIPThreadDispatcher(self.k6pm_instance.dispatcher)
 
         self.temp_canvas = TemperatureCanvas(self.mainframe)
         self.temp_canvas.grid(column=1, row=1)
@@ -222,7 +222,7 @@ class Screen(Tk):
     def periodic_task(self, period=.5):
         if self.k6pm_thread_dispatcher.instance.is_connected_explicit:
             future = self.k6pm_thread_dispatcher.executor.submit(
-                self.k6pm_thread_dispatcher.instance.pixel_temperatures, 1)
+                self.k6pm_instance.pixel_temperatures, 1)
             self.colors = future.result()
             self.temp_canvas.set_color_data(self.colors)
             delay = threading.Timer(period, self.periodic_task)
