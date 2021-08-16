@@ -5,6 +5,17 @@ __email__ = "jr@aphyt.com"
 
 from aphyt.cip import *
 from .eip import *
+from abc import ABC, abstractmethod, abstractproperty
+
+
+class CIPObject(ABC):
+    @abstractmethod
+    def __init__(self, dispatcher: EIPConnectedCIPDispatcher):
+        """Docstring to pass"""
+
+    @abstractmethod
+    def from_bytes(self):
+        """Docstring to pass"""
 
 
 class InstanceAttribute:
@@ -17,9 +28,8 @@ class InstanceAttribute:
         self.writeable = writeable
 
 
-class TCPInterfaceObject:
+class TCPInterfaceObject(CIPObject):
     def __init__(self, dispatcher: EIPConnectedCIPDispatcher):
-        super().__init__()
         self.dispatcher = dispatcher
         self.class_id = b'\xf5'
         self.instance_id = b'\x01'
