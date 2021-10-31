@@ -4,6 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from aphyt.cip import *
+from aphyt.eip import *
 
 
 class TCPIPInterfaceObject:
@@ -15,5 +16,5 @@ class TCPIPInterfaceObject:
     """
     class_id = b'\xf5'
 
-    def __init__(self):
-        pass
+    def __init__(self, cip_dispatcher: EIPConnectedCIPDispatcher):
+        self.dispatcher = cip_dispatcher

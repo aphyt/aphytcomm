@@ -175,6 +175,14 @@ class CIPDispatcher(ABC):
         write_tag_fragmented_request = CIPRequest(CIPService.WRITE_TAG_FRAGMENTED_SERVICE, tag_request_path, data)
         return self.execute_cip_command(write_tag_fragmented_request)
 
+    def get_attribute_all_service(self, tag_request_path):
+        get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_request_path)
+        return self.execute_cip_command(get_attribute_all_request)
+
+    def get_attribute_single_service(self, tag_request_path):
+        get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
+        return self.execute_cip_command(get_attribute_single_request)
+
 
 def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,
                                  attribute_id: bytes = None, element_id: bytes = None) -> bytes:

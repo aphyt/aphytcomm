@@ -191,7 +191,7 @@ class Screen(Tk):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.k6pm_instance = k6pm_th.K6PMTH()
-        self.k6pm_thread_dispatcher = EIPThreadDispatcher(self.k6pm_instance.dispatcher)
+        self.k6pm_thread_dispatcher = EIPThreadDispatcher(self.k6pm_instance.connected_cip_dispatcher)
 
         self.temp_canvas = TemperatureCanvas(self.mainframe)
         self.temp_canvas.grid(column=1, row=1)

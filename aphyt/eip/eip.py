@@ -328,10 +328,10 @@ class EIPConnectedCIPDispatcher(EIPConnectedCommandMixin, CIPDispatcher):
         reply_packet.from_bytes(reply_command_specific_data.encapsulated_packet)
         return reply_packet
 
-    def get_attribute_all_service(self, tag_request_path):
-        get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_request_path)
-        return self.execute_cip_command(get_attribute_all_request)
-
-    def get_attribute_single_service(self, tag_request_path):
-        get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
-        return self.execute_cip_command(get_attribute_single_request)
+    # def get_attribute_all_service(self, tag_request_path):
+    #     get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_request_path)
+    #     return self.execute_cip_command(get_attribute_all_request)
+    #
+    # def get_attribute_single_service(self, tag_request_path):
+    #     get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
+    #     return self.execute_cip_command(get_attribute_single_request)
