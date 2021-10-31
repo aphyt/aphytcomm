@@ -4,6 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from abc import ABC, abstractmethod
+from .cip_services import *
 import binascii
 
 
@@ -18,23 +19,6 @@ def cip_crc16(data: bytes, poly=0xa001) -> bytes:
             if carry:
                 crc = crc ^ poly
     return crc.to_bytes(2, 'little')
-
-
-class CIPService:
-    """
-    ToDo make each service an object that inherits from CIPService
-    """
-    READ_TAG_SERVICE = b'\x4c'
-    READ_TAG_FRAGMENTED_SERVICE = b'\x52'
-    WRITE_TAG_SERVICE = b'\x4d'
-    WRITE_TAG_FRAGMENTED_SERVICE = b'\x53'
-    READ_MODIFY_WRITE_TAG_SERVICE = b'\x4e'
-    # w506_nx_nj - series_cpu_unit_built - in_ethernet_ip_port_users_manual_en.pdf
-    # 303 of 570 CIP Object Services
-    GET_ATTRIBUTE_ALL = b'\x01'
-    GET_ATTRIBUTE_SINGLE = b'\x0e'
-    RESET = b'\x05'
-    SET_ATTRIBUTE_SINGLE = b'\x10'
 
 
 class CIPRequest:
@@ -137,6 +121,8 @@ class CIPDispatcher(ABC):
 
     The key method that subclasses need to implement is 'execute_cip_command' which will
     send a CIPRequest over the CIP network and receive a CIPReply
+
+    ToDo monitor when the read, write, get, set services have all moved to CIP objects mixins and get rid of them
     """
 
     def __init__(self):
@@ -182,6 +168,10 @@ class CIPDispatcher(ABC):
     def get_attribute_single_service(self, tag_request_path):
         get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
         return self.execute_cip_command(get_attribute_single_request)
+
+    def set_attribute_single_service(self, tag_request_path):
+        set_attribute_single_request = CIPRequest(CIPService.SET_ATTRIBUTE_SINGLE, tag_request_path)
+        return self.execute_cip_command(set_attribute_single_request)
 
 
 def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,

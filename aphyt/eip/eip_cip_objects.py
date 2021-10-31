@@ -3,7 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
-from aphyt.cip import *
+from ..cip import *
 from .eip import *
 from abc import ABC, abstractmethod, abstractproperty
 
@@ -26,6 +26,22 @@ class InstanceAttribute:
         self.instance_attribute_id = instance_attribute_id
         self.data_type = data_type
         self.writeable = writeable
+
+
+class InterfaceConfigurationStatus(CIPAttribute, GetAttributeSingleMixin):
+    def __init__(self,
+                 cip_dispatcher: CIPDispatcher):
+        super().__init__(cip_dispatcher, attribute_id=b'\x01', data_type=CIPDoubleWord())
+
+
+class TCPInterfaceObject2(CIPObject):
+    def __init__(self, cip_dispatcher: EIPConnectedCIPDispatcher):
+        self.cip_dispatcher = cip_dispatcher
+        self.class_id = b'\xf5'
+        self.instance_id = b'\x01'
+
+    def from_bytes(self):
+        pass
 
 
 class TCPInterfaceObject(CIPObject):
