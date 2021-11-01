@@ -4,7 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from abc import ABC, abstractmethod
-from .cip_services import *
+import aphyt.cip as ap
 import binascii
 
 
@@ -137,7 +137,7 @@ class CIPDispatcher(ABC):
 
     def read_tag_service(self, tag_request_path, number_of_elements=1) -> CIPReply:
         read_tag_request = \
-            CIPRequest(CIPService.READ_TAG_SERVICE, tag_request_path, number_of_elements.to_bytes(2, 'little'))
+            CIPRequest(ap.CIPService.READ_TAG_SERVICE, tag_request_path, number_of_elements.to_bytes(2, 'little'))
         return self.execute_cip_command(read_tag_request)
 
     def write_tag_service(self, tag_request_path, request_service_data: CIPCommonFormat, number_of_elements=1):
@@ -145,32 +145,32 @@ class CIPDispatcher(ABC):
                int(request_service_data.additional_info_length).to_bytes(1, 'little') + \
                request_service_data.additional_info + number_of_elements.to_bytes(2, 'little') + \
                request_service_data.data
-        write_tag_request = CIPRequest(CIPService.WRITE_TAG_SERVICE, tag_request_path, data)
+        write_tag_request = CIPRequest(ap.CIPService.WRITE_TAG_SERVICE, tag_request_path, data)
         return self.execute_cip_command(write_tag_request)
 
     def read_tag_fragmented_service(self, tag_request_path, offset, number_of_elements):
         data = tag_request_path + number_of_elements.to_bytes(2, 'little') + offset.to_bytes(4, 'little')
         read_tag_fragmented_request = \
-            CIPRequest(CIPService.READ_TAG_FRAGMENTED_SERVICE, tag_request_path, data)
+            CIPRequest(ap.CIPService.READ_TAG_FRAGMENTED_SERVICE, tag_request_path, data)
         return self.execute_cip_command(read_tag_fragmented_request)
 
     def write_tag_fragmented_service(self, tag_request_path, cip_datatype_code, data, offset, number_of_elements=1):
         data = \
             cip_datatype_code + b'\x00' + number_of_elements.to_bytes(2, 'little') + \
             offset.to_bytes(4, 'little') + data
-        write_tag_fragmented_request = CIPRequest(CIPService.WRITE_TAG_FRAGMENTED_SERVICE, tag_request_path, data)
+        write_tag_fragmented_request = CIPRequest(ap.CIPService.WRITE_TAG_FRAGMENTED_SERVICE, tag_request_path, data)
         return self.execute_cip_command(write_tag_fragmented_request)
 
     def get_attribute_all_service(self, tag_request_path):
-        get_attribute_all_request = CIPRequest(CIPService.GET_ATTRIBUTE_ALL, tag_request_path)
+        get_attribute_all_request = CIPRequest(ap.CIPService.GET_ATTRIBUTE_ALL, tag_request_path)
         return self.execute_cip_command(get_attribute_all_request)
 
     def get_attribute_single_service(self, tag_request_path):
-        get_attribute_single_request = CIPRequest(CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
+        get_attribute_single_request = CIPRequest(ap.CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
         return self.execute_cip_command(get_attribute_single_request)
 
     def set_attribute_single_service(self, tag_request_path):
-        set_attribute_single_request = CIPRequest(CIPService.SET_ATTRIBUTE_SINGLE, tag_request_path)
+        set_attribute_single_request = CIPRequest(ap.CIPService.SET_ATTRIBUTE_SINGLE, tag_request_path)
         return self.execute_cip_command(set_attribute_single_request)
 
 
