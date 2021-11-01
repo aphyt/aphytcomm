@@ -65,8 +65,8 @@ class GetAttributeAllMixin(CIPService):
 
 class GetAttributeSingleMixin(CIPService):
     """Always use the Set mixins before the get mixins so that """
-    def __init__(self, cip_dispatcher: CIPDispatcher):
-        super().__init__(cip_dispatcher)
+    def __init__(self, cip_dispatcher: CIPDispatcher, *args, **kwargs):
+        super().__init__(cip_dispatcher, *args, **kwargs)
         self.request_path = None
         self.data_type = None
 
@@ -83,8 +83,8 @@ class GetAttributeSingleMixin(CIPService):
 
 
 class SetAttributeSingleMixin(CIPService):
-    def __init__(self, cip_dispatcher: CIPDispatcher):
-        super().__init__(cip_dispatcher)
+    def __init__(self, cip_dispatcher: CIPDispatcher, *args, **kwargs):
+        super().__init__(cip_dispatcher, *args, **kwargs)
         self.request_path = None
         self.data_type = None
 

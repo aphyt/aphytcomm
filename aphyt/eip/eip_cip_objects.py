@@ -18,9 +18,20 @@ class ConfigurationCapability(CIPAttribute, GetAttributeSingleMixin):
         super().__init__(attribute_id=b'\x02', data_type=CIPDoubleWord(), cip_instance=cip_instance)
 
 
-class ConfigurationControl(CIPAttribute, SetAttributeSingleMixin ,GetAttributeSingleMixin):
+class ConfigurationControl(CIPAttribute, SetAttributeSingleMixin, GetAttributeSingleMixin):
     def __init__(self, cip_instance: CIPInstance):
         super().__init__(attribute_id=b'\x03', data_type=CIPDoubleWord(), cip_instance=cip_instance)
+
+
+class InterfaceConfiguration(CIPAttribute, SetAttributeSingleMixin, GetAttributeSingleMixin):
+    def __init__(self, cip_instance: CIPInstance):
+        super().__init__(attribute_id=b'\x05', data_type=CIPStructure(), cip_instance=cip_instance)
+        self.data_type.variable_name = "Interface Configuration"
+        self.data_type.add_member('IP Address', CIPUnsignedDoubleInteger())
+        self.data_type.add_member('Subnet Mask', CIPUnsignedDoubleInteger())
+        self.data_type.add_member('Default Gateway', CIPUnsignedDoubleInteger())
+        self.data_type.add_member('Primary Nameserver', CIPUnsignedDoubleInteger())
+        self.data_type.add_member('Secondary Nameserver', CIPUnsignedDoubleInteger())
 
 
 class HostName(CIPAttribute, SetAttributeSingleMixin, GetAttributeSingleMixin):
@@ -36,10 +47,11 @@ class TCPInterfaceObject(CIPClass, GetAttributeSingleMixin):
         self.class_id = b'\xf5'
         self.instance_id = b'\x01'
         self.tcp_interface_instance = CIPInstance(self, self.instance_id)
-        self.interface_configuration = InterfaceConfigurationStatus(self.tcp_interface_instance)
+        self.interface_configuration_status = InterfaceConfigurationStatus(self.tcp_interface_instance)
         self.configuration_capability = ConfigurationCapability(self.tcp_interface_instance)
         self.configuration_control = ConfigurationControl(self.tcp_interface_instance)
         self.host_name = HostName(self.tcp_interface_instance)
+        self.interface_configuration = InterfaceConfiguration(self.tcp_interface_instance)
 
 
 #
