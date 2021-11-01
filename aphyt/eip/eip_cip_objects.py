@@ -12,50 +12,20 @@ class InterfaceConfigurationStatus(CIPAttribute, GetAttributeSingleMixin):
     def __init__(self, cip_instance: CIPInstance):
         super().__init__(attribute_id=b'\x01', data_type=CIPDoubleWord(), cip_instance=cip_instance)
 
-    @property
-    def value(self):
-        self.data_type.data = self.get_attribute_single(self.request_path).reply_data
-        return self.data_type.value()
-
 
 class ConfigurationCapability(CIPAttribute, GetAttributeSingleMixin):
     def __init__(self, cip_instance: CIPInstance):
-        super().__init__(attribute_id=b'\x02', data_type=CIPDoubleWord(),  cip_instance=cip_instance)
-
-    @property
-    def value(self):
-        self.data_type.data = self.get_attribute_single(self.request_path).reply_data
-        print(self.get_attribute_single(self.request_path).bytes)
-        return self.data_type.value()
+        super().__init__(attribute_id=b'\x02', data_type=CIPDoubleWord(), cip_instance=cip_instance)
 
 
-class ConfigurationControl(CIPAttribute, GetAttributeSingleMixin, SetAttributeSingleMixin):
+class ConfigurationControl(CIPAttribute, SetAttributeSingleMixin ,GetAttributeSingleMixin):
     def __init__(self, cip_instance: CIPInstance):
         super().__init__(attribute_id=b'\x03', data_type=CIPDoubleWord(), cip_instance=cip_instance)
 
-    @property
-    def value(self):
-        self.data_type.data = self.get_attribute_single(self.request_path).reply_data
-        return self.data_type.value()
 
-    @value.setter
-    def value(self, new_value):
-        self.data_type.from_value(new_value)
-        self.set_attribute_single(self.request_path, self.data_type.data)
-
-
-class HostName(CIPAttribute, GetAttributeSingleMixin, SetAttributeSingleMixin):
+class HostName(CIPAttribute, SetAttributeSingleMixin, GetAttributeSingleMixin):
     def __init__(self, cip_instance: CIPInstance):
         super().__init__(attribute_id=b'\x06', data_type=CIPWord(), cip_instance=cip_instance)
-
-    @property
-    def value(self):
-        self.data_type.data = self.get_attribute_single(self.request_path).reply_data
-        return self.data_type.value()
-
-    @value.setter
-    def value(self, new_value):
-        self.data_type.from_value(new_value)
 
 
 class TCPInterfaceObject(CIPClass, GetAttributeSingleMixin):

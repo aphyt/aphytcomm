@@ -46,9 +46,9 @@ class WriteTagServiceMixin(CIPService):
     def write_tag(self, tag_request_path, request_service_data: CIPCommonFormat, number_of_elements=1):
         service_code = b'\x4d'
         data = request_service_data.data_type + \
-               int(request_service_data.additional_info_length).to_bytes(1, 'little') + \
-               request_service_data.additional_info + number_of_elements.to_bytes(2, 'little') + \
-               request_service_data.data
+            int(request_service_data.additional_info_length).to_bytes(1, 'little') + \
+            request_service_data.additional_info + number_of_elements.to_bytes(2, 'little') + \
+            request_service_data.data
         write_tag_request = CIPRequest(service_code, tag_request_path, data)
         return self.cip_dispatcher.execute_cip_command(write_tag_request)
 
@@ -64,8 +64,11 @@ class GetAttributeAllMixin(CIPService):
 
 
 class GetAttributeSingleMixin(CIPService):
+    """Always use the Set mixins before the get mixins so that """
     def __init__(self, cip_dispatcher: CIPDispatcher):
         super().__init__(cip_dispatcher)
+        self.request_path = None
+        self.data_type = None
 
     def get_attribute_single(self, tag_request_path) -> CIPReply:
         service_code = b'\x0e'
@@ -73,15 +76,32 @@ class GetAttributeSingleMixin(CIPService):
             CIPRequest(service_code, tag_request_path)
         return self.cip_dispatcher.execute_cip_command(read_tag_request)
 
+    @property
+    def value(self):
+        self.data_type.data = self.get_attribute_single(self.request_path).reply_data
+        return self.data_type.value()
+
 
 class SetAttributeSingleMixin(CIPService):
     def __init__(self, cip_dispatcher: CIPDispatcher):
         super().__init__(cip_dispatcher)
+        self.request_path = None
+        self.data_type = None
 
     def set_attribute_single(self, tag_request_path, data: bytes):
         service_code = b'\x10'
         set_attribute_single_request = CIPRequest(service_code, tag_request_path, data)
         return self.cip_dispatcher.execute_cip_command(set_attribute_single_request)
+
+    @property
+    def value(self):
+        self.data_type.data = self.get_attribute_single(self.request_path).reply_data
+        return self.data_type.value()
+
+    @value.setter
+    def value(self, new_value):
+        self.data_type.from_value(new_value)
+        self.set_attribute_single(self.request_path, self.data_type.data)
 
 
 class ResetMixin(CIPService):
