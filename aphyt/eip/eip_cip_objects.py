@@ -3,7 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
-from ..cip.cip import *
+from aphyt.cip import *
 from .eip import *
 from abc import ABC, abstractmethod, abstractproperty
 
@@ -23,6 +23,14 @@ class ConfigurationControl(CIPAttribute, SetAttributeSingleMixin, GetAttributeSi
         super().__init__(attribute_id=b'\x03', data_type=CIPDoubleWord(), cip_instance=cip_instance)
 
 
+class PhysicalLinkObject(CIPAttribute, GetAttributeSingleMixin):
+    def __init__(self, cip_instance: CIPInstance):
+        super().__init__(attribute_id=b'\x04', data_type=CIPStructure(), cip_instance=cip_instance)
+        self.data_type.variable_name = "Physical Link Object"
+        self.data_type.add_member('Path Size', CIPUnsignedInteger())
+        self.data_type.add_member('Path', CIPUnsignedDoubleInteger())
+
+
 class InterfaceConfiguration(CIPAttribute, SetAttributeSingleMixin, GetAttributeSingleMixin):
     def __init__(self, cip_instance: CIPInstance):
         super().__init__(attribute_id=b'\x05', data_type=CIPStructure(), cip_instance=cip_instance)
@@ -39,6 +47,16 @@ class HostName(CIPAttribute, SetAttributeSingleMixin, GetAttributeSingleMixin):
         super().__init__(attribute_id=b'\x06', data_type=CIPWord(), cip_instance=cip_instance)
 
 
+class EncapsulationInactivityTimeout(CIPAttribute, SetAttributeSingleMixin, GetAttributeSingleMixin):
+    def __init__(self, cip_instance: CIPInstance):
+        super().__init__(attribute_id=b'\x0d', data_type=CIPUnsignedInteger(), cip_instance=cip_instance)
+
+
+class Revision(CIPAttribute, GetAttributeSingleMixin):
+    def __init__(self, cip_instance: CIPInstance):
+        super().__init__(attribute_id=b'\x01', data_type=CIPUnsignedInteger(), cip_instance=cip_instance)
+
+
 class TCPInterfaceObject(CIPClass, GetAttributeSingleMixin):
     def __init__(self,
                  cip_dispatcher: CIPDispatcher):
@@ -47,11 +65,15 @@ class TCPInterfaceObject(CIPClass, GetAttributeSingleMixin):
         self.class_id = b'\xf5'
         self.instance_id = b'\x01'
         self.tcp_interface_instance = CIPInstance(self, self.instance_id)
+        self.tcp_class_instance = CIPInstance(self, b'\x00')
+        self.revision = Revision(self.tcp_class_instance)
         self.interface_configuration_status = InterfaceConfigurationStatus(self.tcp_interface_instance)
         self.configuration_capability = ConfigurationCapability(self.tcp_interface_instance)
         self.configuration_control = ConfigurationControl(self.tcp_interface_instance)
-        self.host_name = HostName(self.tcp_interface_instance)
+        self.physical_link_object = PhysicalLinkObject(self.tcp_interface_instance)
         self.interface_configuration = InterfaceConfiguration(self.tcp_interface_instance)
+        self.host_name = HostName(self.tcp_interface_instance)
+        self.encapsulation_inactivity_timeout = EncapsulationInactivityTimeout(self.tcp_interface_instance)
 
 
 #
