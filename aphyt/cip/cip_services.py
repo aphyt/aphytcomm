@@ -4,6 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from .cip import *
+from .cip_attributes import *
 from .cip_datatypes import *
 
 
@@ -57,51 +58,45 @@ class GetAttributeAllMixin(CIPService):
     def __init__(self, cip_dispatcher: CIPDispatcher):
         super().__init__(cip_dispatcher)
 
-    def get_attribute_all(self, tag_request_path):
+    def get_attribute_all_from_path(self, tag_request_path):
         service_code = b'\x01'
         get_attribute_all_request = CIPRequest(service_code, tag_request_path)
         return self.cip_dispatcher.execute_cip_command(get_attribute_all_request)
 
+    # def get_attribute_all(self, cip_attribute: CIPAttribute) -> bytes:
+    #     reply = self.get_attribute_all_from_path(cip_attribute.request_path)
+    #     return reply.reply_data
+
 
 class GetAttributeSingleMixin(CIPService):
     """Always use the Set mixins before the get mixins so that """
-    def __init__(self, cip_dispatcher: CIPDispatcher, *args, **kwargs):
-        super().__init__(cip_dispatcher, *args, **kwargs)
-        self.request_path = None
-        self.data_type = None
+    def __init__(self, cip_dispatcher: CIPDispatcher, **kwargs):
+        super().__init__(cip_dispatcher, **kwargs)
 
-    def get_attribute_single(self, tag_request_path) -> CIPReply:
+    def get_attribute_single_from_path(self, tag_request_path) -> CIPReply:
         service_code = b'\x0e'
-        read_tag_request = \
+        get_attribute_single_request = \
             CIPRequest(service_code, tag_request_path)
-        return self.cip_dispatcher.execute_cip_command(read_tag_request)
+        return self.cip_dispatcher.execute_cip_command(get_attribute_single_request)
 
-    @property
-    def value(self):
-        self.data_type.data = self.get_attribute_single(self.request_path).reply_data
-        return self.data_type.value()
+    def get_attribute_single(self, cip_attribute: CIPAttribute) -> CIPAttribute:
+        reply = self.get_attribute_single_from_path(cip_attribute.request_path)
+        cip_attribute.data_type.data = reply.reply_data
+        return cip_attribute
 
 
 class SetAttributeSingleMixin(CIPService):
-    def __init__(self, cip_dispatcher: CIPDispatcher, *args, **kwargs):
-        super().__init__(cip_dispatcher, *args, **kwargs)
-        self.request_path = None
-        self.data_type = None
+    def __init__(self, cip_dispatcher: CIPDispatcher, **kwargs):
+        super().__init__(cip_dispatcher, **kwargs)
 
-    def set_attribute_single(self, tag_request_path, data: bytes):
+    def set_attribute_single_from_path(self, tag_request_path, data: bytes):
         service_code = b'\x10'
         set_attribute_single_request = CIPRequest(service_code, tag_request_path, data)
         return self.cip_dispatcher.execute_cip_command(set_attribute_single_request)
 
-    @property
-    def value(self):
-        self.data_type.data = self.get_attribute_single(self.request_path).reply_data
-        return self.data_type.value()
-
-    @value.setter
-    def value(self, new_value):
-        self.data_type.from_value(new_value)
-        self.set_attribute_single(self.request_path, self.data_type.data)
+    def set_attribute_single(self, cip_attribute: CIPAttribute):
+        assert (cip_attribute.writeable is True)
+        self.set_attribute_single_from_path(cip_attribute.request_path, data=cip_attribute.data_type.data)
 
 
 class ResetMixin(CIPService):

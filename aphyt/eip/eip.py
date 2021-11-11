@@ -243,11 +243,15 @@ class EIPConnectedCommandMixin(EIPDispatcher):
 
 
 class EIPUnconnectedCommandMixin(EIPDispatcher):
+    """
+    ToDo add broadcast_command to return a List of EIPMessages (List Service to a full domain)
+    """
     def __init__(self):
         super().__init__()
 
-    def send_command(self, eip_command: EIPMessage, host: str) -> EIPMessage:
+    def send_command(self, eip_command: EIPMessage, host: str) -> List[EIPMessage]:
         received_eip_message = EIPMessage()
+        response_list = []
         try:
             udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -256,19 +260,13 @@ class EIPUnconnectedCommandMixin(EIPDispatcher):
             print(self.explicit_message_port)
             udp_socket.bind(('0.0.0.0', self.explicit_message_port))
             udp_socket.sendto(eip_command.bytes(), (host, self.explicit_message_port))
-            # for i in range(10):
+            received_data = udp_socket.recvfrom(1024)[0]
+            # while True:
             #     try:
             #         received_data = udp_socket.recvfrom(1024)[0]
+            #         # response_list.append(received_eip_message.from_bytes(received_data))
             #     except socket.error as e:
             #         break
-            #     print(received_data)
-            #     time.sleep(1)
-            #     print(i)
-            received_data = udp_socket.recvfrom(1024)[0]
-            try:
-                received_data = udp_socket.recvfrom(1024)[0]
-            except socket.error as e:
-                pass
             received_eip_message.from_bytes(received_data)
         except socket.error as e:
             print('Failed to create socket')
