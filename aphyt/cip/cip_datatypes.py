@@ -462,6 +462,8 @@ class CIPStructure(CIPDataType):
                 offset = offset + (member_value.alignment - offset % member_value.alignment)
             end_byte = offset + member_value.size
             member_value.data = structure_data[offset:end_byte]
+            # Call value to handle nested structures
+            member_value.value()
             offset = end_byte
         return self
 
