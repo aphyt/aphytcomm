@@ -3,6 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
+import collections
 import struct
 import copy
 from abc import ABC, abstractmethod
@@ -35,6 +36,13 @@ def clear_bit(int_type, offset):
 def toggle_bit(int_type, offset):
     mask = 1 << offset
     return int_type ^ mask
+
+
+def flatten(x):
+    if isinstance(x, collections.Iterable):
+        return [a for i in x for a in flatten(i)]
+    else:
+        return [x]
 
 
 class CIPDataType(ABC):
@@ -614,6 +622,7 @@ class CIPArray(CIPDataType):
         """
         This method takes the dimension value of the array object and recursively converts the list into byte data
         """
+
         if dimension == 1:
             data = b''
             for element in list_data:
@@ -635,7 +644,19 @@ class CIPArray(CIPDataType):
         return self._list_representation
 
     def from_value(self, value):
-        self.data = self._recursive_array_to_data(self.array_dimensions, value)
+        if self.array_data_type == b'\xc1':
+            flat_list = flatten(self._list_representation)
+            data_int = 0
+            offset = 0
+            for item in flat_list:
+                if item:
+                    data_int = set_bit(data_int, offset)
+                else:
+                    data_int = clear_bit(data_int, offset)
+                offset = offset + 1
+            self.data = data_int.to_bytes(self.size, 'little')
+        else:
+            self.data = self._recursive_array_to_data(self.array_dimensions, value)
 
 
 # class CIPDataTypes:
