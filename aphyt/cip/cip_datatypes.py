@@ -10,7 +10,6 @@ from abc import ABC, abstractmethod
 import binascii
 
 
-# test_bit() returns a nonzero result, 2**offset, if the bit at 'offset' is one.
 def test_bit(int_type, offset):
     mask = 1 << offset
     if int_type & mask != 0:
@@ -20,19 +19,16 @@ def test_bit(int_type, offset):
     return response
 
 
-# set_bit() returns an integer with the bit at 'offset' set to 1.
 def set_bit(int_type, offset):
     mask = 1 << offset
     return int_type | mask
 
 
-# clear_bit() returns an integer with the bit at 'offset' cleared.
 def clear_bit(int_type, offset):
     mask = ~(1 << offset)
     return int_type & mask
 
 
-# toggle_bit() returns an integer with the bit at 'offset' inverted, 0 -> 1 and 1 -> 0.
 def toggle_bit(int_type, offset):
     mask = 1 << offset
     return int_type ^ mask
