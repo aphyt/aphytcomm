@@ -504,16 +504,37 @@ class CIPArray(CIPDataType):
     def alignment(self) -> int:
         return self._alignment
 
+    def _get_size(self) -> int:
+        """
+        Determine the amount of data required to send and receive data,
+        handling the special case of Boolean array packing
+        :return:
+        """
+        total_size = 1
+        last_number = None
+        for number in self.number_of_elements:
+            total_size = total_size * number
+            last_number = number
+        if self.array_data_type == b'\xc1':
+            if last_number % 16 != 0:
+                # Alignment is 16 bits
+                full_words = last_number // 16
+                required_words = full_words + 1
+            else:
+                required_words = last_number // 16
+            total_size = total_size // last_number * required_words
+            # print("Total %s size in bool %s" % (self.variable_name, total_size))
+        else:
+            total_size = total_size * self.array_data_type_size
+        return total_size
+
     def from_items(self, array_data_type, array_data_size, array_dimensions, number_of_elements, start_array_elements):
         self.array_data_type = array_data_type
         self.array_data_type_size = array_data_size
         self.array_dimensions = array_dimensions
         self.number_of_elements = number_of_elements
         self.start_array_elements = start_array_elements
-        total_size = self.array_data_type_size
-        for number in self.number_of_elements:
-            total_size = total_size * number
-        self.size = total_size
+        self.size = self._get_size()
         # ToDo calling get_class_type_data_code seems weird
         self._local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
         self._alignment = self._local_cip_data_type_object.alignment
@@ -525,10 +546,7 @@ class CIPArray(CIPDataType):
         self.array_dimensions = array_dimensions
         self.number_of_elements = number_of_elements
         self.start_array_elements = start_array_elements
-        total_size = self.array_data_type_size
-        for number in self.number_of_elements:
-            total_size = total_size * number
-        self.size = total_size
+        self.size = self._get_size()
         # ToDo calling get_class_type_data_code seems weird
         self._local_cip_data_type_object = cip_instance
         self._alignment = self._local_cip_data_type_object.alignment
