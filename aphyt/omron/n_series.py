@@ -421,7 +421,7 @@ class NSeries:
                 data = data + cip_common_format.data
             offset = offset + max_read_size
         cip_datatype_object.data = data
-        cip_datatype_object.size = len(data)
+        # cip_datatype_object.size = len(data) # Removed Why did it exist? If weird stuff breaks revisit
         return cip_datatype_object.value()
 
     def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, data, offset=0):

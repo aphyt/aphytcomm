@@ -9,6 +9,34 @@ from abc import ABC, abstractmethod
 import binascii
 
 
+# test_bit() returns a nonzero result, 2**offset, if the bit at 'offset' is one.
+def test_bit(int_type, offset):
+    mask = 1 << offset
+    if int_type & mask != 0:
+        response = True
+    else:
+        response = False
+    return response
+
+
+# set_bit() returns an integer with the bit at 'offset' set to 1.
+def set_bit(int_type, offset):
+    mask = 1 << offset
+    return int_type | mask
+
+
+# clear_bit() returns an integer with the bit at 'offset' cleared.
+def clear_bit(int_type, offset):
+    mask = ~(1 << offset)
+    return int_type & mask
+
+
+# toggle_bit() returns an integer with the bit at 'offset' inverted, 0 -> 1 and 1 -> 0.
+def toggle_bit(int_type, offset):
+    mask = 1 << offset
+    return int_type ^ mask
+
+
 class CIPDataType(ABC):
     """
     Abstract Base Class for CIP Data Types. The subclasses will be added to a data type dictionary and
@@ -515,15 +543,14 @@ class CIPArray(CIPDataType):
         for number in self.number_of_elements:
             total_size = total_size * number
             last_number = number
+        add_bytes = 0
         if self.array_data_type == b'\xc1':
             if last_number % 16 != 0:
-                # Alignment is 16 bits
-                full_words = last_number // 16
-                required_words = full_words + 1
-            else:
-                required_words = last_number // 16
-            total_size = total_size // last_number * required_words
-            # print("Total %s size in bool %s" % (self.variable_name, total_size))
+                add_bytes = 2
+            # print("Total %s size in bool %s" % (self.bytes(), total_size))
+            total_size = total_size // 8 + add_bytes
+            # print("Total %s size in bool %s" % (self.bytes(), total_size))
+            # self.array_data_type_size = required_words * 2
         else:
             total_size = total_size * self.array_data_type_size
         return total_size
@@ -563,9 +590,17 @@ class CIPArray(CIPDataType):
         if dimension == self.array_dimensions - 1:
             temp_array = []
             for element in range(self.number_of_elements[dimension]):
-                start_bytes = (position + element) * self.array_data_type_size
-                self._local_cip_data_type_object.data = \
-                    self.data[start_bytes:start_bytes + self.array_data_type_size]
+                if self.array_data_type == b'\xc1':
+                    start_bit = (position + element)
+                    if test_bit(int.from_bytes(self.data, 'little'), start_bit):
+                        integer_bool = 1
+                    else:
+                        integer_bool = 0
+                    self._local_cip_data_type_object.data = integer_bool.to_bytes(2, 'little')
+                else:
+                    start_bytes = (position + element) * self.array_data_type_size
+                    self._local_cip_data_type_object.data = \
+                        self.data[start_bytes:start_bytes + self.array_data_type_size]
                 temp_value = copy.deepcopy(self._local_cip_data_type_object)
                 temp_array.append(temp_value.value())
             return temp_array
