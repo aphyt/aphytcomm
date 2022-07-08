@@ -133,8 +133,8 @@ class TemperatureCanvas(ttk.Frame):
             child.grid_configure(pady=10, padx=10)
 
     def set_color_data(self, color_list: list):
-        min = 23.0
-        max = 31.0
+        min = 60.0
+        max = 70.0
         # print(color_list)
         # self.canvas.delete(tkinter.ALL)
         for i in range(1024):

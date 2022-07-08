@@ -49,7 +49,7 @@ The update variable dictionary method creates a dictionary that maps variable na
 
     from aphyt import omron
     
-    eip_instance = omron.n_series.NSeriesEIP()
+    eip_instance = omron.n_series.NSeries()
     eip_instance.connect_explicit('192.168.250.13')
     eip_instance.register_session()
     eip_instance.update_variable_dictionary()
