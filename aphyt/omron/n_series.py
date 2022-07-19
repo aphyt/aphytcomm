@@ -4,6 +4,7 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from aphyt.eip import *
+import logging
 
 
 class VariableTypeObjectReply(CIPReply):
@@ -392,6 +393,17 @@ class NSeries:
         else:
             request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=cip_datatype_object.data)
             self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
+
+    def verified_write_variable(self, variable_name: str, data, retry_count: int = 2):
+        remaining_retry = retry_count
+        temp_data = None
+        while remaining_retry >= 0 and temp_data != data:
+            self.write_variable(variable_name, data)
+            temp_data = self.read_variable(variable_name)
+            remaining_retry += -1
+        if remaining_retry < 0 and temp_data != data:
+            logging.warning('Write Operation could not be completed within specified retry count')
+            raise IOError('Write Operation could not be completed within specified retry count')
 
     def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0):
         """
