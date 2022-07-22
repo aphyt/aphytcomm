@@ -4,7 +4,9 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import os
+import socket
 import sys
+import time
 import tkinter
 from tkinter import ttk
 from aphyt.omron import n_series
@@ -15,39 +17,76 @@ from signal import signal, SIGINT
 
 class NSeriesThreadDispatcher:
     def __init__(self):
-        self.instance = n_series.NSeries()
+        self._instance = n_series.NSeries()
+        self._host = None
         self.message_timeout = 0.5
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.executor = None
         self.futures = []
         self.status_integer = 0
         self.services = None
         self.keep_alive = False
+        self.has_session = False
 
-    def start_keep_alive(self, time: float = 0.05):
-        if self.instance.connected_cip_dispatcher.is_connected_explicit and self.keep_alive:
-            future = self.executor.submit(
-                self.instance.connected_cip_dispatcher.list_services, '')
-            self.services = future.result()
-            delay = threading.Timer(time, self.start_keep_alive)
+    def _execute_eip_command(self, command, *args, **kwargs):
+        result = None
+        future = self.executor.submit(command, *args, **kwargs)
+        try:
+            result = future.result()
+        except socket.error as exception:
+            print(exception)
+            self._reconnect()
+        return result
+
+    def _reconnect(self):
+        temp_keep_alive = self.keep_alive
+        try:
+            self.close_explicit()
+        except Exception as error:
+            print(error)
+        self.connect_explicit(self._host)
+        if self.has_session:
+            self.register_session()
+        self.keep_alive = temp_keep_alive
+
+    def start_keep_alive(self, keep_alive_time: float = 0.05):
+        if self._instance.connected_cip_dispatcher.is_connected_explicit and self.keep_alive:
+            self.services = self._execute_eip_command(self._instance.connected_cip_dispatcher.list_services, '')
+            delay = threading.Timer(keep_alive_time, self.start_keep_alive)
             delay.start()
-            print(self.services)
 
-    def connect_explicit(self, host: str):
-        self.instance.connect_explicit(host=host)
-        self.instance.register_session()
-        self.instance.update_variable_dictionary()
-        self.keep_alive = True
-        self.start_keep_alive()
+    def connect_explicit(self, host: str, reconnect_time: float = 1.0):
+        connected = False
+        while not connected:
+            self._host = host
+            try:
+                self._instance.connect_explicit(host=self._host)
+                self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+                connected = True
+            except socket.error as err:
+                print(f"Failed to connect, trying again in {reconnect_time} seconds")
+                time.sleep(reconnect_time)
+
+    def register_session(self):
+        self._instance.register_session()
+        self.has_session = True
+
+    def update_variable_dictionary(self):
+        self._instance.update_variable_dictionary()
+
+    def read_variable(self, variable_name: str):
+        return self._execute_eip_command(self._instance.read_variable, variable_name)
+
+    def write_variable(self, variable_name: str, data):
+        return self._execute_eip_command(self._instance.write_variable, variable_name, data)
+
+    def verified_write_variable(self, variable_name: str, data):
+        return self._execute_eip_command(self._instance.verified_write_variable, variable_name, data)
 
     def close_explicit(self):
         self.keep_alive = False
-        # self.executor.submit(
-        #     self.instance.close_explicit)
-        # while self.instance.connected_cip_dispatcher.is_connected_explicit:
-        #     pass
-        self.executor.shutdown(wait=True)
-        if self.instance.connected_cip_dispatcher.is_connected_explicit:
-            self.instance.close_explicit()
+        self.executor.shutdown()
+        if self._instance.connected_cip_dispatcher.is_connected_explicit:
+            self._instance.close_explicit()
 
     def __enter__(self):
         signal(SIGINT, self._sigint_handler)
@@ -57,13 +96,13 @@ class NSeriesThreadDispatcher:
         self.close_explicit()
 
     def _sigint_handler(self, signal_received, frame):
-        print('Ctrl + C handler called')
+        print('Program interrupted with Ctrl+C')
         self.__exit__(None, None, None)
         sys.exit(0)
 
 
 class PushButton(tkinter.ttk.Button):
-    def __init__(self, master, controller: n_series.NSeries, variable_name: str, **kwargs):
+    def __init__(self, master, controller: NSeriesThreadDispatcher, variable_name: str, **kwargs):
         super().__init__(master, **kwargs)
         self.controller = controller
         self.variable_name = variable_name

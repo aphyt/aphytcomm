@@ -217,6 +217,7 @@ class EIPConnectedCommandMixin(EIPDispatcher):
             if self.explicit_message_socket:
                 self.explicit_message_socket.close()
                 self.is_connected_explicit = False
+            raise err
 
     def close_explicit(self):
         """

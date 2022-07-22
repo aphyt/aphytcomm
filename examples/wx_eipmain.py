@@ -51,7 +51,7 @@ class IPAddressBox(wx.Panel):
         self.SetSizer(self.box_sizer)
 
     def connect_down(self, event):
-        if not self.message_dispatcher.instance.is_connected_explicit:
+        if not self.message_dispatcher._instance.is_connected_explicit:
             ip_address = self.ip_address_field.GetLineText(0)
             self.parent.GetParent().status_bar.SetStatusText('Connecting')
             # Create a separate executor so the connect function can use the
@@ -69,11 +69,11 @@ class IPAddressBox(wx.Panel):
         event.Skip()
 
     def disconnect_down(self, event):
-        if self.message_dispatcher.instance.is_connected_explicit:
+        if self.message_dispatcher._instance.is_connected_explicit:
             # with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             #     executor.submit(self.message_dispatcher.instance.close_explicit())
             self.message_dispatcher.executor.shutdown()
-            self.message_dispatcher.instance.close_explicit()
+            self.message_dispatcher._instance.close_explicit()
             self.message_dispatcher.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
             self.parent.GetParent().status_bar.SetStatusText('Not Connected')
             self.parent.GetParent().control_box.Disable()
@@ -152,22 +152,22 @@ class SystemControlBox(wx.Panel):
         self.SetSizer(self.box_sizer)
 
     def connect(self, connect_string: str):
-        self.message_dispatcher.instance.connect_explicit(connect_string)
-        if self.message_dispatcher.instance.is_connected_explicit:
-            self.message_dispatcher.executor.submit(self.message_dispatcher.instance.register_session)
-            self.message_dispatcher.executor.submit(self.message_dispatcher.instance.update_variable_dictionary)
+        self.message_dispatcher._instance.connect_explicit(connect_string)
+        if self.message_dispatcher._instance.is_connected_explicit:
+            self.message_dispatcher.executor.submit(self.message_dispatcher._instance.register_session)
+            self.message_dispatcher.executor.submit(self.message_dispatcher._instance.update_variable_dictionary)
             self.message_queue_sender()
         else:
             wx.MessageBox('Check if the IP address is correct and the device is accessible', 'Failed to connect',
                           wx.OK | wx.ICON_INFORMATION)
 
     def message_queue_sender(self):
-        if self.message_dispatcher.instance.is_connected_explicit and not self.parent.GetParent().done:
+        if self.message_dispatcher._instance.is_connected_explicit and not self.parent.GetParent().done:
             future = self.message_dispatcher.executor.submit(
-                self.message_dispatcher.instance.read_variable, '_CurrentTime')
+                self.message_dispatcher._instance.read_variable, '_CurrentTime')
             self.message_dispatcher.controller_time = future.result()
             future = self.message_dispatcher.executor.submit(
-                self.message_dispatcher.instance.read_variable, 'status_integer')
+                self.message_dispatcher._instance.read_variable, 'status_integer')
             self.message_dispatcher.status_integer = future.result()
             # print(self.controller_time)
             self.set_enabled_fields()
@@ -201,42 +201,42 @@ class SystemControlBox(wx.Panel):
 
     def power_down(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_power', True)
+            self.message_dispatcher._instance.write_variable, 'hmi_power', True)
         event.Skip()
 
     def power_up(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_power', False)
+            self.message_dispatcher._instance.write_variable, 'hmi_power', False)
         event.Skip()
 
     def home_down(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_home', True)
+            self.message_dispatcher._instance.write_variable, 'hmi_home', True)
         event.Skip()
 
     def home_up(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_home', False)
+            self.message_dispatcher._instance.write_variable, 'hmi_home', False)
         event.Skip()
 
     def reverse_jog_down(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_reverse', True)
+            self.message_dispatcher._instance.write_variable, 'hmi_reverse', True)
         event.Skip()
 
     def reverse_jog_up(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_reverse', False)
+            self.message_dispatcher._instance.write_variable, 'hmi_reverse', False)
         event.Skip()
 
     def forward_jog_down(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_forward', True)
+            self.message_dispatcher._instance.write_variable, 'hmi_forward', True)
         event.Skip()
 
     def forward_jog_up(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_forward', False)
+            self.message_dispatcher._instance.write_variable, 'hmi_forward', False)
         event.Skip()
 
     def send_down(self, event):
@@ -246,13 +246,13 @@ class SystemControlBox(wx.Panel):
         acceleration_value = float(self.acceleration.GetLineText(0))
         deceleration_value = float(self.deceleration.GetLineText(0))
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_resolution_value', resolution_value)
+            self.message_dispatcher._instance.write_variable, 'hmi_resolution_value', resolution_value)
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'velocity', velocity_value)
+            self.message_dispatcher._instance.write_variable, 'velocity', velocity_value)
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'acceleration', acceleration_value)
+            self.message_dispatcher._instance.write_variable, 'acceleration', acceleration_value)
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'deceleration', deceleration_value)
+            self.message_dispatcher._instance.write_variable, 'deceleration', deceleration_value)
         event.Skip()
 
     def send_up(self, event):
@@ -260,24 +260,24 @@ class SystemControlBox(wx.Panel):
 
     def run_down(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_data_available', False)
+            self.message_dispatcher._instance.write_variable, 'hmi_data_available', False)
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_run', True)
+            self.message_dispatcher._instance.write_variable, 'hmi_run', True)
         event.Skip()
 
     def run_up(self, event):
         self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.write_variable, 'hmi_run', False)
+            self.message_dispatcher._instance.write_variable, 'hmi_run', False)
         event.Skip()
 
     def export_down(self, event):
         future = self.message_dispatcher.executor.submit(
-            self.message_dispatcher.instance.read_variable, 'hmi_data_available')
+            self.message_dispatcher._instance.read_variable, 'hmi_data_available')
         data_available = future.result()
         if data_available:
             future = \
                 self.message_dispatcher.executor.submit(
-                    self.message_dispatcher.instance.read_variable, 'measurement_samples')
+                    self.message_dispatcher._instance.read_variable, 'measurement_samples')
             structure_array = future.result()
             time_string = self.message_dispatcher.controller_time.strftime("%Y_%m_%d_%H_%M_%S")
             home_directory = Path.home()
