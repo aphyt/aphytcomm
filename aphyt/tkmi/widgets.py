@@ -35,10 +35,14 @@ class NSeriesThreadDispatcher:
         except socket.error as exception:
             print(exception)
             self._reconnect()
-        return result
+        if result:
+            return result
+        else:
+            return "THAT'S A SPICY MEATBALL"
 
     def _reconnect(self):
         temp_keep_alive = self.keep_alive
+        self.keep_alive = False
         try:
             self.close_explicit()
         except Exception as error:
@@ -47,6 +51,8 @@ class NSeriesThreadDispatcher:
         if self.has_session:
             self.register_session()
         self.keep_alive = temp_keep_alive
+        if self.keep_alive:
+            self.start_keep_alive()
 
     def start_keep_alive(self, keep_alive_time: float = 0.05):
         if self._instance.connected_cip_dispatcher.is_connected_explicit and self.keep_alive:
@@ -83,7 +89,7 @@ class NSeriesThreadDispatcher:
         return self._execute_eip_command(self._instance.verified_write_variable, variable_name, data)
 
     def close_explicit(self):
-        self.keep_alive = False
+        # self.keep_alive = False
         self.executor.shutdown()
         if self._instance.connected_cip_dispatcher.is_connected_explicit:
             self._instance.close_explicit()
@@ -114,4 +120,3 @@ class PushButton(tkinter.ttk.Button):
 
     def _reset_value(self, event):
         self.controller.verified_write_variable(self.variable_name, False)
-
