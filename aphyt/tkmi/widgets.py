@@ -28,17 +28,13 @@ class NSeriesThreadDispatcher:
         self.has_session = False
 
     def _execute_eip_command(self, command, *args, **kwargs):
-        result = None
         future = self.executor.submit(command, *args, **kwargs)
         try:
             result = future.result()
+            return result
         except socket.error as exception:
             print(exception)
             self._reconnect()
-        if result:
-            return result
-        else:
-            return "THAT'S A SPICY MEATBALL"
 
     def _reconnect(self):
         temp_keep_alive = self.keep_alive
@@ -89,7 +85,6 @@ class NSeriesThreadDispatcher:
         return self._execute_eip_command(self._instance.verified_write_variable, variable_name, data)
 
     def close_explicit(self):
-        # self.keep_alive = False
         self.executor.shutdown()
         if self._instance.connected_cip_dispatcher.is_connected_explicit:
             self._instance.close_explicit()
