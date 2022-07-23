@@ -108,6 +108,22 @@ class NSeriesThreadDispatcher:
         sys.exit(0)
 
 
+class DataDisplay(tkinter.ttk.Label):
+    def __init__(self, master, controller: NSeriesThreadDispatcher, variable_name: str, **kwargs):
+        super().__init__(master, **kwargs)
+        self.controller = controller
+        self.variable_name = variable_name
+        self._update_data()
+        self.delay = None
+
+    def _update_data(self):
+        if self.controller._instance.connected_cip_dispatcher.is_connected_explicit:
+            data = str(self.controller.read_variable(self.variable_name))
+            self.config(text=data)
+            self.delay = threading.Timer(0.1, self._update_data)
+            self.delay.start()
+
+
 class PushButton(tkinter.ttk.Button):
     def __init__(self, master, controller: NSeriesThreadDispatcher, variable_name: str, **kwargs):
         super().__init__(master, **kwargs)
@@ -121,3 +137,26 @@ class PushButton(tkinter.ttk.Button):
 
     def _reset_value(self, event):
         self.controller.verified_write_variable(self.variable_name, False)
+
+
+class SetButton(tkinter.ttk.Button):
+    def __init__(self, master, controller: NSeriesThreadDispatcher, variable_name: str, **kwargs):
+        super().__init__(master, **kwargs)
+        self.controller = controller
+        self.variable_name = variable_name
+        self.bind('<ButtonPress-1>', self._set_value)
+
+    def _set_value(self, event):
+        self.controller.verified_write_variable(self.variable_name, True)
+
+
+class ResetButton(tkinter.ttk.Button):
+    def __init__(self, master, controller: NSeriesThreadDispatcher, variable_name: str, **kwargs):
+        super().__init__(master, **kwargs)
+        self.controller = controller
+        self.variable_name = variable_name
+        self.bind('<ButtonPress-1>', self._reset_value)
+
+    def _reset_value(self, event):
+        self.controller.verified_write_variable(self.variable_name, False)
+
