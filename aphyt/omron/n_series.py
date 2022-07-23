@@ -3,6 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
+import pickle
 from aphyt.eip import *
 import logging
 
@@ -258,6 +259,14 @@ class NSeries:
                 else:
                     self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
             instance_id = instance_id + 1
+
+    def save_current_dictionary(self, file_name: str):
+        with (open(file_name, "wb")) as f:
+            pickle.dump(self.connected_cip_dispatcher.variables, f)
+
+    def load_dictionary_file(self, file_name: str):
+        with (open(file_name, "rb")) as f:
+            self.connected_cip_dispatcher.variables = pickle.load(f)
 
     def _get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
         """

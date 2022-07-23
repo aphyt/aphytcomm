@@ -75,6 +75,12 @@ class NSeriesThreadDispatcher:
     def update_variable_dictionary(self):
         self._instance.update_variable_dictionary()
 
+    def save_current_dictionary(self, file_name: str):
+        self._instance.save_current_dictionary(file_name)
+
+    def load_dictionary_file(self, file_name: str):
+        self._instance.load_dictionary_file(file_name)
+
     def read_variable(self, variable_name: str):
         return self._execute_eip_command(self._instance.read_variable, variable_name)
 
