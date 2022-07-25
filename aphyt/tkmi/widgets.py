@@ -16,21 +16,16 @@ import threading
 from signal import signal, SIGINT
 
 
-class NSeriesThreadDispatcher:
+class EIPConnectionStatus:
     def __init__(self):
-        self._instance = n_series.NSeries()
-        self._host = None
-        self.message_timeout = 0.5
-        self.executor = None
-        self.futures = []
-        self._observers = []
-        self.status_integer = 0
-        self.services = None
         self.connected = False
+        self.connecting = False
         self.reconnecting = False
-        self.keep_alive = False
         self._has_session = False
-        self._persist_session = False
+        self.persist_session = False
+        self._session_status_observers = []
+        self.keep_alive = False
+        self.keep_alive_running = False
 
     def bind_to_session_status(self, callback):
         """
@@ -38,7 +33,7 @@ class NSeriesThreadDispatcher:
         :param callback:
         :return:
         """
-        self._observers.append(callback)
+        self._session_status_observers.append(callback)
 
     @property
     def has_session(self):
@@ -47,19 +42,32 @@ class NSeriesThreadDispatcher:
     @has_session.setter
     def has_session(self, value):
         self._has_session = value
-        for callback in self._observers:
+        for callback in self._session_status_observers:
             print(f'announcing change: has_session is {self._has_session}')
             callback()
 
+
+class NSeriesThreadDispatcher:
+    def __init__(self):
+        self._instance = n_series.NSeries()
+        self._host = None
+        self.message_timeout = 0.5
+        self.executor = None
+        self.futures = []
+        self.status_integer = 0
+        self.services = None
+        self.connection_status = EIPConnectionStatus()
+
     def _execute_eip_command(self, command, *args, **kwargs):
-        if self.connected:
+        if self.connection_status.connected:
             future = self.executor.submit(command, *args, **kwargs)
             try:
                 result = future.result()
                 return result
             except socket.error as err:
                 print(f'{err} occurred in _execute_eip_command')
-                self.connected = False
+                self.connection_status.connected = False
+                self.connection_status.keep_alive_running = False
                 self.executor.shutdown()
                 self._reconnect()
         else:
@@ -73,67 +81,72 @@ class NSeriesThreadDispatcher:
             delay.start()
         return reply
 
-    def _reconnect(self):
-        if not self.reconnecting and not self.connected:
-            self.reconnecting = True
-            # ToDo Figure out how to separate keeping alive from ideal state
-            temp_keep_alive = self.keep_alive
-            self.keep_alive = False
-            try:
-                self.close_explicit()
-            except Exception as err:
-                print(f'{err} occurred in close_explicit')
-            self.connect_explicit(self._host)
-            reply = b''
-            while reply == b'':
-                reply = self._instance.connected_cip_dispatcher.list_services()
-                print(f'I\'m trying to list services {reply}')
-                time.sleep(1)
-            if self._persist_session:
-                reply = b'\x00\x00\x00\x00\x00\x00\x00\x00'
-                while reply == b'\x00\x00\x00\x00\x00\x00\x00\x00':
-                    print(f"In persist while at {time.time()}")
-                    reply = self.register_session()
-                    print(f'registered reply is: {reply}')
-                    time.sleep(0.1)
-                print('WE DID IT!')
-            self.keep_alive = temp_keep_alive
-            if self.keep_alive:
+    def _reconnect(self, already_executing=False):
+        if not already_executing and not self.connection_status.reconnecting:
+            self.connection_status.reconnecting = True
+            self._reconnect(already_executing=True)
+        elif self.connection_status.reconnecting and already_executing:
+            if not self.connection_status.connected:
+                try:
+                    self.close_explicit()
+                except Exception as err:
+                    print(f'{err} occurred in close_explicit')
+                self.connect_explicit(self._host)
+                self._reconnect(already_executing=True)
+            if (self.connection_status.persist_session
+                    and self.connection_status.connected
+                    and not self.connection_status.has_session):
+                self.register_session()
+                self._reconnect(already_executing=True)
+            elif not self.connection_status.persist_session and not self.connection_status.keep_alive:
+                self.connection_status.reconnecting = False
+            if self.connection_status.keep_alive and self.connection_status.has_session:
                 self.start_keep_alive()
-            self.reconnecting = False
+            elif not self.connection_status.keep_alive:
+                self.connection_status.reconnecting = False
 
     def start_keep_alive(self, keep_alive_time: float = 0.05):
-        self.keep_alive = True
-        if self.connected and self.keep_alive:
+        self.connection_status.keep_alive = True
+        if (self.connection_status.connected
+                and self.connection_status.keep_alive
+                and self.connection_status.has_session):
+            self.connection_status._keep_alive_running = True
             self.services = self._execute_eip_command(self._instance.connected_cip_dispatcher.list_services, '')
-            delay = threading.Timer(keep_alive_time, self.start_keep_alive)
+            print(self.services)
+            delay = threading.Timer(keep_alive_time, self.start_keep_alive, [keep_alive_time])
             delay.start()
 
-    def connect_explicit(self, host: str, reconnect_time: float = 1.0):
-        self.connected = False
-        while not self.connected:
+    def connect_explicit(self, host: str, retry_time: float = 1.0):
+        self.connection_status.connecting = True
+        if not self.connection_status.connected:
             self._host = host
             try:
                 self._instance.connect_explicit(host=self._host)
                 self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-                self.connected = self._instance.connected_cip_dispatcher.is_connected_explicit
+                self.connection_status.connected = self._instance.connected_cip_dispatcher.is_connected_explicit
+                self.connection_status.connecting = False
             except socket.error as err:
-                print(f"Failed to connect, trying again in {reconnect_time} seconds")
-                time.sleep(reconnect_time)
+                print(f"Failed to connect, trying again in {retry_time} seconds")
+                delay = threading.Timer(retry_time, self.connect_explicit, [host, retry_time])
+                delay.start()
 
-    def register_session(self):
+    def register_session(self, retry_time: float = 1.0):
         reply = self._instance.register_session()
         session_id = self._instance.connected_cip_dispatcher.session_handle_id
         print(f'reply is {reply}')
         print(session_id)
         if session_id != b'\x00\x00\x00\x00\x00\x00\x00\x00':
-            self.has_session = True
-        self._persist_session = True
+            self.connection_status.has_session = True
+        else:
+            print(f"Failed to register session, trying again in {retry_time} seconds")
+            delay = threading.Timer(retry_time, self.register_session, [retry_time])
+            delay.start()
+        self.connection_status.persist_session = True
         return reply
 
     def unregister_session(self):
-        self.has_session = False
-        self._persist_session = False
+        self.connection_status.has_session = False
+        self.connection_status.persist_session = False
 
     def update_variable_dictionary(self):
         self._instance.update_variable_dictionary()
@@ -160,8 +173,9 @@ class NSeriesThreadDispatcher:
             pass
 
     def close_explicit(self):
-        self.connected = False
-        self.has_session = False
+        self.connection_status.connected = False
+        self.connection_status.has_session = False
+        self.connection_status._keep_alive_running = False
         self.executor.shutdown(wait=True)
         if self._instance.connected_cip_dispatcher.is_connected_explicit:
             self._instance.close_explicit()
@@ -186,10 +200,10 @@ class DataDisplay(tkinter.ttk.Label):
         self.variable_name = variable_name
         self._update_data()
         self.delay = None
-        self.controller.bind_to_session_status(self._update_data)
+        self.controller.connection_status.bind_to_session_status(self._update_data)
 
     def _update_data(self):
-        if self.controller.has_session:
+        if self.controller.connection_status.has_session:
             data = str(self.controller.read_variable(self.variable_name))
             self.config(text=data)
             self.after(100, self._update_data)
