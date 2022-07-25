@@ -43,7 +43,7 @@ class EIPConnectionStatus:
     def has_session(self, value):
         self._has_session = value
         for callback in self._session_status_observers:
-            print(f'announcing change: has_session is {self._has_session}')
+            # print(f'announcing change: has_session is {self._has_session}')
             callback()
 
 
@@ -112,7 +112,6 @@ class NSeriesThreadDispatcher:
                 and self.connection_status.has_session):
             self.connection_status._keep_alive_running = True
             self.services = self._execute_eip_command(self._instance.connected_cip_dispatcher.list_services, '')
-            print(self.services)
             delay = threading.Timer(keep_alive_time, self.start_keep_alive, [keep_alive_time])
             delay.start()
 
@@ -133,8 +132,6 @@ class NSeriesThreadDispatcher:
     def register_session(self, retry_time: float = 1.0):
         reply = self._instance.register_session()
         session_id = self._instance.connected_cip_dispatcher.session_handle_id
-        print(f'reply is {reply}')
-        print(session_id)
         if session_id != b'\x00\x00\x00\x00\x00\x00\x00\x00':
             self.connection_status.has_session = True
         else:
