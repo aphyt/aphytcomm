@@ -244,3 +244,17 @@ class ResetButton(tkinter.ttk.Button):
     def _reset_value(self, event):
         self.controller.verified_write_variable(self.variable_name, False)
 
+
+class ToggleButton(tkinter.ttk.Button):
+    def __init__(self, master, controller: NSeriesThreadDispatcher, variable_name: str, **kwargs):
+        super().__init__(master, **kwargs)
+        self.controller = controller
+        self.variable_name = variable_name
+        self.bind('<ButtonPress-1>', self._toggle_value)
+
+    def _toggle_value(self, event):
+        reply = self.controller.read_variable(self.variable_name)
+        if reply:
+            self.controller.verified_write_variable(self.variable_name, False)
+        else:
+            self.controller.verified_write_variable(self.variable_name, True)
