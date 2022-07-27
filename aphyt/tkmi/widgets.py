@@ -190,14 +190,28 @@ class NSeriesThreadDispatcher:
         sys.exit(0)
 
 
+DEFAULT_PADDING = 5
+
+
 class HMIPage(tkinter.ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         self.grid(row=0, column=0, sticky="nsew")
 
 
+class HMIWidgetFrame(tkinter.ttk.Frame):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+
+    def add_widget(self, widget: tkinter.ttk.Widget, vertical=True):
+        if vertical:
+            widget.grid(row=self.grid_size()[1], padx=DEFAULT_PADDING, pady=DEFAULT_PADDING)
+        else:
+            widget.grid(column=self.grid_size()[0] + 1, padx=DEFAULT_PADDING, pady=DEFAULT_PADDING)
+
+
 class PageSwitchButton(ttk.Button):
-    def __init__(self, master, page: HMIPage, **kwargs):
+    def __init__(self, master: HMIPage, page: HMIPage, **kwargs):
         super().__init__(master, **kwargs)
         self.page = page
         self.bind('<ButtonPress-1>', self._on_press)
