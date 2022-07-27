@@ -191,16 +191,19 @@ class NSeriesThreadDispatcher:
 
 
 class HMIPage(tkinter.ttk.Frame):
-    def __init__(self, master, width: int, height: int, **kwargs):
+    def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-        self.width = width
-        self.height = height
+        self.grid(row=0, column=0, sticky="nsew")
 
 
 class PageSwitchButton(ttk.Button):
     def __init__(self, master, page: HMIPage, **kwargs):
         super().__init__(master, **kwargs)
         self.page = page
+        self.bind('<ButtonPress-1>', self._on_press)
+
+    def _on_press(self, event):
+        self.page.tkraise()
 
 
 class DataDisplay(tkinter.ttk.Label):
