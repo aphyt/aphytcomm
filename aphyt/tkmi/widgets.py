@@ -190,6 +190,19 @@ class NSeriesThreadDispatcher:
         sys.exit(0)
 
 
+class HMIPage(tkinter.ttk.Frame):
+    def __init__(self, master, width: int, height: int, **kwargs):
+        super().__init__(master, **kwargs)
+        self.width = width
+        self.height = height
+
+
+class PageSwitchButton(ttk.Button):
+    def __init__(self, master, page: HMIPage, **kwargs):
+        super().__init__(master, **kwargs)
+        self.page = page
+
+
 class DataDisplay(tkinter.ttk.Label):
     def __init__(self, master, controller: NSeriesThreadDispatcher, variable_name: str, **kwargs):
         super().__init__(master, **kwargs)
