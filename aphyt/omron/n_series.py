@@ -756,8 +756,8 @@ class NSeriesThreadDispatcher:
     def verified_write_variable(self, variable_name: str, data):
         try:
             return self._execute_eip_command(self._instance.verified_write_variable, variable_name, data)
-        except struct.error as err:
-            pass
+        except struct.error as error:
+            raise error
 
     def close_explicit(self):
         self.connection_status.connected = False
