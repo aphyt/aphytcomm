@@ -14,6 +14,7 @@ import concurrent.futures
 import threading
 import queue
 import copy
+import os
 
 
 class EIPThreadDispatcher:
@@ -133,8 +134,8 @@ class TemperatureCanvas(ttk.Frame):
             child.grid_configure(pady=10, padx=10)
 
     def set_color_data(self, color_list: list):
-        min = 60.0
-        max = 70.0
+        min = 70.0
+        max = 85.0
         # print(color_list)
         # self.canvas.delete(tkinter.ALL)
         for i in range(1024):
@@ -163,9 +164,9 @@ class ConnectFrame(ttk.Frame):
         self.connect_entry = ttk.Entry(self, width=7, textvariable=self.connect_string)
         self.connect_entry.grid(column=1, row=1, columnspan=2, sticky=(W, E), padx=1)
         self.connect_button = ttk.Button(self, text="Connect", command=self.connect)
-        self.connect_button.grid(column=1, row=2, sticky=(W, E))
+        self.connect_button.grid(column=1, row=2, sticky=(W, E), padx=1)
         self.disconnect_button = ttk.Button(self, text="Disconnect", command=self.disconnect)
-        self.disconnect_button.grid(column=2, row=2, sticky=(W, E))
+        self.disconnect_button.grid(column=2, row=2, sticky=(W, E), padx=1)
         for child in self.winfo_children():
             child.grid_configure(pady=1)
 
@@ -186,6 +187,15 @@ class Screen(Tk):
     def __init__(self):
         super().__init__()
         self.title("K6PM Visualization")
+        working_path = os.path.abspath(__file__)
+        working_path = os.path.split(working_path)[0]
+        working_path = os.path.split(working_path)[0]
+        working_path = os.path.split(working_path)[0]
+        working_path = os.path.split(working_path)[0]
+        theme_path = os.path.join(working_path, 'third_party')
+        # Simply set the theme
+        self.tk.call("source", os.path.join(theme_path, 'azure.tcl'))
+        self.tk.call("set_theme", os.path.join('dark'))
         self.mainframe = ttk.Frame(self, padding="3 3 12 12")
         self.mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
         self.columnconfigure(0, weight=1)

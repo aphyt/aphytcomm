@@ -50,7 +50,7 @@ class DataEdit(tkinter.ttk.Entry):
         self.delay = None
         self.controller.connection_status.bind_to_session_status(self._get_data)
         self.validate_command = (self.register(self.validate_entry), '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
-        self.config(validatecommand=self.validate_command)
+        self.config(validate='focus', validatecommand=self.validate_command)
         self.bind("<Return>", (lambda event: self._enter_function()))
 
     def _get_data(self):
