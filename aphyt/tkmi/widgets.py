@@ -7,6 +7,9 @@ import struct
 import tkinter
 from tkinter import messagebox
 from tkinter import ttk
+
+import PIL
+
 from aphyt.omron import NSeriesThreadDispatcher
 
 DEFAULT_PADDING = 5
@@ -16,6 +19,8 @@ class HMIPage(tkinter.ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         self.grid(row=0, column=0, sticky="nsew")
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
 
 
 class HMIWidgetFrame(tkinter.ttk.Frame):
@@ -29,13 +34,49 @@ class HMIWidgetFrame(tkinter.ttk.Frame):
             widget.grid(column=self.grid_size()[0] + 1, padx=DEFAULT_PADDING, pady=DEFAULT_PADDING)
 
 
+class ImagePageSwitchButton(ttk.Button):
+    def __init__(self, master: HMIPage, page: HMIPage, scale=1.0, image=None, pressed_image=None, **kwargs):
+        self.image = None
+        self.pressed_image = None
+        if not image:
+            # image = tkinter.PhotoImage(width=1, height=1)
+            self.image = PIL.Image.open('Transparent_Pixel.png')
+        else:
+            self.image = PIL.Image.open(image)
+        if not pressed_image:
+            self.pressed_image = self.image
+        else:
+            self.pressed_image = PIL.Image.open(pressed_image)
+        width = int(scale * float(self.image.size[0]))
+        height = int(scale * float(self.image.size[1]))
+        self.image = self.image.resize((width, height), PIL.Image.ANTIALIAS)
+        self.pressed_image = self.pressed_image.resize((width, height), PIL.Image.ANTIALIAS)
+        self.image_tk = PIL.ImageTk.PhotoImage(self.image)
+        self.pressed_image_tk = PIL.ImageTk.PhotoImage(self.pressed_image)
+        super().__init__(master, image=self.image_tk, compound='c', **kwargs)
+        self.page = page
+        self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
+
+    def _on_press(self, event):
+        self.config(image=self.pressed_image_tk)
+
+    def _on_release(self, event):
+        self.config(image=self.image_tk)
+        self.page.tkraise()
+
+
 class PageSwitchButton(ttk.Button):
     def __init__(self, master: HMIPage, page: HMIPage, **kwargs):
         super().__init__(master, **kwargs)
         self.page = page
         self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
 
     def _on_press(self, event):
+        pass
+
+    def _on_release(self, event):
         self.page.tkraise()
 
 
