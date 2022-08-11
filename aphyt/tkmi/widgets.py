@@ -7,25 +7,24 @@ import struct
 import tkinter
 from tkinter import messagebox
 from tkinter import ttk
-
+from abc import ABC, abstractmethod
 import PIL
-
-from aphyt.omron import NSeriesThreadDispatcher
+from aphyt.omron import NSeriesThreadDispatcher, MonitoredVariable
 
 DEFAULT_PADDING = 5
 
 
-class HMIPage(tkinter.ttk.Frame):
+class HMIPage(tkinter.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-        self.grid(row=0, column=0, sticky="nsew")
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
+        # self.columnconfigure(0, weight=1)
+        # self.rowconfigure(0, weight=1)
+        self.grid(row=0, column=0, sticky='nsew')
 
 
 class HMIWidgetFrame(tkinter.ttk.Frame):
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master, padding=2, *args, **kwargs)
 
     def add_widget(self, widget: tkinter.ttk.Widget, vertical=True):
         if vertical:
@@ -34,8 +33,21 @@ class HMIWidgetFrame(tkinter.ttk.Frame):
             widget.grid(column=self.grid_size()[0] + 1, padx=DEFAULT_PADDING, pady=DEFAULT_PADDING)
 
 
-class ImagePageSwitchButton(ttk.Button):
-    def __init__(self, master: HMIPage, page: HMIPage, scale=1.0, image=None, pressed_image=None, **kwargs):
+class MonitoredVariableWidgetMixin(ABC):
+    def __init__(self, dispatcher: NSeriesThreadDispatcher, variable_name: str, refresh_time):
+        self.dispatcher = dispatcher
+        self.variable_name = variable_name
+        self.refresh_time = refresh_time
+        self.monitored_variable = MonitoredVariable(self.dispatcher, self.variable_name, self.refresh_time)
+        self.monitored_variable.bind_to_value(self._value_updated)
+
+    @abstractmethod
+    def _value_updated(self):
+        pass
+
+
+class ImageButtonMixin(tkinter.Button, ABC):
+    def __init__(self, master, scale=1.0, image=None, pressed_image=None, **kwargs):
         self.image = None
         self.pressed_image = None
         if not image:
@@ -54,9 +66,23 @@ class ImagePageSwitchButton(ttk.Button):
         self.image_tk = PIL.ImageTk.PhotoImage(self.image)
         self.pressed_image_tk = PIL.ImageTk.PhotoImage(self.pressed_image)
         super().__init__(master, image=self.image_tk, compound='c', **kwargs)
-        self.page = page
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
+
+        @abstractmethod
+        def _on_press(self, event):
+            pass
+
+        @abstractmethod
+        def _on_release(self, event):
+            pass
+
+
+class ImagePageSwitchButton(ImageButtonMixin):
+    def __init__(self, master: HMIPage, page: HMIPage, scale=1.0, image=None, pressed_image=None, **kwargs):
+        super().__init__(master, image=image, pressed_image=pressed_image, scale=scale, **kwargs)
+        self.config(highlightthickness=0, borderwidth=0, activebackground='#4f4f4f')
+        self.page = page
 
     def _on_press(self, event):
         self.config(image=self.pressed_image_tk)

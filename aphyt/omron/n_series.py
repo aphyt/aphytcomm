@@ -164,6 +164,7 @@ class SimpleDataSegmentRequest:
     A simple data segment request is the Omron specific format for requesting data that will not fit
     in a single CIP message. This is used for strings, arrays and structures
     """
+
     def __init__(self, offset, size):
         self.simple_data_type_code = b'\x80'
         self.segment_length = b'\x03'  # Fixed and in words
@@ -211,7 +212,7 @@ class NSeries:
     def update_derived_data_type_dictionary(self):
         # ToDo get the derived data types in such  a way they are easy to use
         number_of_entries = self._get_number_of_derived_data_types()
-        for index in range(1, number_of_entries+1):
+        for index in range(1, number_of_entries + 1):
             request_path = eip.address_request_path_segment(class_id=b'\x6c', instance_id=index.to_bytes(2, 'little'))
             reply = VariableTypeObjectReply(
                 self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
@@ -325,7 +326,8 @@ class NSeries:
                     int.from_bytes(member_cip_datatype_instance.next_instance_id, 'little')
             return cip_datatype_instance
         else:
-            cip_datatype_instance = self.connected_cip_dispatcher.data_type_dictionary.get(cip_datatype_instance.data_type_code())()
+            cip_datatype_instance = self.connected_cip_dispatcher.data_type_dictionary.get(
+                cip_datatype_instance.data_type_code())()
             return cip_datatype_instance
 
     def _get_member_instance(self, member_instance_id: int) -> CIPDataType:
@@ -336,7 +338,8 @@ class NSeries:
         :return:
         """
         variable_type_object_reply = self._get_variable_type_object(member_instance_id)
-        cip_datatype_instance = self.connected_cip_dispatcher.data_type_dictionary.get(variable_type_object_reply.cip_data_type)()
+        cip_datatype_instance = self.connected_cip_dispatcher.data_type_dictionary.get(
+            variable_type_object_reply.cip_data_type)()
         cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
         cip_datatype_instance.size = variable_type_object_reply.size_in_memory
         cip_datatype_instance.next_instance_id = variable_type_object_reply.next_instance_id
@@ -537,7 +540,8 @@ class NSeries:
         """
         request_path = address_request_path_segment(
             class_id=b'\x6c', instance_id=instance_id.to_bytes(2, 'little'))
-        variable_type_object_reply = VariableTypeObjectReply(self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
+        variable_type_object_reply = VariableTypeObjectReply(
+            self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
         return variable_type_object_reply
 
     def _get_number_of_derived_data_types(self) -> int:
@@ -555,7 +559,8 @@ class NSeries:
         """
         request_path = address_request_path_segment(
             class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
-        variable_object_reply = VariableObjectReply(self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
+        variable_object_reply = VariableObjectReply(
+            self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
         return variable_object_reply
 
     def _get_variable_list(self):
@@ -633,8 +638,50 @@ class EIPConnectionStatus:
     def has_session(self, value):
         self._has_session = value
         for callback in self._session_status_observers:
-            # print(f'announcing change: has_session is {self._has_session}')
             callback()
+
+
+class MonitoredVariable:
+    def __init__(self, dispatcher: "NSeriesThreadDispatcher", variable_name,
+                 refresh_time: float = 0.05):
+        self.variable_name = variable_name
+        self.dispatcher = dispatcher
+        self.monitored_variable_observers = []
+        self.refresh_timer = threading.Timer(refresh_time, self.update)
+        self.refresh_time = refresh_time
+        self._value = None
+
+    def bind_to_value(self, callback):
+        """
+        Observer Pattern: Allow widgets to bind a callback function that will act on value change
+        :param callback:
+        :return:
+        """
+        self.monitored_variable_observers.append(callback)
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self.dispatcher.verified_write_variable(self.variable_name, value)
+        self._value = value
+        for callback in self.monitored_variable_observers:
+            callback()
+
+    def update(self):
+        temp_value = self._value
+        self._value = self.dispatcher.read_variable(self.variable_name)
+        if temp_value != self._value:
+            for callback in self.monitored_variable_observers:
+                callback()
+
+    def start(self):
+        self.refresh_timer.start()
+
+    def cancel(self):
+        self.refresh_timer.cancel()
 
 
 class NSeriesThreadDispatcher:
@@ -720,7 +767,7 @@ class NSeriesThreadDispatcher:
                 delay.start()
 
     def register_session(self, retry_time: float = 1.0):
-        reply = self._instance.register_session()
+        self._instance.register_session()
         session_id = self._instance.connected_cip_dispatcher.session_handle_id
         if session_id != b'\x00\x00\x00\x00\x00\x00\x00\x00':
             self.connection_status.has_session = True
@@ -729,7 +776,6 @@ class NSeriesThreadDispatcher:
             delay = threading.Timer(retry_time, self.register_session, [retry_time])
             delay.start()
         self.connection_status.persist_session = True
-        return reply
 
     def unregister_session(self):
         self.connection_status.has_session = False
