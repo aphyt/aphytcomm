@@ -65,7 +65,7 @@ class ImageButtonMixin(tkinter.Button, ABC):
         self.pressed_image = self.pressed_image.resize((width, height), PIL.Image.ANTIALIAS)
         self.image_tk = PIL.ImageTk.PhotoImage(self.image)
         self.pressed_image_tk = PIL.ImageTk.PhotoImage(self.pressed_image)
-        super().__init__(master, image=self.image_tk, compound='c', **kwargs)
+        super().__init__(master, image=self.image_tk, compound='center', **kwargs)
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
 
