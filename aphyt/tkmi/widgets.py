@@ -3,6 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
+import logging
 import struct
 import tkinter
 from tkinter import messagebox
@@ -34,16 +35,55 @@ class HMIWidgetFrame(tkinter.ttk.Frame):
 
 
 class MonitoredVariableWidgetMixin(ABC):
-    def __init__(self, dispatcher: NSeriesThreadDispatcher, variable_name: str, refresh_time):
+    def __init__(self,
+                 dispatcher: NSeriesThreadDispatcher = None,
+                 variable_name: str = None, refresh_time=0.5,
+                 **kwargs):
+        self.log = logging.getLogger(__name__)
         self.dispatcher = dispatcher
+        super().__init__(**kwargs)
         self.variable_name = variable_name
         self.refresh_time = refresh_time
+        self.log.debug("Monitored variable create")
         self.monitored_variable = MonitoredVariable(self.dispatcher, self.variable_name, self.refresh_time)
+        self.log.debug("Done")
         self.monitored_variable.bind_to_value(self._value_updated)
+        self.log.debug("Bound")
+        self.dispatcher.add_monitored_variable(self.monitored_variable)
+        self.log.debug("Added to dict")
 
     @abstractmethod
     def _value_updated(self):
         pass
+
+    def _visibility_updated(self):
+        pass
+        # manager = str(self.winfo_manager())
+        # if self.monitored_variable.value:
+        #     lambda: manager
+        # else:
+        #     forget = manager + '_forget'
+        #     lambda: forget
+
+
+class ImageLamp(MonitoredVariableWidgetMixin, tkinter.Label):
+    def __init__(self, master, controller: NSeriesThreadDispatcher, variable_name, refresh_time,
+                 image_on, image_off, **kwargs):
+        self.log = logging.getLogger(__name__)
+        self.image_on = PIL.Image.open(image_on)
+        self.image_off = PIL.Image.open(image_off)
+        self._image_on_tk = PIL.ImageTk.PhotoImage(self.image_on)
+        self._image_off_tk = PIL.ImageTk.PhotoImage(self.image_off)
+        super().__init__(master=master,
+                         dispatcher=controller, variable_name=variable_name, refresh_time=refresh_time)
+        self.config(image=self._image_off_tk)
+
+    def _value_updated(self):
+        self.log.debug(f'ImageLamp is updated')
+        if self.monitored_variable.value:
+            self.config(image=self._image_on_tk)
+        else:
+            self.config(image=self._image_off_tk)
 
 
 class ImageButtonMixin(tkinter.Button, ABC):

@@ -179,9 +179,11 @@ class SimpleDataSegmentRequest:
 
 class NSeries:
     """
-    Concrete implementation of EIP abstract base class that implements Omron specific Ethernet/IP
-    services in addition to the common Ethernet/IP services of the parent class and the CIP specific
-    items in the grandparent class
+    NSeries
+    ~~~~~~~
+
+    Class that implements Omron N-Series specific Ethernet/IP services in addition to Ethernet/IP services
+    and CIP services common to most Ethernet/IP devices
     """
     MAXIMUM_LENGTH = 502  # UCMM maximum length is 502 bytes
 
@@ -650,6 +652,7 @@ class MonitoredVariable:
         self.refresh_timer = threading.Timer(refresh_time, self.update)
         self.refresh_time = refresh_time
         self._value = None
+        self.update()
 
     def bind_to_value(self, callback):
         """
@@ -676,6 +679,8 @@ class MonitoredVariable:
         if temp_value != self._value:
             for callback in self.monitored_variable_observers:
                 callback()
+        self.refresh_timer = threading.Timer(self.refresh_time, self.update)
+        self.refresh_timer.start()
 
     def start(self):
         self.refresh_timer.start()
@@ -693,7 +698,11 @@ class NSeriesThreadDispatcher:
         self.futures = []
         self.status_integer = 0
         self.services = None
+        self.monitored_variable_dictionary = {}
         self.connection_status = EIPConnectionStatus()
+
+    def add_monitored_variable(self, monitored_variable: MonitoredVariable):
+        self.monitored_variable_dictionary[monitored_variable.variable_name] = monitored_variable
 
     def _execute_eip_command(self, command, *args, **kwargs):
         if self.connection_status.connected:
@@ -809,6 +818,8 @@ class NSeriesThreadDispatcher:
         self.connection_status.connected = False
         self.connection_status.has_session = False
         self.connection_status._keep_alive_running = False
+        for monitored in self.monitored_variable_dictionary:
+            self.monitored_variable_dictionary[monitored].cancel()
         self.executor.shutdown(wait=True)
         if self._instance.connected_cip_dispatcher.is_connected_explicit:
             self._instance.close_explicit()
