@@ -680,6 +680,7 @@ class MonitoredVariable:
             for callback in self.monitored_variable_observers:
                 callback()
         self.refresh_timer = threading.Timer(self.refresh_time, self.update)
+        self.refresh_timer.daemon = True
         self.refresh_timer.start()
 
     def start(self):
@@ -724,6 +725,7 @@ class NSeriesThreadDispatcher:
         if not reply:
             delay = threading.Timer(retry_time, self.retry_command, command,
                                     *args, **dict(**kwargs, retry_time=retry_time))
+            delay.daemon = True
             delay.start()
         return reply
 
@@ -759,6 +761,7 @@ class NSeriesThreadDispatcher:
             self.connection_status._keep_alive_running = True
             self.services = self._execute_eip_command(self._instance.connected_cip_dispatcher.list_services, '')
             delay = threading.Timer(keep_alive_time, self.start_keep_alive, [keep_alive_time])
+            delay.daemon = True
             delay.start()
 
     def connect_explicit(self, host: str, retry_time: float = 1.0):
@@ -818,9 +821,9 @@ class NSeriesThreadDispatcher:
         self.connection_status.connected = False
         self.connection_status.has_session = False
         self.connection_status._keep_alive_running = False
+        self.executor.shutdown(wait=True)
         for monitored in self.monitored_variable_dictionary:
             self.monitored_variable_dictionary[monitored].cancel()
-        self.executor.shutdown(wait=True)
         if self._instance.connected_cip_dispatcher.is_connected_explicit:
             self._instance.close_explicit()
 
