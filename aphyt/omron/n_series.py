@@ -278,6 +278,24 @@ class NSeries:
         with (open(file_name, "rb")) as f:
             self.connected_cip_dispatcher.variables = pickle.load(f)
 
+    def load_dictionary_file_if_present(self, file_name: str):
+        """
+        If the supplied file name exists, load it as the controller's dictionary, and if not, pull it
+        from the controller and save the dictionary as the supplied file name.
+
+        This allows the programmer to use a file instead of network operation to quickly populate the variable
+        dictionary, and if the controller's variable dictionary changes, the user can get the new values
+        by simply deleting the file and it will be repopulated on the next run.
+        :param file_name:
+        :return:
+        """
+        try:
+            with (open(file_name, "rb")) as f:
+                self.connected_cip_dispatcher.variables = pickle.load(f)
+        except IOError as err:
+            self.update_variable_dictionary()
+            self.save_current_dictionary(file_name)
+
     def _get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
         """
         This method is to get an instance of a CIP data type from its type definition.
@@ -801,6 +819,9 @@ class NSeriesThreadDispatcher:
 
     def load_dictionary_file(self, file_name: str):
         self._instance.load_dictionary_file(file_name)
+
+    def load_dictionary_file_if_present(self, file_name: str):
+        self._instance.load_dictionary_file_if_present(file_name)
 
     def read_variable(self, variable_name: str):
         try:
