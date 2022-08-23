@@ -11,6 +11,7 @@ from tkinter import ttk
 from abc import ABC, abstractmethod
 import PIL
 from aphyt.omron import NSeriesThreadDispatcher, MonitoredVariable
+from typing import Dict
 
 DEFAULT_PADDING = 5
 
@@ -33,7 +34,7 @@ class HMIWidgetFrame(tkinter.ttk.Frame):
         else:
             widget.grid(column=self.grid_size()[0] + 1, padx=DEFAULT_PADDING, pady=DEFAULT_PADDING)
 
-    def add_widget_grid(self, widget: tkinter.Widget, row, column, row_span: int = 1, column_span: int =1):
+    def add_widget_grid(self, widget: tkinter.Widget, row, column, row_span: int = 1, column_span: int = 1):
         widget.grid(row=row, column=column, rowspan=row_span, columnspan=column_span)
 
 
@@ -89,8 +90,23 @@ class VisibilityMixin(tkinter.Widget):
 
 
 class ImageMultiStateLamp(MonitoredVariableWidgetMixin, tkinter.Label):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name, refresh_time,
+                 state_images: Dict[int, str], **kwargs):
+        self.log = logging.getLogger(__name__)
+        self.state_images = state_images
+        self.state_images_tk = {}
+        for state in self.state_images:
+            image = PIL.Image.open(self.state_images[state])
+            self.state_images_tk[state] = PIL.ImageTk.PhotoImage(image)
+        super().__init__(master=master, dispatcher=dispatcher,
+                         variable_name=variable_name, refresh_time=refresh_time)
+        self._value_updated()
+
     def _value_updated(self):
-        pass
+        try:
+            self.config(image=self.state_images_tk[self.monitored_variable.value])
+        except KeyError as key_error:
+            tkinter.messagebox.showerror('No State Image', 'Is this an available state?')
 
 
 class ImageMultiStateButton(MonitoredVariableWidgetMixin, tkinter.Button):
