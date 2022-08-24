@@ -24,9 +24,9 @@ class HMIPage(tkinter.Frame):
         self.grid(row=0, column=0, sticky='nsew')
 
 
-class HMIWidgetFrame(tkinter.ttk.Frame):
+class HMIWidgetFrame(tkinter.Frame):
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, padding=2, *args, **kwargs)
+        super().__init__(master, padx=2, pady=2, *args, **kwargs)
 
     def add_widget_linear(self, widget: tkinter.Widget, vertical=True):
         if vertical:
