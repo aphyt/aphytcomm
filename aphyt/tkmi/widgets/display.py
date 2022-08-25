@@ -18,7 +18,7 @@ class ImageMultiStateLamp(MonitoredVariableWidgetMixin, tkinter.Label):
             image = PIL.Image.open(self.state_images[state])
             self.state_images_tk[state] = PIL.ImageTk.PhotoImage(image)
         super().__init__(master=master, dispatcher=dispatcher,
-                         variable_name=variable_name, refresh_time=refresh_time)
+                         variable_name=variable_name, refresh_time=refresh_time, **kwargs)
         self._value_updated()
 
     def _value_updated(self):

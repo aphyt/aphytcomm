@@ -33,8 +33,8 @@ class HMIWidgetFrame(tkinter.Frame):
 
 class MonitoredVariableWidgetMixin(ABC):
     def __init__(self,
-                 dispatcher: NSeriesThreadDispatcher,
-                 variable_name: str,
+                 dispatcher: NSeriesThreadDispatcher = None,
+                 variable_name: str = None,
                  refresh_time=0.5,
                  **kwargs):
         super().__init__(**kwargs)

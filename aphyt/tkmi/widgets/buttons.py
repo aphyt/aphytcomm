@@ -8,6 +8,8 @@ This module implements various buttons useful for industrial HMIs
 import tkinter
 from abc import ABC, abstractmethod
 from tkinter import ttk
+from typing import Dict
+import logging
 
 import PIL
 
@@ -19,21 +21,6 @@ class DispatcherMixin:
     def __init__(self, dispatcher: NSeriesThreadDispatcher, **kwargs):
         super().__init__(**kwargs)
         self.dispatcher = dispatcher
-
-
-class HMIButton(tkinter.Button, ABC):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bind('<ButtonPress-1>', self._on_press)
-        self.bind('<ButtonRelease-1>', self._on_release)
-
-    @abstractmethod
-    def _on_press(self, event):
-        pass
-
-    @abstractmethod
-    def _on_release(self, event):
-        pass
 
 
 class MomentaryButtonMixin(DispatcherMixin):
@@ -88,12 +75,58 @@ class ToggleButtonMixin(DispatcherMixin):
         pass
 
 
-class ImageMultiStateButton(MonitoredVariableWidgetMixin, tkinter.Button):
-    def _value_updated(self):
+class VariableButtonMixin(DispatcherMixin):
+    def __init__(self, variable_name: str = None, value=None, dispatcher: NSeriesThreadDispatcher = None, **kwargs):
+        super().__init__(dispatcher, **kwargs)
+        self.variable_name = variable_name
+        self.value = value
+
+    def _on_press(self, event):
+        self.dispatcher.verified_write_variable(self.variable_name, self.value)
+
+    def _on_release(self, event):
         pass
 
 
-class ImageButtonMixin(HMIButton):
+class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, tkinter.Button):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name, refresh_time,
+                 state_images: Dict[int, str], **kwargs):
+        self.log = logging.getLogger(__name__)
+        self.state_images = state_images
+        self.state_images_tk = {}
+        for state in self.state_images:
+            image = PIL.Image.open(self.state_images[state])
+            self.state_images_tk[state] = PIL.ImageTk.PhotoImage(image)
+        first_value = list(self.state_images_tk)[0]
+        super().__init__(variable_name=variable_name,
+                         value=first_value, dispatcher=dispatcher,
+                         refresh_time=refresh_time,
+                         master=master,
+                         **kwargs)
+        self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
+        self._value_updated()
+
+    def _next_value(self):
+        temp = list(self.state_images_tk)
+        try:
+            next_value = temp[temp.index(self.value) + 1]
+        except (ValueError, IndexError):
+            next_value = temp[0]
+        return next_value
+
+    def _value_updated(self):
+        try:
+            self.config(image=self.state_images_tk[self.monitored_variable.value])
+        except KeyError as key_error:
+            tkinter.messagebox.showerror('No State Image', 'Is this an available state?')
+
+    def _on_press(self, event):
+        self.value = self._next_value()
+        super()._on_press(event)
+
+
+class ImageButtonMixin(tkinter.Button):
     def __init__(self, master, scale=1.0, image=None, pressed_image=None, **kwargs):
         self.image = None
         self.pressed_image = None
@@ -113,6 +146,8 @@ class ImageButtonMixin(HMIButton):
         self.image_tk = PIL.ImageTk.PhotoImage(self.image)
         self.pressed_image_tk = PIL.ImageTk.PhotoImage(self.pressed_image)
         super().__init__(master=master, image=self.image_tk, compound='center', **kwargs)
+        self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
 
     def _on_press(self, event):
         self.config(image=self.pressed_image_tk)
@@ -121,10 +156,12 @@ class ImageButtonMixin(HMIButton):
         self.config(image=self.image_tk)
 
 
-class PageSwitchButtonMixin(HMIButton):
-    def __init__(self, master: HMIPage, page: HMIPage, **kwargs):
+class PageSwitchButtonMixin(tkinter.Button):
+    def __init__(self, master: tkinter.Widget, page: HMIPage, **kwargs):
         super(PageSwitchButtonMixin, self).__init__(master=master, **kwargs)
         self.page = page
+        self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
 
     def _on_press(self, event):
         pass
@@ -134,9 +171,9 @@ class PageSwitchButtonMixin(HMIButton):
 
 
 class ImagePageSwitchButton(ImageButtonMixin, PageSwitchButtonMixin):
-    def __init__(self, master: HMIPage, page: HMIPage, scale=1.0, image=None, pressed_image=None, **kwargs):
+    def __init__(self, master: tkinter.Widget, page: HMIPage, scale=1.0, image=None, pressed_image=None, **kwargs):
         super().__init__(master=master, page=page, image=image, pressed_image=pressed_image, scale=scale, **kwargs)
-        # self.config(highlightthickness=0, borderwidth=0, activebackground='#4f4f4f')
+        self.config(highlightthickness=0, borderwidth=0, activebackground='#4f4f4f')
 
     def _on_press(self, event):
         ImageButtonMixin._on_press(self, event)
@@ -147,7 +184,7 @@ class ImagePageSwitchButton(ImageButtonMixin, PageSwitchButtonMixin):
 
 
 class PageSwitchButton(ttk.Button):
-    def __init__(self, master: HMIPage, page: HMIPage, **kwargs):
+    def __init__(self, master: tkinter.Widget, page: HMIPage, **kwargs):
         super().__init__(master, **kwargs)
         self.page = page
         self.bind('<ButtonPress-1>', self._on_press)
@@ -160,7 +197,7 @@ class PageSwitchButton(ttk.Button):
         self.page.tkraise()
 
 
-class MomentaryButton(MomentaryButtonMixin, tkinter.ttk.Button):
+class MomentaryButton(MomentaryButtonMixin, ttk.Button):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
         super().__init__(master=master, variable_name=variable_name, dispatcher=dispatcher, **kwargs)
         self.bind('<ButtonPress-1>', self._on_press)
@@ -179,78 +216,6 @@ class ResetButton(ResetButtonMixin, tkinter.ttk.Button):
         super().__init__(master=master, variable_name=variable_name, dispatcher=dispatcher, **kwargs)
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
-
-# class MomentaryButton(tkinter.ttk.Button):
-#     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
-#         super().__init__(master, **kwargs)
-#         self.dispatcher = dispatcher
-#         self.variable_name = variable_name
-#         self.bind('<ButtonPress-1>', self._set_value)
-#         self.bind('<ButtonRelease-1>', self._reset_value)
-#
-#     def _set_value(self, event):
-#         self.dispatcher.verified_write_variable(self.variable_name, True)
-#
-#     def _reset_value(self, event):
-#         self.dispatcher.verified_write_variable(self.variable_name, False)
-#
-#
-# class SetButton(tkinter.ttk.Button):
-#     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
-#         super().__init__(master, **kwargs)
-#         self.dispatcher = dispatcher
-#         self.variable_name = variable_name
-#         self.bind('<ButtonPress-1>', self._set_value)
-#
-#     def _set_value(self, event):
-#         self.dispatcher.verified_write_variable(self.variable_name, True)
-#
-#
-# class ResetButton(tkinter.ttk.Button):
-#     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
-#         super().__init__(master, **kwargs)
-#         self.dispatcher = dispatcher
-#         self.variable_name = variable_name
-#         self.bind('<ButtonPress-1>', self._reset_value)
-#
-#     def _reset_value(self, event):
-#         self.dispatcher.verified_write_variable(self.variable_name, False)
-#
-# class MomentaryButton(tkinter.ttk.Button):
-#     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
-#         super().__init__(master, **kwargs)
-#         self.dispatcher = dispatcher
-#         self.variable_name = variable_name
-#         self.bind('<ButtonPress-1>', self._set_value)
-#         self.bind('<ButtonRelease-1>', self._reset_value)
-#
-#     def _set_value(self, event):
-#         self.dispatcher.verified_write_variable(self.variable_name, True)
-#
-#     def _reset_value(self, event):
-#         self.dispatcher.verified_write_variable(self.variable_name, False)
-#
-#
-# class SetButton(tkinter.ttk.Button):
-#     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
-#         super().__init__(master, **kwargs)
-#         self.dispatcher = dispatcher
-#         self.variable_name = variable_name
-#         self.bind('<ButtonPress-1>', self._set_value)
-#
-#     def _set_value(self, event):
-#         self.dispatcher.verified_write_variable(self.variable_name, True)
-#
-#
-# class ResetButton(tkinter.ttk.Button):
-#     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
-#         super().__init__(master, **kwargs)
-#         self.dispatcher = dispatcher
-#         self.variable_name = variable_name
-#         self.bind('<ButtonPress-1>', self._reset_value)
-#
-#     def _reset_value(self, event):
-#         self.dispatcher.verified_write_variable(self.variable_name, False)
 
 
 class ToggleButton(ToggleButtonMixin, tkinter.ttk.Button):
