@@ -13,6 +13,8 @@ class HMIPage(tkinter.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         self.grid(row=0, column=0, sticky='nsew')
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
 
 
 class HMIWidgetFrame(tkinter.Frame):

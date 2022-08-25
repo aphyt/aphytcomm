@@ -103,6 +103,7 @@ class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, t
                          refresh_time=refresh_time,
                          master=master,
                          **kwargs)
+        self.value = self.monitored_variable.value
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
         self._value_updated()
