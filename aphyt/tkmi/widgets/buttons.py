@@ -8,13 +8,14 @@ This module implements various buttons useful for industrial HMIs
 import tkinter
 from abc import ABC, abstractmethod
 from tkinter import ttk
-from typing import Dict
+from typing import Dict, Union
 import logging
 
 import PIL
+from PIL import Image, ImageTk
 
 from aphyt.omron import NSeriesThreadDispatcher
-from aphyt.tkmi.widgets.hmi import HMIPage, MonitoredVariableWidgetMixin
+from aphyt.tkmi.widgets.hmi import HMIPage, HMIImage, MonitoredVariableWidgetMixin
 
 
 class DispatcherMixin:
@@ -24,7 +25,7 @@ class DispatcherMixin:
 
 
 class MomentaryButtonMixin(DispatcherMixin):
-    def __init__(self, variable_name: str, **kwargs):
+    def __init__(self, variable_name: str = None, **kwargs):
         super().__init__(**kwargs)
         self.variable_name = variable_name
 
@@ -48,7 +49,7 @@ class SetButtonMixin(DispatcherMixin):
 
 
 class ResetButtonMixin(DispatcherMixin):
-    def __init__(self, variable_name: str, **kwargs):
+    def __init__(self, variable_name: str = None, **kwargs):
         super().__init__(**kwargs)
         self.variable_name = variable_name
 
@@ -60,7 +61,7 @@ class ResetButtonMixin(DispatcherMixin):
 
 
 class ToggleButtonMixin(DispatcherMixin):
-    def __init__(self, variable_name: str, dispatcher: NSeriesThreadDispatcher, **kwargs):
+    def __init__(self, variable_name: str = None, dispatcher: NSeriesThreadDispatcher = None, **kwargs):
         super().__init__(dispatcher, **kwargs)
         self.variable_name = variable_name
 
@@ -89,8 +90,8 @@ class VariableButtonMixin(DispatcherMixin):
 
 
 class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, tkinter.Button):
-    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name, refresh_time,
-                 state_images: Dict[int, str], **kwargs):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, refresh_time,
+                 state_images: Dict[int, Union[str, HMIImage]], **kwargs):
         self.log = logging.getLogger(__name__)
         self.state_images = state_images
         self.state_images_tk = {}
@@ -158,7 +159,7 @@ class ImageButtonMixin(tkinter.Button):
 
 
 class PageSwitchButtonMixin(tkinter.Button):
-    def __init__(self, master: tkinter.Widget, page: HMIPage, **kwargs):
+    def __init__(self, master: tkinter.Widget, page: Union[HMIPage, str], **kwargs):
         super(PageSwitchButtonMixin, self).__init__(master=master, **kwargs)
         self.page = page
         self.bind('<ButtonPress-1>', self._on_press)
@@ -168,11 +169,14 @@ class PageSwitchButtonMixin(tkinter.Button):
         pass
 
     def _on_release(self, event):
-        self.page.tkraise()
+        if type(self.page) == str:
+            self.winfo_toplevel().pages[self.page].tkraise()
+        else:
+            self.page.tkraise()
 
 
 class ImagePageSwitchButton(ImageButtonMixin, PageSwitchButtonMixin):
-    def __init__(self, master: tkinter.Widget, page: HMIPage, scale=1.0, image=None, pressed_image=None, **kwargs):
+    def __init__(self, master: tkinter.Widget, page: Union[HMIPage, str], scale=1.0, image=None, pressed_image=None, **kwargs):
         super().__init__(master=master, page=page, image=image, pressed_image=pressed_image, scale=scale, **kwargs)
         self.config(highlightthickness=0, borderwidth=0, activebackground='#4f4f4f')
 
@@ -184,8 +188,8 @@ class ImagePageSwitchButton(ImageButtonMixin, PageSwitchButtonMixin):
         PageSwitchButtonMixin._on_release(self, event)
 
 
-class PageSwitchButton(ttk.Button):
-    def __init__(self, master: tkinter.Widget, page: HMIPage, **kwargs):
+class PageSwitchButton(ttk.Button, PageSwitchButtonMixin):
+    def __init__(self, master: tkinter.Widget, page: Union[HMIPage, str], **kwargs):
         super().__init__(master, **kwargs)
         self.page = page
         self.bind('<ButtonPress-1>', self._on_press)
@@ -195,7 +199,7 @@ class PageSwitchButton(ttk.Button):
         pass
 
     def _on_release(self, event):
-        self.page.tkraise()
+        PageSwitchButtonMixin._on_release(self, event)
 
 
 class MomentaryButton(MomentaryButtonMixin, ttk.Button):

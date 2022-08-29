@@ -9,14 +9,6 @@ from aphyt.omron import NSeriesThreadDispatcher, MonitoredVariable
 DEFAULT_PADDING = 5
 
 
-class HMIPage(tkinter.Frame):
-    def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
-        self.grid(row=0, column=0, sticky='nsew')
-        self.rowconfigure(0, weight=1)
-        self.columnconfigure(0, weight=1)
-
-
 class HMIWidgetFrame(tkinter.Frame):
     def __init__(self, master, background=None, *args, **kwargs):
         super().__init__(master, padx=2, pady=2,  *args, **kwargs)
@@ -92,8 +84,40 @@ class HMIImage:
             self.image = PIL.Image.open('Transparent_Pixel.png')
         else:
             self.image = PIL.Image.open(image)
-        width = int(scale * float(self.image.size[0]))
-        height = int(scale * float(self.image.size[1]))
-        self.image = self.image.resize((width, height), PIL.Image.ANTIALIAS)
+        self.width = int(scale * float(self.image.size[0]))
+        self.height = int(scale * float(self.image.size[1]))
+        self.image = self.image.resize((self.width, self.height), PIL.Image.ANTIALIAS)
         self.image_tk = PIL.ImageTk.PhotoImage(self.image)
         super().__init__(master, image=self.image_tk, compound='center', **kwargs)
+
+
+class HMIPage(tkinter.Frame):
+    def __init__(self, master, background=None, **kwargs):
+        super().__init__(master, **kwargs)
+        if background is None:
+            self.config(background=master['background'])
+        self.grid(row=0, column=0, sticky='nsew')
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+
+
+class HMIScreen(tkinter.Tk):
+    def __init__(self, window_title, dispatcher_host: str, geometry: str = None, background=None, **kwargs):
+        super().__init__(**kwargs)
+        self.pages = {}
+        self.withdraw()
+        self.iconbitmap('transparent_icon.ico')
+        self.title(window_title)
+        if geometry is not None:
+            self.geometry(geometry)
+        if background is not None:
+            self.config(background=background)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+
+        self.eip_instance = NSeriesThreadDispatcher()
+        self.eip_instance.connect_explicit(dispatcher_host)
+        self.eip_instance.register_session()
+
+        self.update()
+        self.deiconify()
