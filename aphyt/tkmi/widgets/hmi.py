@@ -1,5 +1,6 @@
 import logging
 import tkinter
+from tkinter import ttk
 from abc import ABC, abstractmethod
 
 import PIL
@@ -15,14 +16,29 @@ class HMIWidgetFrame(tkinter.Frame):
         if background is None:
             self.config(background=master['background'])
 
-    def add_widget_linear(self, widget: tkinter.Widget, vertical=True):
+    def add_widget_linear(self, widget: tkinter.Widget, vertical=True,
+                          pad_x=None, pad_y=None, **kwargs):
+        if pad_x is None:
+            pad_x = DEFAULT_PADDING
+        if pad_y is None:
+            pad_y = DEFAULT_PADDING
         if vertical:
-            widget.grid(row=self.grid_size()[1], padx=DEFAULT_PADDING, pady=DEFAULT_PADDING)
+            widget.grid(row=self.grid_size()[1] + 1, padx=pad_x,
+                        pady=pad_y, sticky='n', **kwargs)
         else:
-            widget.grid(column=self.grid_size()[0] + 1, padx=DEFAULT_PADDING, pady=DEFAULT_PADDING)
+            widget.grid(column=self.grid_size()[0] + 1, padx=pad_x,
+                        pady=pad_y, sticky='w', **kwargs)
 
-    def add_widget_grid(self, widget: tkinter.Widget, row, column, row_span: int = 1, column_span: int = 1):
-        widget.grid(row=row, column=column, rowspan=row_span, columnspan=column_span)
+    def add_widget_grid(self, widget: tkinter.Widget, row, column,
+                        row_span: int = 1, column_span: int = 1,
+                        pad_x = None, pad_y = None, **kwargs):
+        if pad_x is None:
+            pad_x = DEFAULT_PADDING
+        if pad_y is None:
+            pad_y = DEFAULT_PADDING
+        widget.grid(row=row, column=column,
+                    rowspan=row_span, columnspan=column_span,
+                    padx=pad_x, pady=pad_y, **kwargs)
 
 
 class MonitoredVariableWidgetMixin(ABC):
@@ -46,16 +62,18 @@ class MonitoredVariableWidgetMixin(ABC):
 
 
 class VisibilityMixin(tkinter.Widget):
-    def __init__(self, dispatcher: NSeriesThreadDispatcher, visibility_variable, refresh_time=0.5, **kwargs):
+    def __init__(self, dispatcher: NSeriesThreadDispatcher = None,
+                 visibility_variable=None, refresh_time=0.5, **kwargs):
         super().__init__(**kwargs)
         self.log = logging.getLogger(__name__)
         self.dispatcher = dispatcher
         self.visibility_variable = visibility_variable
         self.refresh_time = refresh_time
-        self.monitored_visibility_variable = MonitoredVariable(self.dispatcher,
-                                                               self.visibility_variable,
-                                                               self.refresh_time)
-        self.monitored_visibility_variable.bind_to_value(self._update)
+        if self.visibility_variable is not None:
+            self.monitored_visibility_variable = MonitoredVariable(self.dispatcher,
+                                                                   self.visibility_variable,
+                                                                   self.refresh_time)
+            self.monitored_visibility_variable.bind_to_value(self._update)
 
     def _update(self):
         if self.monitored_visibility_variable.value:
@@ -78,8 +96,9 @@ class VisibilityMixin(tkinter.Widget):
 
 class HMIImage:
     def __init__(self, master, image=None, scale=1.0, **kwargs):
+        # ToDo scale, scale_x, scale_y?
         self.image = None
-        if not image:
+        if image is not None:
             # image = tkinter.PhotoImage(width=1, height=1)
             self.image = PIL.Image.open('Transparent_Pixel.png')
         else:

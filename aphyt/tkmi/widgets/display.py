@@ -1,5 +1,6 @@
 import logging
 import tkinter
+from tkinter import ttk
 from typing import Dict
 
 import PIL

@@ -1,10 +1,10 @@
 import struct
 import tkinter
-
+from tkinter import ttk, messagebox
 from aphyt.omron import NSeriesThreadDispatcher
 
 
-class DataEdit(tkinter.ttk.Entry):
+class DataEdit(ttk.Entry):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
         super().__init__(master, **kwargs)
         self.dispatcher = dispatcher

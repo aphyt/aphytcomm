@@ -7,7 +7,7 @@ This module implements various buttons useful for industrial HMIs
 
 import tkinter
 from abc import ABC, abstractmethod
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from typing import Dict, Union
 import logging
 
@@ -19,7 +19,7 @@ from aphyt.tkmi.widgets.hmi import HMIPage, HMIImage, MonitoredVariableWidgetMix
 
 
 class DispatcherMixin:
-    def __init__(self, dispatcher: NSeriesThreadDispatcher, **kwargs):
+    def __init__(self, dispatcher: NSeriesThreadDispatcher = None, **kwargs):
         super().__init__(**kwargs)
         self.dispatcher = dispatcher
 
@@ -37,7 +37,7 @@ class MomentaryButtonMixin(DispatcherMixin):
 
 
 class SetButtonMixin(DispatcherMixin):
-    def __init__(self, variable_name: str, **kwargs):
+    def __init__(self, variable_name: str = None, **kwargs):
         super().__init__(**kwargs)
         self.variable_name = variable_name
 
@@ -129,7 +129,7 @@ class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, t
 
 
 class ImageButtonMixin(tkinter.Button):
-    def __init__(self, master, scale=1.0, image=None, pressed_image=None, **kwargs):
+    def __init__(self, master=None, scale=1.0, image=None, pressed_image=None, **kwargs):
         self.image = None
         self.pressed_image = None
         if not image:
