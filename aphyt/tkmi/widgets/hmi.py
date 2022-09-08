@@ -120,26 +120,37 @@ class HMIPage(tkinter.Frame):
         self.columnconfigure(0, weight=1)
 
 
+class HMIControllerPageChange(MonitoredVariableWidgetMixin):
+    def __init__(self, screen: 'HMIScreen', **kwargs):
+        super(HMIControllerPageChange, self).__init__(**kwargs)
+        self.screen = screen
+
+    def _value_updated(self):
+        self.screen.change_page(self.monitored_variable.value)
+
+
 class HMIScreen(tkinter.Tk):
     def __init__(self, window_title,
                  dispatcher_host: str,
+                 initial_page: str,
                  dictionary_file=None,
                  geometry: str = None,
                  background=None,
                  screen_change_variable=None,
                  **kwargs):
         super().__init__(**kwargs)
+        self.initial_page = initial_page
         self.pages = {}
         self.withdraw()
         self.iconbitmap('transparent_icon.ico')
         self.title(window_title)
+        self.screen_change_variable = screen_change_variable
         if geometry is not None:
             self.geometry(geometry)
         if background is not None:
             self.config(background=background)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-
         self.eip_instance = NSeriesThreadDispatcher()
         self.eip_instance.connect_explicit(dispatcher_host)
         self.eip_instance.register_session()
@@ -149,3 +160,17 @@ class HMIScreen(tkinter.Tk):
             self.eip_instance.update_variable_dictionary()
         self.update()
         self.deiconify()
+
+    def show_front_page(self):
+        self.change_page(self.initial_page)
+        if self.screen_change_variable is not None:
+            if type(self.screen_change_variable) == str:
+                print("Is this here")
+                self.screen_change_variable = HMIControllerPageChange(self,
+                                                                      dispatcher=self.eip_instance,
+                                                                      variable_name=self.screen_change_variable,
+                                                                      refresh_time=0.05)
+                self.screen_change_variable.monitored_variable.value = self.initial_page
+
+    def change_page(self, page: str):
+        self.pages[page].tkraise()

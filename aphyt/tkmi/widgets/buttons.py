@@ -15,7 +15,7 @@ import PIL
 from PIL import Image, ImageTk
 
 from aphyt.omron import NSeriesThreadDispatcher
-from aphyt.tkmi.widgets.hmi import HMIPage, HMIImage, MonitoredVariableWidgetMixin
+from aphyt.tkmi.widgets.hmi import HMIScreen, HMIPage, HMIImage, MonitoredVariableWidgetMixin
 
 
 class DispatcherMixin:
@@ -171,8 +171,12 @@ class PageSwitchButtonMixin(tkinter.Button):
     def _on_release(self, event):
         if type(self.page) == str:
             self.winfo_toplevel().pages[self.page].tkraise()
+            if self.winfo_toplevel().screen_change_variable is not None:
+                self.winfo_toplevel().screen_change_variable.monitored_variable.value = self.page
         else:
             self.page.tkraise()
+            if self.winfo_toplevel().screen_change_variable is not None:
+                self.winfo_toplevel().screen_change_variable.monitored_variable.value = self.page.__class__.__name__
 
 
 class ImagePageSwitchButton(ImageButtonMixin, PageSwitchButtonMixin):
