@@ -121,7 +121,13 @@ class HMIPage(tkinter.Frame):
 
 
 class HMIScreen(tkinter.Tk):
-    def __init__(self, window_title, dispatcher_host: str, geometry: str = None, background=None, **kwargs):
+    def __init__(self, window_title,
+                 dispatcher_host: str,
+                 dictionary_file=None,
+                 geometry: str = None,
+                 background=None,
+                 screen_change_variable=None,
+                 **kwargs):
         super().__init__(**kwargs)
         self.pages = {}
         self.withdraw()
@@ -137,6 +143,9 @@ class HMIScreen(tkinter.Tk):
         self.eip_instance = NSeriesThreadDispatcher()
         self.eip_instance.connect_explicit(dispatcher_host)
         self.eip_instance.register_session()
-
+        if dictionary_file is not None:
+            self.eip_instance.load_dictionary_file_if_present(dictionary_file)
+        else:
+            self.eip_instance.update_variable_dictionary()
         self.update()
         self.deiconify()
