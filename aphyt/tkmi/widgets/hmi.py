@@ -165,7 +165,6 @@ class HMIScreen(tkinter.Tk):
         self.change_page(self.initial_page)
         if self.screen_change_variable is not None:
             if type(self.screen_change_variable) == str:
-                print("Is this here")
                 self.screen_change_variable = HMIControllerPageChange(self,
                                                                       dispatcher=self.eip_instance,
                                                                       variable_name=self.screen_change_variable,
