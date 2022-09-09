@@ -3,8 +3,7 @@ buttons
 ~~~~~~~
 This module implements various buttons useful for industrial HMIs
 """
-
-
+import os
 import tkinter
 from abc import ABC, abstractmethod
 from tkinter import ttk, messagebox
@@ -134,7 +133,9 @@ class ImageButtonMixin(tkinter.Button):
         self.pressed_image = None
         if not image:
             # image = tkinter.PhotoImage(width=1, height=1)
-            self.image = PIL.Image.open('Transparent_Pixel.png')
+            path = os.path.dirname(__file__)
+            path = os.path.join(path, 'Transparent_Pixel.png')
+            self.image = PIL.Image.open(path)
         else:
             self.image = PIL.Image.open(image)
         if not pressed_image:
