@@ -5,7 +5,6 @@ from tkinter import ttk
 from abc import ABC, abstractmethod
 
 import PIL
-from cairosvg import svg2png
 
 from aphyt.omron import NSeriesThreadDispatcher, MonitoredVariable
 
