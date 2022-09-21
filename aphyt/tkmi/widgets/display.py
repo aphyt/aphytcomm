@@ -6,18 +6,18 @@ from typing import Dict
 import PIL
 
 from aphyt.omron import NSeriesThreadDispatcher
-from aphyt.tkmi.widgets.hmi import MonitoredVariableWidgetMixin
+from aphyt.tkmi.widgets.hmi import MonitoredVariableWidgetMixin, HMIImage
 
 
 class ImageMultiStateLamp(MonitoredVariableWidgetMixin, tkinter.Label):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name, refresh_time,
-                 state_images: Dict[int, str], **kwargs):
+                 state_images: Dict[int, str], scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
         self.log = logging.getLogger(__name__)
         self.state_images = state_images
         self.state_images_tk = {}
         for state in self.state_images:
-            image = PIL.Image.open(self.state_images[state])
-            self.state_images_tk[state] = PIL.ImageTk.PhotoImage(image)
+            image = HMIImage(self.state_images[state], scale, scale_x, scale_y)
+            self.state_images_tk[state] = image.image_tk
         super().__init__(master=master, dispatcher=dispatcher,
                          variable_name=variable_name, refresh_time=refresh_time, **kwargs)
         self._value_updated()
@@ -31,22 +31,20 @@ class ImageMultiStateLamp(MonitoredVariableWidgetMixin, tkinter.Label):
 
 class ImageLamp(MonitoredVariableWidgetMixin, tkinter.Label):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name, refresh_time,
-                 image_on, image_off, **kwargs):
+                 image_on, image_off, scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
         self.log = logging.getLogger(__name__)
-        self.image_on = PIL.Image.open(image_on)
-        self.image_off = PIL.Image.open(image_off)
-        self._image_on_tk = PIL.ImageTk.PhotoImage(self.image_on)
-        self._image_off_tk = PIL.ImageTk.PhotoImage(self.image_off)
+        self.image_on = HMIImage(image_on, scale, scale_x, scale_y)
+        self.image_off = HMIImage(image_off, scale, scale_x, scale_y)
         super().__init__(master=master, dispatcher=dispatcher,
-                         variable_name=variable_name, refresh_time=refresh_time)
+                         variable_name=variable_name, refresh_time=refresh_time, **kwargs)
         self._value_updated()
 
     def _value_updated(self):
         self.log.debug(f'ImageLamp is updated')
         if self.monitored_variable.value:
-            self.config(image=self._image_on_tk)
+            self.config(image=self.image_on.image_tk)
         else:
-            self.config(image=self._image_off_tk)
+            self.config(image=self.image_off.image_tk)
 
 
 class DataDisplay(tkinter.ttk.Label):

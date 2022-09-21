@@ -1,9 +1,11 @@
 import logging
+import os
 import tkinter
 from tkinter import ttk
 from abc import ABC, abstractmethod
 
 import PIL
+from cairosvg import svg2png
 
 from aphyt.omron import NSeriesThreadDispatcher, MonitoredVariable
 
@@ -95,19 +97,27 @@ class VisibilityMixin(tkinter.Widget):
 
 
 class HMIImage:
-    def __init__(self, master, image=None, scale=1.0, **kwargs):
+    def __init__(self, image=None, scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
         # ToDo scale, scale_x, scale_y?
         self.image = None
-        if image is not None:
-            # image = tkinter.PhotoImage(width=1, height=1)
-            self.image = PIL.Image.open('Transparent_Pixel.png')
+        path = os.path.dirname(__file__)
+        if image is None:
+            path = os.path.join(path, 'Transparent_Pixel.png')
+            self.image = PIL.Image.open(path)
         else:
+            # path = os.path.join(path, image)
             self.image = PIL.Image.open(image)
-        self.width = int(scale * float(self.image.size[0]))
-        self.height = int(scale * float(self.image.size[1]))
+        self.width = int(scale * scale_x * float(self.image.size[0]))
+        self.height = int(scale * scale_y * float(self.image.size[1]))
         self.image = self.image.resize((self.width, self.height), PIL.Image.ANTIALIAS)
         self.image_tk = PIL.ImageTk.PhotoImage(self.image)
-        super().__init__(master, image=self.image_tk, compound='center', **kwargs)
+        # super().__init__(master, image=self.image_tk, compound='center', **kwargs)
+
+    def resize(self, scale=1.0, scale_x=1.0, scale_y=1.0):
+        self.width = int(scale * scale_x * float(self.image.size[0]))
+        self.height = int(scale * scale_y * float(self.image.size[1]))
+        self.image = self.image.resize((self.width, self.height), PIL.Image.ANTIALIAS)
+        self.image_tk = PIL.ImageTk.PhotoImage(self.image)
 
 
 class HMIPage(tkinter.Frame):

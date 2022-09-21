@@ -90,13 +90,15 @@ class VariableButtonMixin(DispatcherMixin):
 
 class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, tkinter.Button):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, refresh_time,
-                 state_images: Dict[int, Union[str, HMIImage]], **kwargs):
+                 state_images: Dict[int, str], scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
         self.log = logging.getLogger(__name__)
         self.state_images = state_images
         self.state_images_tk = {}
         for state in self.state_images:
-            image = PIL.Image.open(self.state_images[state])
-            self.state_images_tk[state] = PIL.ImageTk.PhotoImage(image)
+            # image = PIL.Image.open(self.state_images[state])
+            # self.state_images_tk[state] = PIL.ImageTk.PhotoImage(image)
+            image = HMIImage(state_images[state],scale, scale_x, scale_y)
+            self.state_images_tk[state] = image.image_tk
         first_value = list(self.state_images_tk)[0]
         super().__init__(variable_name=variable_name,
                          value=first_value, dispatcher=dispatcher,
@@ -128,35 +130,30 @@ class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, t
 
 
 class ImageButtonMixin(tkinter.Button):
-    def __init__(self, master=None, scale=1.0, image=None, pressed_image=None, **kwargs):
+    def __init__(self, master=None, image=None, pressed_image=None,
+                 scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
         self.image = None
         self.pressed_image = None
         if not image:
             # image = tkinter.PhotoImage(width=1, height=1)
             path = os.path.dirname(__file__)
             path = os.path.join(path, 'Transparent_Pixel.png')
-            self.image = PIL.Image.open(path)
+            self.image = HMIImage(path)
         else:
-            self.image = PIL.Image.open(image)
+            self.image = HMIImage(image, scale, scale_x, scale_y)
         if not pressed_image:
             self.pressed_image = self.image
         else:
-            self.pressed_image = PIL.Image.open(pressed_image)
-        width = int(scale * float(self.image.size[0]))
-        height = int(scale * float(self.image.size[1]))
-        self.image = self.image.resize((width, height), PIL.Image.ANTIALIAS)
-        self.pressed_image = self.pressed_image.resize((width, height), PIL.Image.ANTIALIAS)
-        self.image_tk = PIL.ImageTk.PhotoImage(self.image)
-        self.pressed_image_tk = PIL.ImageTk.PhotoImage(self.pressed_image)
-        super().__init__(master=master, image=self.image_tk, compound='center', **kwargs)
+            self.pressed_image = HMIImage(pressed_image, scale, scale_x, scale_y)
+        super().__init__(master=master, image=self.image.image_tk, compound='center', **kwargs)
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
 
     def _on_press(self, event):
-        self.config(image=self.pressed_image_tk)
+        self.config(image=self.pressed_image.image_tk)
 
     def _on_release(self, event):
-        self.config(image=self.image_tk)
+        self.config(image=self.image.image_tk)
 
 
 class PageSwitchButtonMixin(tkinter.Button):
