@@ -40,6 +40,10 @@ class HMIWidgetFrame(tkinter.Frame):
         widget.grid(row=row, column=column,
                     rowspan=row_span, columnspan=column_span,
                     padx=pad_x, pady=pad_y, **kwargs)
+        if hasattr(widget, 'visibility_variable'):
+            if widget.visibility_variable is not None:
+                widget.hide()
+                widget._update()
 
 
 class MonitoredVariableWidgetMixin(ABC):
@@ -69,13 +73,14 @@ class VisibilityMixin(tkinter.Widget):
         super().__init__(**kwargs)
         self.visibility_variable = visibility_variable
         self.refresh_time = refresh_time
-        self.invisible_widget = None
+        self.invisible_widget = ImageWidget()
         self.visible = False
         if self.visibility_variable is not None:
             self.monitored_visibility_variable = MonitoredVariable(self.dispatcher,
                                                                    self.visibility_variable,
                                                                    self.refresh_time)
             self.monitored_visibility_variable.bind_to_value(self._update)
+            # self.after(50, self.wait_visibility)
             self._update()
 
     def _update(self):
@@ -85,9 +90,13 @@ class VisibilityMixin(tkinter.Widget):
             self.hide()
 
     def show(self):
+        self.invisible_widget.grid_remove()
         self.grid()
 
     def hide(self):
+        self.invisible_widget.set_size(self.winfo_reqwidth(),
+                                       self.winfo_reqheight())
+        self.invisible_widget.grid(self.grid_info())
         self.grid_remove()
 
 
@@ -103,7 +112,8 @@ class ImageWidget(tkinter.Label):
             self.image = HMIImage(path)
         else:
             self.image = HMIImage(image, scale, scale_x, scale_y)
-        super().__init__(master=master, image=self.image.image_tk, **kwargs)
+        super().__init__(master=master, image=self.image.image_tk, borderwidth=0, highlightthickness=0,
+                         **kwargs)
 
     def set_size(self, width: int = 1, height: int = 1):
         self.image.set_size(width, height)
