@@ -2,16 +2,14 @@ import logging
 import tkinter
 from tkinter import ttk
 from typing import Dict
-
 import PIL
-
 from aphyt.omron import NSeriesThreadDispatcher
 from aphyt.tkmi.widgets import MonitoredVariableWidgetMixin, VisibilityMixin, HMIImage
 
 
 class ImageMultiStateLamp(MonitoredVariableWidgetMixin, VisibilityMixin, tkinter.Label):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name, refresh_time,
-                 state_images: Dict[int, str], scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
+                 state_images: Dict[int, str], scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
         self.log = logging.getLogger(__name__)
         self.dispatcher = dispatcher
         self.state_images = state_images
@@ -21,6 +19,8 @@ class ImageMultiStateLamp(MonitoredVariableWidgetMixin, VisibilityMixin, tkinter
             self.state_images_tk[state] = image.image_tk
         super().__init__(master=master, dispatcher=dispatcher, variable_name=variable_name,
                          refresh_time=refresh_time, **kwargs)
+        if background is None:
+            self.config(background=master['background'])
         self._value_updated()
 
     def _value_updated(self):
@@ -32,12 +32,14 @@ class ImageMultiStateLamp(MonitoredVariableWidgetMixin, VisibilityMixin, tkinter
 
 class ImageLamp(MonitoredVariableWidgetMixin, tkinter.Label):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name, refresh_time,
-                 image_on, image_off, scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
+                 image_on, image_off, scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
         self.log = logging.getLogger(__name__)
         self.image_on = HMIImage(image_on, scale, scale_x, scale_y)
         self.image_off = HMIImage(image_off, scale, scale_x, scale_y)
         super().__init__(master=master, dispatcher=dispatcher,
                          variable_name=variable_name, refresh_time=refresh_time, **kwargs)
+        if background is None:
+            self.config(background=master['background'])
         self._value_updated()
 
     def _value_updated(self):

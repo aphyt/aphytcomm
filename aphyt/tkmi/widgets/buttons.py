@@ -9,12 +9,12 @@ from abc import ABC, abstractmethod
 from tkinter import ttk, messagebox
 from typing import Dict, Union
 import logging
-
 import PIL
 from PIL import Image, ImageTk
 
 from aphyt.omron import NSeriesThreadDispatcher
 from aphyt.tkmi.widgets import *
+from aphyt.tkmi.widgets import MonitoredVariableWidgetMixin
 
 
 class DispatcherMixin:
@@ -90,7 +90,7 @@ class VariableButtonMixin(DispatcherMixin):
 
 class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, tkinter.Button):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, refresh_time,
-                 state_images: Dict[int, str], scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
+                 state_images: Dict[int, str], scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
         self.log = logging.getLogger(__name__)
         self.state_images = state_images
         self.state_images_tk = {}
@@ -105,6 +105,8 @@ class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, t
                          refresh_time=refresh_time,
                          master=master,
                          **kwargs)
+        if background is None:
+            self.config(background=master['background'])
         self.value = self.monitored_variable.value
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
@@ -131,7 +133,7 @@ class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, t
 
 class ImageButtonMixin(tkinter.Button):
     def __init__(self, master=None, image=None, pressed_image=None,
-                 scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
+                 scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
         self.image = None
         self.pressed_image = None
         if not image:
@@ -146,6 +148,8 @@ class ImageButtonMixin(tkinter.Button):
         else:
             self.pressed_image = HMIImage(pressed_image, scale, scale_x, scale_y)
         super().__init__(master=master, image=self.image.image_tk, compound='center', **kwargs)
+        if background is None:
+            self.config(background=master['background'])
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
 
@@ -178,9 +182,15 @@ class PageSwitchButtonMixin(tkinter.Button):
 
 
 class ImagePageSwitchButton(ImageButtonMixin, PageSwitchButtonMixin):
-    def __init__(self, master: tkinter.Widget, page: Union[HMIPage, str], scale=1.0, image=None, pressed_image=None, **kwargs):
+    def __init__(self, master: tkinter.Widget, page: Union[HMIPage, str], scale=1.0,
+                 image=None, pressed_image=None, background=None,
+                 **kwargs):
         super().__init__(master=master, page=page, image=image, pressed_image=pressed_image, scale=scale, **kwargs)
-        self.config(highlightthickness=0, borderwidth=0, activebackground='#4f4f4f')
+        if background is None:
+            background = master['background']
+        self.config(background=background)
+        self.config(activebackground=background)
+        self.config(highlightthickness=0, borderwidth=0)
 
     def _on_press(self, event):
         ImageButtonMixin._on_press(self, event)

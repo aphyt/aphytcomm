@@ -42,7 +42,7 @@ class HMIWidgetFrame(tkinter.Frame):
         if hasattr(widget, 'visibility_variable'):
             if widget.visibility_variable is not None:
                 widget.hide()
-                widget._update()
+                widget.visibility_update()
 
 
 class MonitoredVariableWidgetMixin(ABC):
@@ -78,11 +78,11 @@ class VisibilityMixin(tkinter.Widget):
             self.monitored_visibility_variable = MonitoredVariable(self.dispatcher,
                                                                    self.visibility_variable,
                                                                    self.refresh_time)
-            self.monitored_visibility_variable.bind_to_value(self._update)
+            self.monitored_visibility_variable.bind_to_value(self.visibility_update)
             # self.after(50, self.wait_visibility)
-            self._update()
+            self.visibility_update()
 
-    def _update(self):
+    def visibility_update(self):
         if self.monitored_visibility_variable.value:
             self.show()
         else:
@@ -101,7 +101,7 @@ class VisibilityMixin(tkinter.Widget):
 
 class ImageWidget(tkinter.Label):
     def __init__(self, master=None, image=None,
-                 scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
+                 scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
         self.image = None
         self.pressed_image = None
         if not image:
