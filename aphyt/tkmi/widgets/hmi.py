@@ -3,10 +3,9 @@ import os
 import tkinter
 from tkinter import ttk
 from abc import ABC, abstractmethod
-
 import PIL
-
 from aphyt.omron import NSeriesThreadDispatcher, MonitoredVariable
+from aphyt.tkmi.widgets import *
 
 DEFAULT_PADDING = 5
 

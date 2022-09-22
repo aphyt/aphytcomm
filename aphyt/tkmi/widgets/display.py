@@ -6,7 +6,7 @@ from typing import Dict
 import PIL
 
 from aphyt.omron import NSeriesThreadDispatcher
-from aphyt.tkmi.widgets.hmi import MonitoredVariableWidgetMixin, HMIImage, VisibilityMixin
+from aphyt.tkmi.widgets import *
 
 
 class ImageMultiStateLamp(MonitoredVariableWidgetMixin, VisibilityMixin, tkinter.Label):
