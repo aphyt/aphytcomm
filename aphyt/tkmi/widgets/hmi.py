@@ -32,7 +32,7 @@ class HMIWidgetFrame(tkinter.Frame):
 
     def add_widget_grid(self, widget: tkinter.Widget, row, column,
                         row_span: int = 1, column_span: int = 1,
-                        pad_x = None, pad_y = None, **kwargs):
+                        pad_x=None, pad_y=None, **kwargs):
         if pad_x is None:
             pad_x = DEFAULT_PADDING
         if pad_y is None:
@@ -63,18 +63,20 @@ class MonitoredVariableWidgetMixin(ABC):
 
 
 class VisibilityMixin(tkinter.Widget):
-    def __init__(self, dispatcher: NSeriesThreadDispatcher = None,
-                 visibility_variable=None, refresh_time=0.5, **kwargs):
+    def __init__(self,
+                 visibility_variable=None,
+                 refresh_time=0.5, **kwargs):
         super().__init__(**kwargs)
-        self.log = logging.getLogger(__name__)
-        self.dispatcher = dispatcher
         self.visibility_variable = visibility_variable
         self.refresh_time = refresh_time
+        self.invisible_widget = None
+        self.visible = False
         if self.visibility_variable is not None:
             self.monitored_visibility_variable = MonitoredVariable(self.dispatcher,
                                                                    self.visibility_variable,
                                                                    self.refresh_time)
             self.monitored_visibility_variable.bind_to_value(self._update)
+            self._update()
 
     def _update(self):
         if self.monitored_visibility_variable.value:
@@ -83,16 +85,29 @@ class VisibilityMixin(tkinter.Widget):
             self.hide()
 
     def show(self):
-        if self.winfo_manager() == 'grid':
-            self.grid()
-        elif self.winfo_manager() == 'place':
-            self.place()
+        self.grid()
 
     def hide(self):
-        if self.winfo_manager() == 'grid':
-            self.grid_forget()
-        elif self.winfo_manager() == 'place':
-            self.place_forget()
+        self.grid_remove()
+
+
+class ImageWidget(tkinter.Label):
+    def __init__(self, master=None, image=None,
+                 scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
+        self.image = None
+        self.pressed_image = None
+        if not image:
+            # image = tkinter.PhotoImage(width=1, height=1)
+            path = os.path.dirname(__file__)
+            path = os.path.join(path, 'Transparent_Pixel.png')
+            self.image = HMIImage(path)
+        else:
+            self.image = HMIImage(image, scale, scale_x, scale_y)
+        super().__init__(master=master, image=self.image.image_tk, **kwargs)
+
+    def set_size(self, width: int = 1, height: int = 1):
+        self.image.set_size(width, height)
+        self.config(image=self.image.image_tk)
 
 
 class HMIImage:
@@ -115,6 +130,12 @@ class HMIImage:
     def resize(self, scale=1.0, scale_x=1.0, scale_y=1.0):
         self.width = int(scale * scale_x * float(self.image.size[0]))
         self.height = int(scale * scale_y * float(self.image.size[1]))
+        self.image = self.image.resize((self.width, self.height), PIL.Image.ANTIALIAS)
+        self.image_tk = PIL.ImageTk.PhotoImage(self.image)
+
+    def set_size(self, width: int = 1, height: int = 1):
+        self.width = width
+        self.height = height
         self.image = self.image.resize((self.width, self.height), PIL.Image.ANTIALIAS)
         self.image_tk = PIL.ImageTk.PhotoImage(self.image)
 

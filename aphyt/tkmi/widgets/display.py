@@ -6,20 +6,21 @@ from typing import Dict
 import PIL
 
 from aphyt.omron import NSeriesThreadDispatcher
-from aphyt.tkmi.widgets.hmi import MonitoredVariableWidgetMixin, HMIImage
+from aphyt.tkmi.widgets.hmi import MonitoredVariableWidgetMixin, HMIImage, VisibilityMixin
 
 
-class ImageMultiStateLamp(MonitoredVariableWidgetMixin, tkinter.Label):
+class ImageMultiStateLamp(MonitoredVariableWidgetMixin, VisibilityMixin, tkinter.Label):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name, refresh_time,
                  state_images: Dict[int, str], scale=1.0, scale_x=1.0, scale_y=1.0, **kwargs):
         self.log = logging.getLogger(__name__)
+        self.dispatcher = dispatcher
         self.state_images = state_images
         self.state_images_tk = {}
         for state in self.state_images:
             image = HMIImage(self.state_images[state], scale, scale_x, scale_y)
             self.state_images_tk[state] = image.image_tk
-        super().__init__(master=master, dispatcher=dispatcher,
-                         variable_name=variable_name, refresh_time=refresh_time, **kwargs)
+        super().__init__(master=master, dispatcher=dispatcher, variable_name=variable_name,
+                         refresh_time=refresh_time, **kwargs)
         self._value_updated()
 
     def _value_updated(self):
