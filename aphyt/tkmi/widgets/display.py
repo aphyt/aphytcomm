@@ -1,5 +1,6 @@
 import logging
 import tkinter
+from numbers import Number
 from tkinter import ttk
 from typing import Dict
 import PIL
@@ -51,17 +52,21 @@ class ImageLamp(MonitoredVariableWidgetMixin, tkinter.Label):
 
 
 class DataDisplay(tkinter.ttk.Label):
-    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, decimal_places=None, **kwargs):
         super().__init__(master, **kwargs)
         self.dispatcher = dispatcher
         self.variable_name = variable_name
+        self.decimal_places = decimal_places
         self._update_data()
         self.delay = None
         self.dispatcher.connection_status.bind_to_session_status(self._update_data)
 
     def _update_data(self):
         if self.dispatcher.connection_status.has_session:
-            data = str(self.dispatcher.read_variable(self.variable_name))
+            data = self.dispatcher.read_variable(self.variable_name)
+            if isinstance(data, Number) and self.decimal_places is not None:
+                data = round(data, self.decimal_places)
+            data = str(data)
             self.config(text=data)
             self.after(100, self._update_data)
             # self.delay = threading.Timer(0.1, self._update_data)
