@@ -14,7 +14,7 @@ from PIL import Image, ImageTk
 
 from aphyt.omron import NSeriesThreadDispatcher
 from aphyt.tkmi.widgets import *
-from aphyt.tkmi.widgets import MonitoredVariableWidgetMixin
+from aphyt.tkmi.widgets import MonitoredVariableWidgetMixin, HMIImage
 
 
 class DispatcherMixin:
