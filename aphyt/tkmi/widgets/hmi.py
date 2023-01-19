@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 import PIL
 from aphyt.omron import NSeriesThreadDispatcher, MonitoredVariable
 from aphyt.tkmi.widgets import *
+from tkinter import TclError
 
 DEFAULT_PADDING = 5
 
@@ -14,7 +15,10 @@ class HMIWidgetFrame(tkinter.Frame):
     def __init__(self, master, background=None, *args, **kwargs):
         super().__init__(master, padx=2, pady=2,  *args, **kwargs)
         if background is None:
-            self.config(background=master['background'])
+            try:
+                self.config(background=master['background'])
+            except TclError:
+                pass
 
     def add_widget_linear(self, widget: tkinter.Widget, vertical=True,
                           pad_x=None, pad_y=None, **kwargs):
