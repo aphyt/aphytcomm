@@ -11,8 +11,8 @@ from abc import ABC, abstractmethod
 from numbers import Number
 from tkinter import ttk, TclError
 from typing import Dict, Union
-
 import PIL
+from PIL import Image, ImageTk
 
 from aphyt.omron import NSeriesThreadDispatcher, MonitoredVariable
 
@@ -41,6 +41,8 @@ class MonitoredVariableWidgetMixin(ABC):
     @abstractmethod
     def _value_updated(self):
         pass
+
+
 DEFAULT_PADDING = 5
 
 
