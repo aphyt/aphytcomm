@@ -10,7 +10,7 @@ import tkinter
 from abc import ABC, abstractmethod
 from numbers import Number
 from tkinter import ttk, TclError
-from typing import Dict, Union
+from typing import Dict, Union, SupportsRound
 import PIL
 from PIL import Image, ImageTk
 
@@ -48,7 +48,7 @@ DEFAULT_PADDING = 5
 
 class HMIWidgetFrame(tkinter.Frame):
     def __init__(self, master, background=None, *args, **kwargs):
-        super().__init__(master, padx=2, pady=2,  *args, **kwargs)
+        super().__init__(master, padx=2, pady=2, *args, **kwargs)
         if background is None:
             try:
                 self.config(background=master['background'])
@@ -198,6 +198,7 @@ class HMIScreen(tkinter.Tk):
     def change_page(self, page: str):
         self.pages[page].tkraise()
 
+
 class MomentaryButtonMixin(DispatcherMixin):
     def __init__(self, variable_name: str = None, **kwargs):
         super().__init__(**kwargs)
@@ -263,7 +264,6 @@ class VariableButtonMixin(DispatcherMixin):
         pass
 
 
-
 class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, tkinter.Button):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, refresh_time,
                  state_images: Dict[int, str], scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
@@ -273,7 +273,7 @@ class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, t
         for state in self.state_images:
             # image = PIL.Image.open(self.state_images[state])
             # self.state_images_tk[state] = PIL.ImageTk.PhotoImage(image)
-            image = HMIImage(state_images[state],scale, scale_x, scale_y)
+            image = HMIImage(state_images[state], scale, scale_x, scale_y)
             self.state_images_tk[state] = image.image_tk
         first_value = list(self.state_images_tk)[0]
         super().__init__(variable_name=variable_name,
@@ -496,25 +496,23 @@ class ImageLamp(MonitoredVariableWidgetMixin, tkinter.Label):
 
 
 class DataDisplay(tkinter.ttk.Label):
-    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, decimal_places=None, **kwargs):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str,
+                 decimal_places=None, delay: int = 100, **kwargs):
         super().__init__(master, **kwargs)
         self.dispatcher = dispatcher
         self.variable_name = variable_name
         self.decimal_places = decimal_places
+        self.delay = delay
+        self.monitored_variable = MonitoredVariable(self.dispatcher, self.variable_name)
         self._update_data()
-        self.delay = None
-        self.dispatcher.connection_status.bind_to_session_status(self._update_data)
+        self.monitored_variable.bind_to_value(self._update_data)
 
     def _update_data(self):
-        if self.dispatcher.connection_status.has_session:
-            data = self.dispatcher.read_variable(self.variable_name)
-            if isinstance(data, Number) and self.decimal_places is not None:
-                data = round(data, self.decimal_places)
-            data = str(data)
-            self.config(text=data)
-            self.after(100, self._update_data)
-            # self.delay = threading.Timer(0.1, self._update_data)
-            # self.delay.start()
+        data = self.monitored_variable.value
+        if isinstance(data, SupportsRound) and self.decimal_places is not None:
+            data = round(data, self.decimal_places)
+        data = str(data)
+        self.config(text=data)
 
 
 class DataEdit(ttk.Entry):
