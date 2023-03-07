@@ -13,6 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://bitbucket.org/jryan/aphytcomm/src/master/",
     packages=setuptools.find_packages(exclude=("tests", "nxmessageservice", "nxmessaging", "examples")),
+    package_data={"aphyt.tkmi": ["transparent_icon.ico", "Transparent_Pixel.png"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
