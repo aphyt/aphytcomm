@@ -166,7 +166,9 @@ class HMIScreen(tkinter.Tk):
         self.initial_page = initial_page
         self.pages = {}
         self.withdraw()
-        self.iconbitmap('transparent_icon.ico')
+        path = os.path.dirname(__file__)
+        path = os.path.join(path, 'transparent_icon.ico')
+        self.iconbitmap(path)
         self.title(window_title)
         self.screen_change_variable = screen_change_variable
         if geometry is not None:
