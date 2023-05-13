@@ -470,7 +470,7 @@ class CIPStructure(CIPDataType):
         return self.members[item]
 
     def __repr__(self):
-        return 'name: %s | type: %s | members: %s' % (self.variable_name, self.variable_type_name, self.members)
+        return '%s { type: %s | members: %s }' % (self.variable_name, self.variable_type_name, self.members)
 
         if member.alignment > self.alignment:
             self.alignment = member.alignment

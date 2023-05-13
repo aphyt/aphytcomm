@@ -29,6 +29,10 @@ class VariableTypeObjectReply(CIPReply):
         return struct.unpack("<L", self.reply_data[0:4])[0]
 
     @property
+    def size(self):
+        return self.size_in_memory
+
+    @property
     def cip_data_type(self):
         return self.reply_data[5:6]
 
@@ -211,40 +215,39 @@ class NSeries:
         get_instance_list_request = CIPRequest(b'\x5f', tag_request_path, data)
         return self.connected_cip_dispatcher.execute_cip_command(get_instance_list_request)
 
-    def update_derived_data_type_dictionary(self):
+    def update_derived_data_type_dictionary(self, display=False):
         # ToDo get the derived data types in such  a way they are easy to use
         number_of_entries = self._get_number_of_derived_data_types()
         for index in range(1, number_of_entries + 1):
-            request_path = eip.address_request_path_segment(class_id=b'\x6c', instance_id=index.to_bytes(2, 'little'))
-            reply = VariableTypeObjectReply(
-                self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
-            print('index: %s '
-                  'size: %s '
-                  'type: %s '
-                  'array type: %s '
-                  'dimensions: %s '
-                  'elements: %s '
-                  'number of members: %s '
-                  'crc: %s '
-                  'variable name length: %s '
-                  'variable type name: %s '
-                  'next instance id: %s '
-                  'nesting variable type instance id %s '
-                  'start array elements %s' %
-                  (str(index),
-                   str(reply.size_in_memory),
-                   str(reply.cip_data_type),
-                   str(reply.cip_data_type_of_array),
-                   str(reply.array_dimension),
-                   str(reply.number_of_elements),
-                   str(reply.number_of_members),
-                   str(reply.crc_code),
-                   str(reply.variable_type_name_length),
-                   str(reply.variable_type_name),
-                   str(reply.next_instance_id),
-                   str(reply.nesting_variable_type_instance_id),
-                   str(reply.start_array_elements)
-                   ))
+            reply = self._get_variable_type_object(index)
+            if display:
+                print('index: %s '
+                      'size: %s '
+                      'type: %s '
+                      'array type: %s '
+                      'dimensions: %s '
+                      'elements: %s '
+                      'number of members: %s '
+                      'crc: %s '
+                      'variable name length: %s '
+                      'variable type name: %s '
+                      'next instance id: %s '
+                      'nesting variable type instance id %s '
+                      'start array elements %s' %
+                      (str(index),
+                       str(reply.size_in_memory),
+                       str(reply.cip_data_type),
+                       str(reply.cip_data_type_of_array),
+                       str(reply.array_dimension),
+                       str(reply.number_of_elements),
+                       str(reply.number_of_members),
+                       str(reply.crc_code),
+                       str(reply.variable_type_name_length),
+                       str(reply.variable_type_name),
+                       str(reply.next_instance_id),
+                       str(reply.nesting_variable_type_instance_id),
+                       str(reply.start_array_elements)
+                       ))
 
     def update_variable_dictionary(self):
         """
@@ -256,18 +259,14 @@ class NSeries:
         variable_list = self._get_variable_list()
         instance_id = 1
         for variable in variable_list:
-            reply = self._get_variable_object(instance_id)
-            variable_cip_datatype = self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
-            if not isinstance(variable_cip_datatype, type(None)):
-                variable_cip_datatype.instance_id = instance_id
-                # Instantiate the classes into objects
-                variable_cip_datatype = self._get_data_instance(variable_cip_datatype)
-                variable_cip_datatype.variable_name = str(variable)
-                self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
-                if variable[0:1] == '_':
-                    self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
-                else:
-                    self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
+            # Instantiate the classes into objects
+            variable_cip_datatype = self._get_instance_from_variable_object_id(instance_id)
+            variable_cip_datatype.variable_name = str(variable)
+            self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
+            if variable[0:1] == '_':
+                self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
+            else:
+                self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
             instance_id = instance_id + 1
 
     def save_current_dictionary(self, file_name: str):
@@ -296,61 +295,150 @@ class NSeries:
             self.update_variable_dictionary()
             self.save_current_dictionary(file_name)
 
-    def _get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
-        """
-        This method is to get an instance of a CIP data type from its type definition.
-        :param cip_datatype_instance:
-        :return:
-        """
-        # ToDo TESTS
-        if isinstance(cip_datatype_instance, CIPArray):
-            variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
-            if variable_object_reply.variable_type_instance_id == b'\x00\x00\x00\x00':
-                cip_datatype_instance.from_items(variable_object_reply.cip_data_type_of_array,
-                                                 variable_object_reply.size,
-                                                 variable_object_reply.array_dimension,
-                                                 variable_object_reply.number_of_elements,
-                                                 variable_object_reply.start_array_elements)
-            else:
-                member_instance_id = int.from_bytes(variable_object_reply.variable_type_instance_id, 'little')
-                member_instance = self._get_member_instance(member_instance_id)
-                cip_datatype_instance.from_instance(member_instance,
-                                                    variable_object_reply.size,
-                                                    variable_object_reply.array_dimension,
-                                                    variable_object_reply.number_of_elements,
-                                                    variable_object_reply.start_array_elements)
-            return cip_datatype_instance
-
-        elif isinstance(cip_datatype_instance, CIPString):
-            variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
-            cip_datatype_instance.size = variable_object_reply.size
-            return cip_datatype_instance
-
-        elif isinstance(cip_datatype_instance, CIPAbbreviatedStructure):
-            pass
-
-        elif isinstance(cip_datatype_instance, CIPStructure):
-            variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
-            variable_type_instance_id = int.from_bytes(variable_object_reply.variable_type_instance_id, 'little')
+    def _structure_instance_from_variable_object(
+            self, variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPStructure:
+        cip_datatype_instance = CIPStructure()
+        variable_type_instance_id = None
+        if isinstance(variable_object, VariableObjectReply):
+            variable_type_instance_id = int.from_bytes(variable_object.variable_type_instance_id, 'little')
             variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
             cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
+            print(cip_datatype_instance.variable_name)
+            cip_datatype_instance.size = variable_object.size
+        if isinstance(variable_object, VariableTypeObjectReply):
+            variable_type_instance_id = int.from_bytes(variable_object.nesting_variable_type_instance_id, 'little')
+            variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
             cip_datatype_instance.size = variable_type_object_reply.size_in_memory
-            nesting_variable_type_instance_id = \
-                int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
-            member_instance_id = nesting_variable_type_instance_id
-            while member_instance_id != 0:
-                member_cip_datatype_instance = self._get_member_instance(member_instance_id)
-                cip_datatype_instance.members.update(
-                    {member_cip_datatype_instance.variable_type_name: member_cip_datatype_instance})
-                member_instance_id = \
-                    int.from_bytes(member_cip_datatype_instance.next_instance_id, 'little')
-            return cip_datatype_instance
+            cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
+
+        nesting_variable_type_instance_id = \
+            int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
+        member_instance_id = nesting_variable_type_instance_id
+        while member_instance_id != 0:
+            variable_type_object_reply = self._get_variable_type_object(member_instance_id)
+            member_cip_datatype_instance = self._get_member_instance(member_instance_id)
+            member_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
+            cip_datatype_instance.members.update(
+                {member_name: member_cip_datatype_instance})
+            member_instance_id = \
+                int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
+        return cip_datatype_instance
+
+    def _array_instance_from_variable_object(
+            self, variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPArray:
+        cip_array_instance = CIPArray()
+        variable_type_instance_id = b'\x00\x00\x00\x00'
+        if isinstance(variable_object, VariableObjectReply):
+            variable_type_instance_id = variable_object.variable_type_instance_id
+        if variable_type_instance_id == b'\x00\x00\x00\x00':
+            cip_array_instance.from_items(variable_object.cip_data_type_of_array,
+                                          variable_object.size,
+                                          variable_object.array_dimension,
+                                          variable_object.number_of_elements,
+                                          variable_object.start_array_elements)
         else:
-            cip_datatype_instance = self.connected_cip_dispatcher.data_type_dictionary.get(
-                cip_datatype_instance.data_type_code())()
-            return cip_datatype_instance
+            member_instance_id = int.from_bytes(variable_object.variable_type_instance_id, 'little')
+            member_instance = self._get_member_instance(member_instance_id)
+            cip_array_instance = member_instance
+        return cip_array_instance
+
+    @staticmethod
+    def _string_instance_from_variable_object(
+            variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPString:
+        cip_string = CIPString()
+        cip_string.size = variable_object.size
+        return cip_string
+
+    def _get_instance_from_variable_object_id(self, instance_id: int) -> CIPDataType:
+        reply = self._get_variable_object(instance_id)
+        if reply.cip_data_type == CIPStructure.data_type_code():
+            return self._structure_instance_from_variable_object(reply)
+        elif reply.cip_data_type == CIPAbbreviatedStructure.data_type_code():
+            return self._structure_instance_from_variable_object(reply)
+        elif reply.cip_data_type == CIPString.data_type_code():
+            return self._string_instance_from_variable_object(reply)
+        elif reply.cip_data_type == CIPArray.data_type_code():
+            return self._array_instance_from_variable_object(reply)
+        else:
+            return self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
+
+    def _get_instance_member_id(self, member_id: int) -> CIPDataType:
+        reply = self._get_variable_type_object(member_id)
+        if reply.cip_data_type == CIPStructure.data_type_code():
+            return self._structure_instance_from_variable_object(reply)
+        elif reply.cip_data_type == CIPAbbreviatedStructure.data_type_code():
+            return self._structure_instance_from_variable_object(reply)
+        elif reply.cip_data_type == CIPString.data_type_code():
+            return self._string_instance_from_variable_object(reply)
+        elif reply.cip_data_type == CIPArray.data_type_code():
+            return self._array_instance_from_variable_object(reply)
+        else:
+            return self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
+
+    # def _get_data_instance(self, cip_datatype_instance: CIPDataType) -> CIPDataType:
+    #     """
+    #     This method is to get an instance of a CIP data type from its type definition.
+    #     :param cip_datatype_instance:
+    #     :return:
+    #     """
+    #     # ToDo TESTS
+    #     if isinstance(cip_datatype_instance, CIPArray):
+    #         variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
+    #         if variable_object_reply.variable_type_instance_id == b'\x00\x00\x00\x00':
+    #             cip_datatype_instance.from_items(variable_object_reply.cip_data_type_of_array,
+    #                                              variable_object_reply.size,
+    #                                              variable_object_reply.array_dimension,
+    #                                              variable_object_reply.number_of_elements,
+    #                                              variable_object_reply.start_array_elements)
+    #         else:
+    #             member_instance_id = int.from_bytes(variable_object_reply.variable_type_instance_id, 'little')
+    #             member_instance = self._get_member_instance(member_instance_id)
+    #             cip_datatype_instance.from_instance(member_instance,
+    #                                                 variable_object_reply.size,
+    #                                                 variable_object_reply.array_dimension,
+    #                                                 variable_object_reply.number_of_elements,
+    #                                                 variable_object_reply.start_array_elements)
+    #         return cip_datatype_instance
+    #
+    #     elif isinstance(cip_datatype_instance, CIPString):
+    #         variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
+    #         cip_datatype_instance.size = variable_object_reply.size
+    #         return cip_datatype_instance
+    #
+    #     elif isinstance(cip_datatype_instance, CIPAbbreviatedStructure):
+    #         pass
+    #
+    #     elif isinstance(cip_datatype_instance, CIPStructure):
+    #         variable_object_reply = self._get_variable_object(cip_datatype_instance.instance_id)
+    #         variable_type_instance_id = int.from_bytes(variable_object_reply.variable_type_instance_id, 'little')
+    #         variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
+    #         cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
+    #         cip_datatype_instance.size = variable_type_object_reply.size_in_memory
+    #         nesting_variable_type_instance_id = \
+    #             int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
+    #         member_instance_id = nesting_variable_type_instance_id
+    #         while member_instance_id != 0:
+    #             member_cip_datatype_instance = self._get_member_instance(member_instance_id)
+    #             cip_datatype_instance.members.update(
+    #                 {member_cip_datatype_instance.variable_type_name: member_cip_datatype_instance})
+    #             member_instance_id = \
+    #                 int.from_bytes(member_cip_datatype_instance.next_instance_id, 'little')
+    #         return cip_datatype_instance
+    #     else:
+    #         cip_datatype_instance = self.connected_cip_dispatcher.data_type_dictionary.get(
+    #             cip_datatype_instance.data_type_code())()
+    #         return cip_datatype_instance
 
     def _get_member_instance(self, member_instance_id: int) -> CIPDataType:
+        """
+        This method returns a CIP datatype instance from a member ID. This is how the driver can
+        build instances of derived data types like structures and arrays of structures
+        :param member_instance_id:
+        :return:
+        """
+        return self._get_instance_member_id(member_instance_id)
+
+    def _get_member_instance_old(self, member_instance_id: int) -> CIPDataType:
         """
         This method returns a CIP datatype instance from a member ID. This is how the driver can
         build instances of derived data types like structures and arrays of structures
@@ -389,12 +477,14 @@ class NSeries:
             while member_instance_id != 0:
                 variable_type_object_reply = self._get_variable_type_object(member_instance_id)
                 member_cip_datatype_instance = self._get_member_instance(member_instance_id)
+                # The alignment is always the greatest of the members
                 if member_cip_datatype_instance.alignment > cip_datatype_instance.alignment:
                     cip_datatype_instance.alignment = member_cip_datatype_instance.alignment
                 cip_datatype_instance.members.update(
                     {member_cip_datatype_instance.variable_type_name: member_cip_datatype_instance})
                 member_instance_id = \
                     int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
+
             return cip_datatype_instance
         else:
             # cip_datatype_instance = self.data_type_dictionary.get(cip_datatype_instance.data_type_code())()
