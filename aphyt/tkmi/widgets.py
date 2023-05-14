@@ -392,6 +392,22 @@ class PageSwitchButton(ttk.Button, PageSwitchButtonMixin):
         PageSwitchButtonMixin._on_release(self, event)
 
 
+class ImageMomentaryButton(ImageButtonMixin, MomentaryButtonMixin):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, refresh_time,
+                 image=None, pressed_image=None,
+                 scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
+        self.log = logging.getLogger(__name__)
+        super().__init__(variable_name=variable_name,
+                         dispatcher=dispatcher,
+                         refresh_time=refresh_time,
+                         master=master,
+                         image=image, pressed_image=pressed_image,
+                         scale=scale, scale_x=scale_x, scale_y=scale_y, background=background,
+                         **kwargs)
+        self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
+
+
 class MomentaryButton(MomentaryButtonMixin, ttk.Button):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
         super().__init__(master=master, variable_name=variable_name, dispatcher=dispatcher, **kwargs)
