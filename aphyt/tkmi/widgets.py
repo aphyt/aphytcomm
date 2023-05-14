@@ -315,6 +315,8 @@ class ImageButtonMixin(tkinter.Button):
                  image=None, pressed_image=None,
                  scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
         self.image = None
+        self.dispatcher = dispatcher
+        self.variable_name = variable_name
         self.pressed_image = None
         if not image:
             # image = tkinter.PhotoImage(width=1, height=1)
@@ -327,7 +329,8 @@ class ImageButtonMixin(tkinter.Button):
             self.pressed_image = self.image
         else:
             self.pressed_image = HMIImage(pressed_image, scale, scale_x, scale_y)
-        super().__init__(master=master, image=self.image.image_tk, compound='center', **kwargs)
+        self.initial_image = self.image
+        super().__init__(master=master, image=self.initial_image.image_tk, compound='center', **kwargs)
         if background is None:
             self.config(background=master['background'])
         self.bind('<ButtonPress-1>', self._on_press)
@@ -447,6 +450,7 @@ class ImageMomentaryButton(MonitoredVariableWidgetMixin, ImageButtonMixin, Momen
         self.variable_name = variable_name
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
+        self._value_updated()
 
     def _value_updated(self):
         if self.monitored_variable.value:
@@ -455,11 +459,11 @@ class ImageMomentaryButton(MonitoredVariableWidgetMixin, ImageButtonMixin, Momen
             self.config(image=self.image.image_tk)
 
     def _on_press(self, event):
-        ImageButtonMixin._on_press(self, event)
+        # ImageButtonMixin._on_press(self, event)
         MomentaryButtonMixin._on_press(self, event)
 
     def _on_release(self, event):
-        ImageButtonMixin._on_release(self, event)
+        # ImageButtonMixin._on_release(self, event)
         MomentaryButtonMixin._on_release(self, event)
 
 
@@ -478,6 +482,7 @@ class ImageSetButton(MonitoredVariableWidgetMixin, ImageButtonMixin, SetButtonMi
         self.variable_name = variable_name
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
+        self._value_updated()
 
     def _value_updated(self):
         if self.monitored_variable.value:
@@ -486,7 +491,7 @@ class ImageSetButton(MonitoredVariableWidgetMixin, ImageButtonMixin, SetButtonMi
             self.config(image=self.image.image_tk)
 
     def _on_press(self, event):
-        ImageButtonMixin._on_press(self, event)
+        # ImageButtonMixin._on_press(self, event)
         SetButtonMixin._on_press(self, event)
 
     def _on_release(self, event):
@@ -515,6 +520,7 @@ class ImageResetButton(MonitoredVariableWidgetMixin, ImageButtonMixin, ResetButt
         self.variable_name = variable_name
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
+        self._value_updated()
 
     def _value_updated(self):
         if self.monitored_variable.value:
@@ -523,7 +529,7 @@ class ImageResetButton(MonitoredVariableWidgetMixin, ImageButtonMixin, ResetButt
             self.config(image=self.image.image_tk)
 
     def _on_press(self, event):
-        ImageButtonMixin._on_press(self, event)
+        # ImageButtonMixin._on_press(self, event)
         ResetButtonMixin._on_press(self, event)
 
     def _on_release(self, event):
@@ -552,6 +558,7 @@ class ImageToggleButton(MonitoredVariableWidgetMixin, ImageButtonMixin, ToggleBu
         self.variable_name = variable_name
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
+        self._value_updated()
 
     def _value_updated(self):
         if self.monitored_variable.value:
@@ -560,11 +567,11 @@ class ImageToggleButton(MonitoredVariableWidgetMixin, ImageButtonMixin, ToggleBu
             self.config(image=self.image.image_tk)
 
     def _on_press(self, event):
-        ImageButtonMixin._on_press(self, event)
+        # ImageButtonMixin._on_press(self, event)
         ToggleButtonMixin._on_press(self, event)
 
     def _on_release(self, event):
-        ImageButtonMixin._on_release(self, event)
+        # ImageButtonMixin._on_release(self, event)
         ToggleButtonMixin._on_release(self, event)
 
 
