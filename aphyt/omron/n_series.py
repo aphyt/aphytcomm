@@ -648,8 +648,8 @@ class MonitoredVariable:
         self.variable_name = variable_name
         self.dispatcher = dispatcher
         self.monitored_variable_observers = []
-        self.refresh_timer = threading.Timer(refresh_time, self.update)
         self.refresh_time = refresh_time
+        self.refresh_timer = threading.Timer(self.refresh_time, self.update)
         self._value = None
         self.update()
 
