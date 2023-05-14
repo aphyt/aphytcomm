@@ -200,6 +200,10 @@ class HMIScreen(tkinter.Tk):
     def change_page(self, page: str):
         self.pages[page].tkraise()
 
+    def destroy(self):
+        self.eip_instance.close_explicit()
+        super().destroy()
+
 
 class MomentaryButtonMixin(DispatcherMixin):
     def __init__(self, variable_name: str = None, **kwargs):

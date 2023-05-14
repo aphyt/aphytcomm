@@ -837,9 +837,10 @@ class NSeriesThreadDispatcher:
         self.connection_status.connected = False
         self.connection_status.has_session = False
         self.connection_status._keep_alive_running = False
-        self.executor.shutdown(wait=True)
         for monitored in self.monitored_variable_dictionary:
             self.monitored_variable_dictionary[monitored].cancel()
+        time.sleep(0.01)
+        self.executor.shutdown(wait=True)
         if self._instance.connected_cip_dispatcher.is_connected_explicit:
             self._instance.close_explicit()
 
