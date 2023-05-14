@@ -150,6 +150,27 @@ class TestOnline(unittest.TestCase):
                                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]])
+
+    def test_nested_struct(self):
+        variable_string = 'sStructTest'
+        reply = self.eip_instance.read_variable(variable_string)
+        reply['sNest2']['StringMember'] = 'Hello World'
+        reply['sNest2']['BoolMember'] = True
+        self.eip_instance.write_variable(variable_string, reply)
+        reply = self.eip_instance.read_variable(variable_string)
+        self.assertEqual(str(reply['sNest2']['StringMember']), 'Hello World')
+        self.assertTrue(reply['sNest2']['BoolMember'].value())
+
+    def test_nested_struct_reset(self):
+        variable_string = 'sStructTest'
+        reply = self.eip_instance.read_variable(variable_string)
+        reply['sNest2']['StringMember'] = 'Goodnight Moon'
+        reply['sNest2']['BoolMember'] = False
+        self.eip_instance.write_variable(variable_string, reply)
+        reply = self.eip_instance.read_variable(variable_string)
+        self.assertEqual(str(reply['sNest2']['StringMember']), 'Goodnight Moon')
+        self.assertFalse(reply['sNest2']['BoolMember'].value())
+
         # self.eip_instance.write_variable(variable_string, True)
         # reply = self.eip_instance.read_variable(variable_string)
         # self.assertEqual(reply, True)

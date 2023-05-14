@@ -303,7 +303,6 @@ class NSeries:
             variable_type_instance_id = int.from_bytes(variable_object.variable_type_instance_id, 'little')
             variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
             cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
-            print(cip_datatype_instance.variable_name)
             cip_datatype_instance.size = variable_object.size
         if isinstance(variable_object, VariableTypeObjectReply):
             variable_type_instance_id = int.from_bytes(variable_object.nesting_variable_type_instance_id, 'little')
