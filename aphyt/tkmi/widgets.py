@@ -432,6 +432,67 @@ class MomentaryButton(MomentaryButtonMixin, ttk.Button):
         self.bind('<ButtonRelease-1>', self._on_release)
 
 
+class ImageMomentaryButton(MonitoredVariableWidgetMixin, ImageButtonMixin, MomentaryButtonMixin):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str,
+                 image=None, pressed_image=None,
+                 scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
+        self.log = logging.getLogger(__name__)
+        super().__init__(master=master,
+                         dispatcher=dispatcher,
+                         variable_name=variable_name,
+                         image=image, pressed_image=pressed_image,
+                         scale=scale, scale_x=scale_x, scale_y=scale_y, background=background,
+                         **kwargs)
+        self.dispatcher = dispatcher
+        self.variable_name = variable_name
+        self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
+
+    def _value_updated(self):
+        if self.monitored_variable.value:
+            self.config(image=self.pressed_image.image_tk)
+        else:
+            self.config(image=self.image.image_tk)
+
+    def _on_press(self, event):
+        ImageButtonMixin._on_press(self, event)
+        MomentaryButtonMixin._on_press(self, event)
+
+    def _on_release(self, event):
+        ImageButtonMixin._on_release(self, event)
+        MomentaryButtonMixin._on_release(self, event)
+
+
+class ImageSetButton(MonitoredVariableWidgetMixin, ImageButtonMixin, SetButtonMixin):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str,
+                 image=None, pressed_image=None,
+                 scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
+        self.log = logging.getLogger(__name__)
+        super().__init__(master=master,
+                         dispatcher=dispatcher,
+                         variable_name=variable_name,
+                         image=image, pressed_image=pressed_image,
+                         scale=scale, scale_x=scale_x, scale_y=scale_y, background=background,
+                         **kwargs)
+        self.dispatcher = dispatcher
+        self.variable_name = variable_name
+        self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
+
+    def _value_updated(self):
+        if self.monitored_variable.value:
+            self.config(image=self.pressed_image.image_tk)
+        else:
+            self.config(image=self.image.image_tk)
+
+    def _on_press(self, event):
+        ImageButtonMixin._on_press(self, event)
+        SetButtonMixin._on_press(self, event)
+
+    def _on_release(self, event):
+        SetButtonMixin._on_release(self, event)
+
+
 class SetButton(SetButtonMixin, tkinter.ttk.Button):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
         super().__init__(master=master, variable_name=variable_name, dispatcher=dispatcher, **kwargs)
@@ -439,11 +500,72 @@ class SetButton(SetButtonMixin, tkinter.ttk.Button):
         self.bind('<ButtonRelease-1>', self._on_release)
 
 
+class ImageResetButton(MonitoredVariableWidgetMixin, ImageButtonMixin, ResetButtonMixin):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str,
+                 image=None, pressed_image=None,
+                 scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
+        self.log = logging.getLogger(__name__)
+        super().__init__(master=master,
+                         dispatcher=dispatcher,
+                         variable_name=variable_name,
+                         image=image, pressed_image=pressed_image,
+                         scale=scale, scale_x=scale_x, scale_y=scale_y, background=background,
+                         **kwargs)
+        self.dispatcher = dispatcher
+        self.variable_name = variable_name
+        self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
+
+    def _value_updated(self):
+        if self.monitored_variable.value:
+            self.config(image=self.pressed_image.image_tk)
+        else:
+            self.config(image=self.image.image_tk)
+
+    def _on_press(self, event):
+        ImageButtonMixin._on_press(self, event)
+        ResetButtonMixin._on_press(self, event)
+
+    def _on_release(self, event):
+        ResetButtonMixin._on_release(self, event)
+
+
 class ResetButton(ResetButtonMixin, tkinter.ttk.Button):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, **kwargs):
         super().__init__(master=master, variable_name=variable_name, dispatcher=dispatcher, **kwargs)
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
+
+
+class ImageToggleButton(MonitoredVariableWidgetMixin, ImageButtonMixin, ToggleButtonMixin):
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str,
+                 image=None, pressed_image=None,
+                 scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
+        self.log = logging.getLogger(__name__)
+        super().__init__(master=master,
+                         dispatcher=dispatcher,
+                         variable_name=variable_name,
+                         image=image, pressed_image=pressed_image,
+                         scale=scale, scale_x=scale_x, scale_y=scale_y, background=background,
+                         **kwargs)
+        self.dispatcher = dispatcher
+        self.variable_name = variable_name
+        self.bind('<ButtonPress-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
+
+    def _value_updated(self):
+        if self.monitored_variable.value:
+            self.config(image=self.pressed_image.image_tk)
+        else:
+            self.config(image=self.image.image_tk)
+
+    def _on_press(self, event):
+        ImageButtonMixin._on_press(self, event)
+        ToggleButtonMixin._on_press(self, event)
+
+    def _on_release(self, event):
+        ImageButtonMixin._on_release(self, event)
+        ToggleButtonMixin._on_release(self, event)
 
 
 class ToggleButton(ToggleButtonMixin, tkinter.ttk.Button):
