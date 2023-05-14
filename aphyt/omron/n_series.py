@@ -643,14 +643,28 @@ class EIPConnectionStatus:
 
 
 class MonitoredVariable:
+
+    instance = {}
+
+    def __new__(cls, dispatcher: "NSeriesThreadDispatcher", variable_name,
+                refresh_time: float = 0.05, *args, **kwargs):
+        if variable_name in MonitoredVariable.instance:
+            monitored_object = MonitoredVariable.instance[variable_name]
+            if monitored_object.refresh_time > refresh_time:
+                monitored_object.refresh_time = refresh_time
+            return monitored_object
+        else:
+            return super(MonitoredVariable, cls).__new__(cls)
+
     def __init__(self, dispatcher: "NSeriesThreadDispatcher", variable_name,
-                 refresh_time: float = 0.05):
+                 refresh_time: float = 0.05, observers=[]):
         self.variable_name = variable_name
         self.dispatcher = dispatcher
-        self.monitored_variable_observers = []
+        self.monitored_variable_observers = observers
         self.refresh_time = refresh_time
         self.refresh_timer = threading.Timer(self.refresh_time, self.update)
         self._value = None
+        MonitoredVariable.instance[self.variable_name] = self
         self.update()
 
     def bind_to_value(self, callback):
