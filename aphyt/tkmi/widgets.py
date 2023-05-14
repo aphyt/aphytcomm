@@ -310,7 +310,9 @@ class ImageMultiStateButton(MonitoredVariableWidgetMixin, VariableButtonMixin, t
 
 
 class ImageButtonMixin(tkinter.Button):
-    def __init__(self, master=None, image=None, pressed_image=None,
+    def __init__(self, master=None, dispatcher: NSeriesThreadDispatcher = None,
+                 variable_name: str = None,
+                 image=None, pressed_image=None,
                  scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
         self.image = None
         self.pressed_image = None
@@ -321,7 +323,7 @@ class ImageButtonMixin(tkinter.Button):
             self.image = HMIImage(path)
         else:
             self.image = HMIImage(image, scale, scale_x, scale_y)
-        if not pressed_image:
+        if pressed_image is None:
             self.pressed_image = self.image
         else:
             self.pressed_image = HMIImage(pressed_image, scale, scale_x, scale_y)
@@ -393,19 +395,28 @@ class PageSwitchButton(ttk.Button, PageSwitchButtonMixin):
 
 
 class ImageMomentaryButton(ImageButtonMixin, MomentaryButtonMixin):
-    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str, refresh_time,
+    def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str,
                  image=None, pressed_image=None,
                  scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
         self.log = logging.getLogger(__name__)
-        super().__init__(variable_name=variable_name,
+        super().__init__(master=master,
                          dispatcher=dispatcher,
-                         refresh_time=refresh_time,
-                         master=master,
+                         variable_name=variable_name,
                          image=image, pressed_image=pressed_image,
                          scale=scale, scale_x=scale_x, scale_y=scale_y, background=background,
                          **kwargs)
+        self.dispatcher = dispatcher
+        self.variable_name = variable_name
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
+        
+    def _on_press(self, event):
+        ImageButtonMixin._on_press(self, event)
+        MomentaryButtonMixin._on_press(self, event)
+
+    def _on_release(self, event):
+        ImageButtonMixin._on_release(self, event)
+        MomentaryButtonMixin._on_release(self, event)
 
 
 class MomentaryButton(MomentaryButtonMixin, ttk.Button):
