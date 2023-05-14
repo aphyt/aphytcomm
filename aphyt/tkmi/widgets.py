@@ -394,7 +394,7 @@ class PageSwitchButton(ttk.Button, PageSwitchButtonMixin):
         PageSwitchButtonMixin._on_release(self, event)
 
 
-class ImageMomentaryButton(ImageButtonMixin, MomentaryButtonMixin):
+class ImageMomentaryButton(MonitoredVariableWidgetMixin, ImageButtonMixin, MomentaryButtonMixin):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str,
                  image=None, pressed_image=None,
                  scale=1.0, scale_x=1.0, scale_y=1.0, background=None, **kwargs):
@@ -409,6 +409,12 @@ class ImageMomentaryButton(ImageButtonMixin, MomentaryButtonMixin):
         self.variable_name = variable_name
         self.bind('<ButtonPress-1>', self._on_press)
         self.bind('<ButtonRelease-1>', self._on_release)
+
+    def _value_updated(self):
+        if self.monitored_variable.value:
+            self.config(image=self.image.image_tk)
+        else:
+            self.config(image=self.pressed_image.image_tk)
         
     def _on_press(self, event):
         ImageButtonMixin._on_press(self, event)
