@@ -412,9 +412,9 @@ class ImageMomentaryButton(MonitoredVariableWidgetMixin, ImageButtonMixin, Momen
 
     def _value_updated(self):
         if self.monitored_variable.value:
-            self.config(image=self.image.image_tk)
-        else:
             self.config(image=self.pressed_image.image_tk)
+        else:
+            self.config(image=self.image.image_tk)
         
     def _on_press(self, event):
         ImageButtonMixin._on_press(self, event)
