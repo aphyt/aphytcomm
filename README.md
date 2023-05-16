@@ -29,10 +29,6 @@ Currently Supported Data Types
     CIP_STRUCT = b'\xa2'
     CIP_ARRAY = b'\xa3'
 
-## Future Development
-
-The plan is to support all CIP and Omron specific data types, including derived data types like arrays and structures. From there, development efforts will go to reading and writing to logical segments and supporting additional devices transparently.
-
 ## Example Use
 
 ### Installation
