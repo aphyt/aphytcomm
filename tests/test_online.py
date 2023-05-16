@@ -160,6 +160,7 @@ class TestOnline(unittest.TestCase):
         reply = self.eip_instance.read_variable(variable_string)
         self.assertEqual(str(reply['sNest2']['StringMember']), 'Hello World')
         self.assertTrue(reply['sNest2']['BoolMember'].value())
+        print(reply.data)
 
     def test_nested_struct_reset(self):
         variable_string = 'sStructTest'
@@ -170,6 +171,88 @@ class TestOnline(unittest.TestCase):
         reply = self.eip_instance.read_variable(variable_string)
         self.assertEqual(str(reply['sNest2']['StringMember']), 'Goodnight Moon')
         self.assertFalse(reply['sNest2']['BoolMember'].value())
+
+    def test_structure3(self):
+        """
+        Given a CIPStructure, a variable is updated, the structure data must be updated accordingly.
+        """
+        cip_structure = CIPStructure()
+        cip_structure.variable_name = "Yes"
+        cip_structure.variable_type_name = 'YesType'
+        cip_structure.add_member('bool_1', CIPBoolean())
+        cip_structure['bool_1'] = True
+        cip_structure.add_member('bool_2', CIPBoolean())
+        cip_structure['bool_2'] = False
+        cip_structure.add_member('bool_3', CIPBoolean())
+        cip_structure['bool_3'] = True
+
+        self.assertEqual(cip_structure.data, b'\x01\x00\x00\x00\x01\x00')  # This is just to be sure
+
+        cip_structure['bool_3'] = False
+
+        self.assertEqual(cip_structure.data, b'\x01\x00\x00\x00\x00\x00')  # This is the real test assert
+
+    def test_structure_contents_update_updates_data(self):
+        """
+
+        Given a CIPStructure, a variable is updated, the structure data must be updated accordingly.
+
+        """
+        cip_structure = CIPStructure()
+        cip_structure.variable_name = "Yes"
+        cip_structure.variable_type_name = 'LREALisREAL'
+        cip_structure.add_member('lreal_member', CIPLongReal())
+        cip_structure['lreal_member'] = 0.00123
+
+        self.assertEqual(cip_structure.data, b'\xd7\x86\x8a\x71\xfe\x26\x54\x3f')  # This is just to be sure
+
+        cip_structure['lreal_member'] = 34.12121212
+
+        self.assertEqual(cip_structure.data, b'\xb1\xa3\xf5\xe0\x83\x0fA@')  # This is the real test assert
+
+    def test_structure_with_structure_inside(self):
+        """
+
+        Given a CIPStructure that has a CIPStructure inside, the structure data must exist.
+
+        """
+        cip_structure = CIPStructure()
+        cip_structure.size = 6
+        cip_structure.variable_name = "outer_struct"
+        cip_structure.variable_type_name = 'OuterStruct'
+
+        inner_struct_key = 'inner_struct'
+        cip_structure.add_member(inner_struct_key, CIPStructure())
+        cip_structure[inner_struct_key].size = 6
+        cip_structure[inner_struct_key].variable_type_name = 'StructWithBoolsInside'
+        cip_structure[inner_struct_key].add_member('bool_1', CIPBoolean())
+        cip_structure[inner_struct_key]['bool_1'] = False
+        cip_structure[inner_struct_key].add_member('bool_2', CIPBoolean())
+        cip_structure[inner_struct_key]['bool_2'] = True
+        cip_structure[inner_struct_key].add_member('bool_3', CIPBoolean())
+        cip_structure[inner_struct_key]['bool_3'] = False
+
+        cip_structure.from_value(cip_structure)
+        print(f"{cip_structure=}")
+        # output -> cip_structure=outer_struct { type: OuterStruct | members: {'inner_struct':
+        # { type: StructWithBoolsInside | members: {'bool_1': False, 'bool_2': True, 'bool_3': False} }} }
+
+        print(f'before {binascii.hexlify(cip_structure.data, "-")=}')
+        # output -> before binascii.hexlify(cip_structure.data, "-")=b''
+
+        cip_structure.from_value(cip_structure)  # are we supposed to do this to update cip_structure.data ?
+
+        print(f'after {binascii.hexlify(cip_structure.data, "-")=}')
+        # output -> after binascii.hexlify(cip_structure.data, "-")=b'00-00-01-00-00-00'
+
+        self.assertEqual(cip_structure.data, b'\x00\x00\x01\x00\x00\x00')  # This is just to be sure
+
+        cip_structure[inner_struct_key]['bool_3'] = True
+
+        # Using the following line does not work, neither using it (but gives different result).
+        cip_structure.from_value(cip_structure)  # are we supposed to do this to update cip_structure.data ?
+
+        self.assertEqual(cip_structure.data, b'\x00\x00\x01\x00\x01\x00')  # This is the real test assert
 
         # self.eip_instance.write_variable(variable_string, True)
         # reply = self.eip_instance.read_variable(variable_string)

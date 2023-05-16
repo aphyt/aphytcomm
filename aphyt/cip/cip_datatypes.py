@@ -447,6 +447,7 @@ class CIPStructure(CIPDataType):
         self.members = {}
         self._alignment = 0
         self.crc_code = b''
+        self.observer_callbacks = []
 
     @staticmethod
     def data_type_code():
@@ -459,6 +460,14 @@ class CIPStructure(CIPDataType):
     @alignment.setter
     def alignment(self, new_alignment):
         self._alignment = new_alignment
+
+    def bind_to_value(self, callback):
+        """
+        Observer Pattern: Allow  to bind a callback function that will act on value change
+        :param callback:
+        :return:
+        """
+        self.observer_callbacks.append(callback)
 
     def __setitem__(self, key, value):
         current_type = self.members.get(key)
@@ -512,6 +521,8 @@ class CIPStructure(CIPDataType):
             mutable_data[offset:offset+member.size] = member.data
             offset = end_byte
         self.data = bytes(mutable_data)
+        for callback in self.observer_callbacks:
+            callback()
         self.value()
 
 

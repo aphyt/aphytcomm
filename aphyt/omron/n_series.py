@@ -316,6 +316,9 @@ class NSeries:
         while member_instance_id != 0:
             variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_cip_datatype_instance = self._get_member_instance(member_instance_id)
+            if type(member_cip_datatype_instance) == CIPStructure:
+                member_cip_datatype_instance.bind_to_value(lambda:
+                                                           cip_datatype_instance.from_value(cip_datatype_instance))
             member_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
             cip_datatype_instance.members.update(
                 {member_name: member_cip_datatype_instance})
