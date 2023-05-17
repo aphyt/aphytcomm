@@ -447,7 +447,8 @@ class CIPStructure(CIPDataType):
         self.members = {}
         self._alignment = 0
         self.crc_code = b''
-        self.observer_callbacks = []
+        self.callback = None
+        self.callback_arg = None
 
     @staticmethod
     def data_type_code():
@@ -521,8 +522,8 @@ class CIPStructure(CIPDataType):
             mutable_data[offset:offset+member.size] = member.data
             offset = end_byte
         self.data = bytes(mutable_data)
-        for callback in self.observer_callbacks:
-            callback()
+        if self.callback is not None:
+            self.callback(self.callback_arg)
         self.value()
 
 
