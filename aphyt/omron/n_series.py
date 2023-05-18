@@ -650,8 +650,9 @@ class MonitoredVariable:
 
     def __new__(cls, dispatcher: "NSeriesThreadDispatcher", variable_name,
                 refresh_time: float = 0.05, *args, **kwargs):
-        if variable_name in MonitoredVariable.instance:
-            monitored_object = MonitoredVariable.instance[variable_name]
+        unique_key = str(dispatcher) + variable_name
+        if unique_key in MonitoredVariable.instance:
+            monitored_object = MonitoredVariable.instance[unique_key]
             if monitored_object.refresh_time > refresh_time:
                 monitored_object.refresh_time = refresh_time
             return monitored_object
@@ -661,12 +662,13 @@ class MonitoredVariable:
     def __init__(self, dispatcher: "NSeriesThreadDispatcher", variable_name,
                  refresh_time: float = 0.05, observers=[]):
         self.variable_name = variable_name
+        self.unique_key = str(dispatcher) + self.variable_name
         self.dispatcher = dispatcher
         self.monitored_variable_observers = observers
         self.refresh_time = refresh_time
         self.refresh_timer = threading.Timer(self.refresh_time, self.update)
         self._value = None
-        MonitoredVariable.instance[self.variable_name] = self
+        MonitoredVariable.instance[self.unique_key] = self
         self.update()
 
     def bind_to_value(self, callback):
