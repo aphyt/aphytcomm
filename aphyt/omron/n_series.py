@@ -383,6 +383,39 @@ class NSeries:
         else:
             return self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
 
+    def new_read_variable(self, variable_name: str):
+        """
+        This method will read the variable name from the controller and return it in the corresponding
+        Python datatype
+        :param variable_name:
+        :return:
+        """
+        request_path = variable_request_path_segment(variable_name)
+        cip_datatype_object = self.connected_cip_dispatcher.variables.get(variable_name)
+        if cip_datatype_object is None:
+            response = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
+            update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
+            data_type_code = response.bytes[8:9]
+            variable_type_object_instance_id = int.from_bytes(response.bytes[12:16], 'little')
+            variable_type_object = self._get_variable_type_object(variable_type_object_instance_id)
+            print(variable_type_object_instance_id)
+            if data_type_code == CIPStructure.data_type_code():
+                cip_datatype_object = self._structure_instance_from_variable_object(variable_type_object)
+            elif data_type_code == CIPAbbreviatedStructure.data_type_code():
+                cip_datatype_object = self._structure_instance_from_variable_object(variable_type_object)
+            elif data_type_code == CIPString.data_type_code():
+                cip_datatype_object = self._string_instance_from_variable_object(variable_type_object)
+            elif data_type_code == CIPArray.data_type_code():
+                cip_datatype_object = self._array_instance_from_variable_object(variable_type_object)
+            else:
+                cip_datatype_object = self.connected_cip_dispatcher.data_type_dictionary.get(data_type_code)()
+        if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
+            return self._multi_message_variable_read(cip_datatype_object)
+        else:
+            response = self.connected_cip_dispatcher.read_tag_service(request_path)
+            cip_datatype_object.from_bytes(response.reply_data)
+            return cip_datatype_object.value()
+
     def read_variable(self, variable_name: str):
         """
         This method will read the variable name from the controller and return it in the corresponding
@@ -398,6 +431,25 @@ class NSeries:
             response = self.connected_cip_dispatcher.read_tag_service(request_path)
             cip_datatype_object.from_bytes(response.reply_data)
             return cip_datatype_object.value()
+
+    def new_write_variable(self, variable_name: str, data):
+        """
+        This method takes a variable name and formats the Python datatype into the correct CIP datatype
+        and writes it to the controller
+        :param variable_name:
+        :param data:
+        :return:
+        """
+        request_path = variable_request_path_segment(variable_name)
+        cip_datatype_object = self.connected_cip_dispatcher.variables.get(variable_name)
+        cip_datatype_object.from_value(data)
+        if cip_datatype_object is None:
+            print('HERE')
+        elif isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
+            self._multi_message_variable_write(cip_datatype_object, data)
+        else:
+            request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=cip_datatype_object.data)
+            self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
 
     def write_variable(self, variable_name: str, data):
         """
@@ -534,6 +586,19 @@ class NSeries:
             response = self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
         return response
 
+    def _get_variable_object(self, instance_id: int) -> VariableObjectReply:
+        """
+        Omron specific CIP class that is used to describe variables. This contains critical information if the
+        variable is an array type
+        :param instance_id:
+        :return:
+        """
+        request_path = address_request_path_segment(
+            class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
+        variable_object_reply = VariableObjectReply(
+            self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
+        return variable_object_reply
+
     def _get_variable_type_object(self, instance_id: int) -> VariableTypeObjectReply:
         """
         Omron specific CIP class that is used to describe variable types. This is where derived data types
@@ -552,19 +617,6 @@ class NSeries:
         reply = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
         max_instance = struct.unpack("<H", reply.reply_data[2:4])[0]
         return max_instance
-
-    def _get_variable_object(self, instance_id: int) -> VariableObjectReply:
-        """
-        Omron specific CIP class that is used to describe variables. This contains critical information if the
-        variable is an array type
-        :param instance_id:
-        :return:
-        """
-        request_path = address_request_path_segment(
-            class_id=b'\x6b', instance_id=instance_id.to_bytes(2, 'little'))
-        variable_object_reply = VariableObjectReply(
-            self.connected_cip_dispatcher.get_attribute_all_service(request_path).bytes)
-        return variable_object_reply
 
     def _get_variable_list(self):
         """
@@ -588,30 +640,6 @@ class NSeries:
         request_path = address_request_path_segment(b'\x6a', b'\x00\x00')
         reply = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
         return int.from_bytes(reply.reply_data[2:4], 'little')
-
-    def _cip_string_read(self, request_path):
-        pass
-
-    def _cip_string_write(self):
-        pass
-
-    def _cip_structure_read(self):
-        pass
-
-    def _cip_structure_write(self):
-        pass
-
-    def _cip_abbreviated_structure_read(self):
-        pass
-
-    def _cip_abbreviated_structure_write(self):
-        pass
-
-    def _cip_array_read(self):
-        pass
-
-    def _cip_array_write(self):
-        pass
 
 
 class EIPConnectionStatus:
