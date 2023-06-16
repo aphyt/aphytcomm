@@ -20,7 +20,7 @@ class TestOnline(unittest.TestCase):
         cls.eip_instance = omron.n_series.NSeries()
         cls.eip_instance.connected_cip_dispatcher.connect_explicit('192.168.250.9')
         cls.eip_instance.connected_cip_dispatcher.register_session()
-        cls.eip_instance.update_variable_dictionary()
+        # cls.eip_instance.update_variable_dictionary()
 
     @classmethod
     def tearDownClass(cls) -> None:
