@@ -549,8 +549,9 @@ class NSeries:
         if cip_datatype_instance is None:
             response = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
             update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
-            data_type_code = response.bytes[8:9]
-            variable_type_object_instance_id = int.from_bytes(response.bytes[12:16], 'little')
+            data_type_code = response.reply_data[4:5]
+            """TODO: THIS IS NOT CORRECT! ID FOR VARIABLE TYPE OBJECT IS CONTEXT SPECIFIC"""
+            variable_type_object_instance_id = int.from_bytes(response.reply_data[8:12], 'little')
             variable_type_object = self._get_variable_type_object(variable_type_object_instance_id)
             if data_type_code == CIPStructure.data_type_code():
                 cip_datatype_instance = self._structure_instance_from_variable_type_object(variable_type_object)
@@ -558,6 +559,7 @@ class NSeries:
                 cip_datatype_instance = self._structure_instance_from_variable_type_object(variable_type_object)
             elif data_type_code == CIPString.data_type_code():
                 cip_datatype_instance = self._string_instance_from_variable_type_object(variable_type_object)
+                cip_datatype_instance.size = int.from_bytes(response.reply_data[0:2], 'little')
             elif data_type_code == CIPArray.data_type_code():
                 cip_datatype_instance = self._array_instance_from_variable_type_object(variable_type_object)
             else:
