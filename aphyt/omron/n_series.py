@@ -324,6 +324,7 @@ class NSeries:
     def _structure_instance_from_variable_object(
             self, variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPStructure:
         cip_datatype_instance = CIPStructure()
+
         variable_type_object_reply = None
         if isinstance(variable_object, VariableObjectReply):
             variable_type_instance_id = int.from_bytes(variable_object.variable_type_instance_id, 'little')
@@ -383,13 +384,18 @@ class NSeries:
         cip_datatype_instance.size = variable_object.size_in_memory
         cip_datatype_instance.variable_type_name = str(variable_object.variable_type_name, 'utf-8')
 
+        # variable_type_instance_id = int.from_bytes(variable_object.nesting_variable_type_instance_id, 'little')
+        # variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
+        # cip_datatype_instance.size = variable_type_object_reply.size_in_memory
+        # cip_datatype_instance.variable_type_name = str(variable_object.variable_type_name, 'utf-8')
+
         nesting_variable_type_instance_id = \
             int.from_bytes(variable_object.nesting_variable_type_instance_id, 'little')
         member_instance_id = nesting_variable_type_instance_id
         while member_instance_id != 0:
             variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_cip_datatype_instance = self._get_member_instance(member_instance_id)
-            print(member_cip_datatype_instance)
+            # print(member_cip_datatype_instance)
             if type(member_cip_datatype_instance) == CIPStructure:
                 member_cip_datatype_instance.callback = cip_datatype_instance.from_value
                 member_cip_datatype_instance.callback_arg = cip_datatype_instance
@@ -518,6 +524,7 @@ class NSeries:
         data_type_code = response.reply_data[4:5]
         """TODO: THIS IS NOT CORRECT! ID FOR VARIABLE TYPE OBJECT IS CONTEXT SPECIFIC"""
         if data_type_code == CIPStructure.data_type_code():
+
             variable_type_object_instance_id = int.from_bytes(response.reply_data[8:12], 'little')
             variable_type_object = self._get_variable_type_object(variable_type_object_instance_id)
             cip_data_type_instance = self._structure_instance_from_variable_type_object(variable_type_object)
