@@ -3,6 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
+import binascii
 import concurrent.futures
 import pickle
 import socket
@@ -379,29 +380,41 @@ class NSeries:
         return cip_string
 
     def _structure_instance_from_variable_type_object(
-            self, variable_object: VariableTypeObjectReply) -> CIPStructure:
+            self, variable_type_object: VariableTypeObjectReply) -> CIPStructure:
+
+        """This is recursive, but I can't figure out why data types are being treated as members"""
+        nesting_id = variable_type_object.nesting_variable_type_instance_id
+        nesting_id = int.from_bytes(nesting_id, 'little')
+        nested_variable_type_object = self._get_variable_type_object(nesting_id)
         cip_datatype_instance = CIPStructure()
-        cip_datatype_instance.size = variable_object.size_in_memory
-        cip_datatype_instance.variable_type_name = str(variable_object.variable_type_name, 'utf-8')
+        if variable_type_object.number_of_members == 0:
+            # This is a case where it is referencing a structure elsewhere
+            cip_datatype_instance.variable_type_name = str(nested_variable_type_object.variable_type_name, 'utf-8')
+            variable_type_object = nested_variable_type_object
+        else:
+            cip_datatype_instance.variable_type_name = str(variable_type_object.variable_type_name, 'utf-8')
+        cip_datatype_instance.size = variable_type_object.size_in_memory
+        nest_id = variable_type_object.nesting_variable_type_instance_id
 
-        # variable_type_instance_id = int.from_bytes(variable_object.nesting_variable_type_instance_id, 'little')
-        # variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
-        # cip_datatype_instance.size = variable_type_object_reply.size_in_memory
-        # cip_datatype_instance.variable_type_name = str(variable_object.variable_type_name, 'utf-8')
-
-        nesting_variable_type_instance_id = \
-            int.from_bytes(variable_object.nesting_variable_type_instance_id, 'little')
-        member_instance_id = nesting_variable_type_instance_id
+        member_instance_id = int.from_bytes(nest_id, 'little')
+        # if variable_object.next_instance_id == b'\x00\x00\x00\x00':
         while member_instance_id != 0:
-            variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_cip_datatype_instance = self._get_member_instance(member_instance_id)
             # print(member_cip_datatype_instance)
             if type(member_cip_datatype_instance) == CIPStructure:
+                # print('oww')
                 member_cip_datatype_instance.callback = cip_datatype_instance.from_value
                 member_cip_datatype_instance.callback_arg = cip_datatype_instance
+                if variable_type_object.number_of_members == 0:
+                    print(member_instance_id)
+            variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
-            cip_datatype_instance.members.update(
-                {member_name: member_cip_datatype_instance})
+            # print(member_name)
+            # if variable_type_object_reply.next_instance_id == b'\x00\x00\x00\x00' and \
+            #     variable_type_object_reply.nesting_variable_type_instance_id != b'\x00\x00\x00\x00':
+            if True:
+                cip_datatype_instance.members[member_name] = member_cip_datatype_instance
+            variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_instance_id = \
                 int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
         return cip_datatype_instance
@@ -436,6 +449,7 @@ class NSeries:
                                          array_attributes_all_reply.array_dimension,
                                          array_attributes_all_reply.number_of_elements,
                                          array_attributes_all_reply.start_array_elements)
+        # cip_array_instance.variable_name = variable_name
         return cip_array_instance
 
     def _array_instance_from_variable_type_object(self, variable_type_object: VariableTypeObjectReply) -> CIPArray:
@@ -474,49 +488,6 @@ class NSeries:
         cip_string.size = variable_object.size
         return cip_string
 
-    def _get_instance_from_variable_type_object_id_old(self, instance_id: int) -> CIPDataType:
-        reply = self._get_variable_type_object(instance_id)
-        if reply.cip_data_type == CIPStructure.data_type_code():
-            return self._structure_instance_from_variable_object(reply)
-        elif reply.cip_data_type == CIPAbbreviatedStructure.data_type_code():
-            return self._structure_instance_from_variable_object(reply)
-        elif reply.cip_data_type == CIPString.data_type_code():
-            return self._string_instance_from_variable_object(reply)
-        elif reply.cip_data_type == CIPArray.data_type_code():
-            return self._array_instance_from_variable_object(reply)
-        else:
-            return self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
-
-    def _get_instance(self, variable_name: str, instance_id: int, data_type_code: bytes):
-        variable_type_object = self._get_variable_type_object(instance_id)
-        if data_type_code == CIPStructure.data_type_code():
-            cip_data_type_instance = self._structure_instance_from_variable_type_object(variable_type_object)
-            # cip_data_type_instance = CIPStructure()
-            # cip_data_type_instance.instance_id = instance_id
-            # variable_type_object = self._get_variable_type_object(cip_data_type_instance.instance_id)
-            # cip_data_type_instance.size = variable_type_object.size
-            # cip_data_type_instance.variable_type_name = str(variable_type_object.variable_type_name, 'utf-8')
-        elif data_type_code == CIPAbbreviatedStructure.data_type_code():
-            cip_data_type_instance = CIPStructure()
-            cip_data_type_instance.instance_id = instance_id
-            variable_type_object = self._get_variable_type_object(cip_data_type_instance.instance_id)
-            cip_data_type_instance.size = variable_type_object.size
-        elif data_type_code == CIPString.data_type_code():
-            cip_data_type_instance = CIPString()
-            cip_data_type_instance.instance_id = instance_id
-            variable_type_object = self._get_variable_type_object(cip_data_type_instance.instance_id)
-            cip_data_type_instance.size = variable_type_object.size
-        elif data_type_code == CIPArray.data_type_code():
-            cip_data_type_instance = CIPArray()
-            cip_data_type_instance.instance_id = instance_id
-            variable_type_object = self._get_variable_type_object(cip_data_type_instance.instance_id)
-            cip_data_type_instance.size = variable_type_object.size
-        else:
-            cip_data_type_instance = self.connected_cip_dispatcher.data_type_dictionary.get(
-                data_type_code)()
-        cip_data_type_instance.variable_name = variable_name
-        return cip_data_type_instance
-
     def _get_instance_from_variable_name(self, variable_name: str):
         request_path = variable_request_path_segment(variable_name)
         response = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
@@ -542,6 +513,7 @@ class NSeries:
         else:
             cip_data_type_instance = self.connected_cip_dispatcher.data_type_dictionary.get(data_type_code)()
         cip_data_type_instance.variable_name = str(variable_name)
+        # print(variable_name)
         self.connected_cip_dispatcher.variables.update({variable_name: cip_data_type_instance})
         if variable_name[0:1] == '_':
             self.connected_cip_dispatcher.system_variables.update({variable_name: cip_data_type_instance})
