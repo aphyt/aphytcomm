@@ -485,13 +485,17 @@ class NSeries:
         return cip_string
 
     def _get_instance_from_variable_name(self, variable_name: str):
+        """
+        This method returns the correct type of CIP Datatype instance based on the associated datatype
+        that is discovered by calling the get_attribute_all CIP Service on the variable's request path.
+        :param variable_name:
+        :return:
+        """
         request_path = variable_request_path_segment(variable_name)
         response = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
         update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
         data_type_code = response.reply_data[4:5]
-        """TODO: THIS IS NOT CORRECT! ID FOR VARIABLE TYPE OBJECT IS CONTEXT SPECIFIC"""
         if data_type_code == CIPStructure.data_type_code():
-
             variable_type_object_instance_id = int.from_bytes(response.reply_data[8:12], 'little')
             variable_type_object = self._get_variable_type_object(variable_type_object_instance_id)
             cip_data_type_instance = self._structure_instance_from_variable_type_object(variable_type_object)
@@ -509,7 +513,6 @@ class NSeries:
         else:
             cip_data_type_instance = self.connected_cip_dispatcher.data_type_dictionary.get(data_type_code)()
         cip_data_type_instance.variable_name = str(variable_name)
-        # print(variable_name)
         self.connected_cip_dispatcher.variables.update({variable_name: cip_data_type_instance})
         if variable_name[0:1] == '_':
             self.connected_cip_dispatcher.system_variables.update({variable_name: cip_data_type_instance})
