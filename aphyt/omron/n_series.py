@@ -517,19 +517,6 @@ class NSeries:
             self.connected_cip_dispatcher.user_variables.update({variable_name: cip_data_type_instance})
         return cip_data_type_instance
 
-    def _get_instance_from_variable_object_id(self, instance_id: int) -> CIPDataType:
-        reply = self._get_variable_object(instance_id)
-        if reply.cip_data_type == CIPStructure.data_type_code():
-            return self._structure_instance_from_variable_object(reply)
-        elif reply.cip_data_type == CIPAbbreviatedStructure.data_type_code():
-            return self._structure_instance_from_variable_object(reply)
-        elif reply.cip_data_type == CIPString.data_type_code():
-            return self._string_instance_from_variable_object(reply)
-        elif reply.cip_data_type == CIPArray.data_type_code():
-            return self._array_instance_from_variable_object(reply)
-        else:
-            return self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
-
     def _get_member_instance(self, member_instance_id: int) -> CIPDataType:
         """
         This method returns a CIP datatype instance from a member ID. This is how the driver can
