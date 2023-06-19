@@ -372,13 +372,6 @@ class NSeries:
             cip_array_instance = member_instance
         return cip_array_instance
 
-    @staticmethod
-    def _string_instance_from_variable_object(
-            variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPString:
-        cip_string = CIPString()
-        cip_string.size = variable_object.size
-        return cip_string
-
     def _structure_instance_from_variable_type_object(
             self, variable_type_object: VariableTypeObjectReply) -> CIPStructure:
         """
