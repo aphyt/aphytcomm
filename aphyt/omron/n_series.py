@@ -287,7 +287,7 @@ class NSeries:
         instance_id = 1
         for variable in variable_list:
             # Instantiate the classes into objects
-            variable_cip_datatype = self._get_instance_from_variable_object_id(instance_id)
+            variable_cip_datatype = self._get_instance_from_variable_name(variable)
             variable_cip_datatype.variable_name = str(variable)
             self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
             if variable[0:1] == '_':
@@ -381,8 +381,12 @@ class NSeries:
 
     def _structure_instance_from_variable_type_object(
             self, variable_type_object: VariableTypeObjectReply) -> CIPStructure:
-
-        """This is recursive, but I can't figure out why data types are being treated as members"""
+        """
+        This method recursively builds a CIP Structure from a Variable Type Object that represents a
+        structure definition
+        :param variable_type_object:
+        :return:
+        """
         nesting_id = variable_type_object.nesting_variable_type_instance_id
         nesting_id = int.from_bytes(nesting_id, 'little')
         nested_variable_type_object = self._get_variable_type_object(nesting_id)
@@ -395,25 +399,17 @@ class NSeries:
             cip_datatype_instance.variable_type_name = str(variable_type_object.variable_type_name, 'utf-8')
         cip_datatype_instance.size = variable_type_object.size_in_memory
         nest_id = variable_type_object.nesting_variable_type_instance_id
-
         member_instance_id = int.from_bytes(nest_id, 'little')
-        # if variable_object.next_instance_id == b'\x00\x00\x00\x00':
         while member_instance_id != 0:
             member_cip_datatype_instance = self._get_member_instance(member_instance_id)
-            # print(member_cip_datatype_instance)
             if type(member_cip_datatype_instance) == CIPStructure:
-                # print('oww')
                 member_cip_datatype_instance.callback = cip_datatype_instance.from_value
                 member_cip_datatype_instance.callback_arg = cip_datatype_instance
                 if variable_type_object.number_of_members == 0:
                     print(member_instance_id)
             variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
-            # print(member_name)
-            # if variable_type_object_reply.next_instance_id == b'\x00\x00\x00\x00' and \
-            #     variable_type_object_reply.nesting_variable_type_instance_id != b'\x00\x00\x00\x00':
-            if True:
-                cip_datatype_instance.members[member_name] = member_cip_datatype_instance
+            cip_datatype_instance.members[member_name] = member_cip_datatype_instance
             variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_instance_id = \
                 int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
