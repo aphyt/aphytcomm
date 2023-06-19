@@ -322,38 +322,6 @@ class NSeries:
             self.update_variable_dictionary()
             self.save_current_dictionary(file_name)
 
-    def _structure_instance_from_variable_object(
-            self, variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPStructure:
-        cip_datatype_instance = CIPStructure()
-
-        variable_type_object_reply = None
-        if isinstance(variable_object, VariableObjectReply):
-            variable_type_instance_id = int.from_bytes(variable_object.variable_type_instance_id, 'little')
-            variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
-            cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
-            cip_datatype_instance.size = variable_object.size
-        if isinstance(variable_object, VariableTypeObjectReply):
-            variable_type_instance_id = int.from_bytes(variable_object.nesting_variable_type_instance_id, 'little')
-            variable_type_object_reply = self._get_variable_type_object(variable_type_instance_id)
-            cip_datatype_instance.size = variable_type_object_reply.size_in_memory
-            cip_datatype_instance.variable_type_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
-
-        nesting_variable_type_instance_id = \
-            int.from_bytes(variable_type_object_reply.nesting_variable_type_instance_id, 'little')
-        member_instance_id = nesting_variable_type_instance_id
-        while member_instance_id != 0:
-            variable_type_object_reply = self._get_variable_type_object(member_instance_id)
-            member_cip_datatype_instance = self._get_member_instance(member_instance_id)
-            if type(member_cip_datatype_instance) == CIPStructure:
-                member_cip_datatype_instance.callback = cip_datatype_instance.from_value
-                member_cip_datatype_instance.callback_arg = cip_datatype_instance
-            member_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
-            cip_datatype_instance.members.update(
-                {member_name: member_cip_datatype_instance})
-            member_instance_id = \
-                int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
-        return cip_datatype_instance
-
     def _array_instance_from_variable_object(
             self, variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPArray:
         cip_array_instance = CIPArray()
