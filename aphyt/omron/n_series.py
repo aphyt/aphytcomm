@@ -537,12 +537,6 @@ class NSeries:
             return self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
 
     def read_variable(self, variable_name: str):
-        return self.new_read_variable(variable_name)
-
-    def write_variable(self, variable_name: str, data):
-        self.new_write_variable(variable_name, data)
-
-    def new_read_variable(self, variable_name: str):
         """
         This method will read the variable name from the controller and return it in the corresponding
         Python datatype
@@ -562,23 +556,7 @@ class NSeries:
             cip_data_type_instance.variable_name = variable_name
             return cip_data_type_instance.value()
 
-    def old_read_variable(self, variable_name: str):
-        """
-        This method will read the variable name from the controller and return it in the corresponding
-        Python datatype
-        :param variable_name:
-        :return:
-        """
-        request_path = variable_request_path_segment(variable_name)
-        cip_datatype_object = self.connected_cip_dispatcher.variables.get(variable_name)
-        if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
-            return self._multi_message_variable_read(cip_datatype_object)
-        else:
-            response = self.connected_cip_dispatcher.read_tag_service(request_path)
-            cip_datatype_object.from_bytes(response.reply_data)
-            return cip_datatype_object.value()
-
-    def new_write_variable(self, variable_name: str, data):
+    def write_variable(self, variable_name: str, data):
         """
         This method takes a variable name and formats the Python datatype into the correct CIP datatype
         and writes it to the controller
@@ -598,23 +576,6 @@ class NSeries:
             self._multi_message_variable_write(cip_data_type_instance, data)
         else:
             request_data = CIPCommonFormat(cip_data_type_instance.data_type_code(), data=cip_data_type_instance.data)
-            self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
-
-    def old_write_variable(self, variable_name: str, data):
-        """
-        This method takes a variable name and formats the Python datatype into the correct CIP datatype
-        and writes it to the controller
-        :param variable_name:
-        :param data:
-        :return:
-        """
-        request_path = variable_request_path_segment(variable_name)
-        cip_datatype_object = self.connected_cip_dispatcher.variables.get(variable_name)
-        cip_datatype_object.from_value(data)
-        if isinstance(cip_datatype_object, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
-            self._multi_message_variable_write(cip_datatype_object, data)
-        else:
-            request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=cip_datatype_object.data)
             self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
 
     def verified_write_variable(self, variable_name: str, data, retry_count: int = 2):
