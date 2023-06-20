@@ -183,7 +183,7 @@ class HMIScreen(tkinter.Tk):
         if dictionary_file is not None:
             self.eip_instance.load_dictionary_file_if_present(dictionary_file)
         else:
-            self.eip_instance.update_variable_dictionary()
+            pass
         self.update()
         self.deiconify()
 
