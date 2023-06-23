@@ -322,24 +322,6 @@ class NSeries:
             self.update_variable_dictionary()
             self.save_current_dictionary(file_name)
 
-    def _array_instance_from_variable_object(
-            self, variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPArray:
-        cip_array_instance = CIPArray()
-        variable_type_instance_id = b'\x00\x00\x00\x00'
-        if isinstance(variable_object, VariableObjectReply):
-            variable_type_instance_id = variable_object.variable_type_instance_id
-        if variable_type_instance_id == b'\x00\x00\x00\x00':
-            cip_array_instance.from_items(variable_object.cip_data_type_of_array,
-                                          variable_object.size,
-                                          variable_object.array_dimension,
-                                          variable_object.number_of_elements,
-                                          variable_object.start_array_elements)
-        else:
-            member_instance_id = int.from_bytes(variable_object.variable_type_instance_id, 'little')
-            member_instance = self._get_member_instance(member_instance_id)
-            cip_array_instance = member_instance
-        return cip_array_instance
-
     def _structure_instance_from_variable_type_object(
             self, variable_type_object: VariableTypeObjectReply) -> CIPStructure:
         """
@@ -499,6 +481,24 @@ class NSeries:
             return self._array_instance_from_variable_type_object(reply)
         else:
             return self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
+
+    def _array_instance_from_variable_object(
+            self, variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPArray:
+        cip_array_instance = CIPArray()
+        variable_type_instance_id = b'\x00\x00\x00\x00'
+        if isinstance(variable_object, VariableObjectReply):
+            variable_type_instance_id = variable_object.variable_type_instance_id
+        if variable_type_instance_id == b'\x00\x00\x00\x00':
+            cip_array_instance.from_items(variable_object.cip_data_type_of_array,
+                                          variable_object.size,
+                                          variable_object.array_dimension,
+                                          variable_object.number_of_elements,
+                                          variable_object.start_array_elements)
+        else:
+            member_instance_id = int.from_bytes(variable_object.variable_type_instance_id, 'little')
+            member_instance = self._get_member_instance(member_instance_id)
+            cip_array_instance = member_instance
+        return cip_array_instance
 
     def read_variable(self, variable_name: str):
         """
