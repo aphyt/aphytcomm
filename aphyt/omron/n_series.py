@@ -222,6 +222,7 @@ class NSeries:
         super().__init__()
         self.derived_data_type_dictionary = {}
         self.connected_cip_dispatcher = EIPConnectedCIPDispatcher()
+        update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
 
     def connect_explicit(self, host):
         self.connected_cip_dispatcher.connect_explicit(host)
@@ -436,7 +437,6 @@ class NSeries:
         """
         request_path = variable_request_path_segment(variable_name)
         response = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
-        update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
         data_type_code = response.reply_data[4:5]
         if data_type_code == CIPStructure.data_type_code():
             variable_type_object_instance_id = int.from_bytes(response.reply_data[8:12], 'little')
