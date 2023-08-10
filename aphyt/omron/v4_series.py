@@ -9,7 +9,7 @@ from aphyt.eip import *
 from decimal import *
 
 
-class V4_SERIES:
+class V4Series:
     def __init__(self):
         super().__init__()
         self.connected_cip_dispatcher = EIPConnectedCIPDispatcher()
