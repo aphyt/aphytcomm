@@ -665,11 +665,12 @@ class ImageLamp(MonitoredVariableWidgetMixin, tkinter.Label):
 
 class DataDisplay(tkinter.ttk.Label):
     def __init__(self, master, dispatcher: NSeriesThreadDispatcher, variable_name: str,
-                 decimal_places=None, delay: int = 100, **kwargs):
+                 decimal_places=None, rollover=0.0, delay: int = 100, **kwargs):
         super().__init__(master, **kwargs)
         self.dispatcher = dispatcher
         self.variable_name = variable_name
         self.decimal_places = decimal_places
+        self.rollover = rollover
         self.delay = delay
         self.monitored_variable = MonitoredVariable(self.dispatcher, self.variable_name)
         self._update_data()
@@ -679,6 +680,8 @@ class DataDisplay(tkinter.ttk.Label):
         data = self.monitored_variable.value
         if isinstance(data, SupportsRound) and self.decimal_places is not None:
             data = round(data, self.decimal_places)
+            if data >= self.rollover:
+                data = 0.0
         data = str(data)
         self.config(text=data)
 
