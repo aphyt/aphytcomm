@@ -27,13 +27,29 @@ def clear_bit(data: bytes, bit_position: int):
     return result
 
 
+def test_bit(data: bytes, bit_position: int):
+    data_int = int.from_bytes(data, 'little', signed=False)
+    mask_int = 2**bit_position
+    if data_int & mask_int:
+        result = True
+    else:
+        result = False
+    return result
+
+
+def clear_bytes(data: bytes):
+    length = len(data)
+    data = b'\x00' * length
+    return data
+
+
 class F4Series:
     def __init__(self):
         super().__init__()
         self.connected_cip_dispatcher = EIPConnectedCIPDispatcher()
         self.blank_control = 0b0000000000000000
-        self.status = 0b0000000000000000
-        self.camera_control_register = 0b0000000000000000
+        self.status = b'\x00\x00'
+        self.camera_control_register = b'\x00\x00'
 
     def connect_explicit(self, host):
         self.connected_cip_dispatcher.connect_explicit(host)
@@ -56,20 +72,56 @@ class F4Series:
         return self.status
 
     def status_online(self):
-        if 0b0000000000000001 & int.from_bytes(self.status, 'little'):
-            return True
-        else:
-            return False
+        return test_bit(self.status, 0)
+
+    def status_exposure_busy(self):
+        return test_bit(self.status, 1)
+
+    def status_acquisition_busy(self):
+        return test_bit(self.status, 2)
+
+    def status_trigger_ready(self):
+        return test_bit(self.status, 3)
+
+    def status_error(self):
+        return test_bit(self.status, 4)
+
+    def status_reset_count_acknowledgement(self):
+        return test_bit(self.status, 5)
+
+    def status_execute_command_acknowledgement(self):
+        return test_bit(self.status, 7)
+
+    def status_trigger_acknowledgement(self):
+        return test_bit(self.status, 8)
+
+    def status_inspection_busy(self):
+        return test_bit(self.status, 9)
+
+    def status_inspection_status(self):
+        return test_bit(self.status, 10)
+
+    def status_data_valid(self):
+        return test_bit(self.status, 11)
+
+    def get_string(self, number: int):
+        attribute_id = number.to_bytes(2, 'little', signed=False)
+        request_path = address_request_path_segment(
+            class_id=b'\x6c\x00', instance_id=b'\x01', attribute_id=attribute_id)
+        reply = self.connected_cip_dispatcher.get_attribute_single_service(request_path)
+        reply_string = str(reply.reply_data[4:], 'utf-8')
+        return reply_string
+
+    def send_command_register(self):
+        request_path = address_request_path_segment(class_id=b'\x6d\x00', instance_id=b'\x01', attribute_id=b'\x01')
+        self.connected_cip_dispatcher.set_attribute_single_service(request_path, self.camera_control_register)
+        self.camera_control_register = clear_bytes(self.camera_control_register)
+        self.connected_cip_dispatcher.set_attribute_single_service(request_path, self.camera_control_register)
 
     def trigger_inspection(self):
-        self.camera_control_register = 0b0000000100000000 | self.camera_control_register
-        register_bytes = self.camera_control_register.to_bytes(2, 'little', signed=False)
-        request_path = address_request_path_segment(
-            class_id=b'\x6d\x00', instance_id=b'\x01', attribute_id=b'\x01')
-        self.connected_cip_dispatcher.set_attribute_single_service(request_path, register_bytes)
-        self.camera_control_register = self.blank_control
-        register_bytes = self.camera_control_register.to_bytes(2, 'little', signed=False)
-        self.connected_cip_dispatcher.set_attribute_single_service(request_path, register_bytes)
-
-
+        self.get_camera_status()
+        while not self.status_trigger_ready():
+            self.get_camera_status()
+        self.camera_control_register = set_bit(self.camera_control_register, 8)
+        self.send_command_register()
 
