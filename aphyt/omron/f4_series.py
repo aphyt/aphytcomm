@@ -9,6 +9,24 @@ from aphyt.eip import *
 from decimal import *
 
 
+def set_bit(data: bytes, bit_position: int):
+    length = len(data)
+    data_int = int.from_bytes(data, 'little', signed=False)
+    mask_int = 2**bit_position
+    data_int = data_int | mask_int
+    result = data_int.to_bytes(length, 'little', signed=False)
+    return result
+
+
+def clear_bit(data: bytes, bit_position: int):
+    length = len(data)
+    data_int = int.from_bytes(data, 'little', signed=False)
+    mask_int = ~2**bit_position
+    data_int = data_int & mask_int
+    result = data_int.to_bytes(length, 'little', signed=False)
+    return result
+
+
 class F4Series:
     def __init__(self):
         super().__init__()
