@@ -169,8 +169,8 @@ class CIPDispatcher(ABC):
         get_attribute_single_request = CIPRequest(ap.CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
         return self.execute_cip_command(get_attribute_single_request)
 
-    def set_attribute_single_service(self, tag_request_path):
-        set_attribute_single_request = CIPRequest(ap.CIPService.SET_ATTRIBUTE_SINGLE, tag_request_path)
+    def set_attribute_single_service(self, tag_request_path, data):
+        set_attribute_single_request = CIPRequest(ap.CIPService.SET_ATTRIBUTE_SINGLE, tag_request_path, data)
         return self.execute_cip_command(set_attribute_single_request)
 
 
