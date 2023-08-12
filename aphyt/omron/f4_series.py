@@ -105,6 +105,8 @@ class F4Series:
         return test_bit(self.status, 11)
 
     def get_string(self, number: int):
+        assert number >= 1
+        assert number <= 200
         attribute_id = number.to_bytes(2, 'little', signed=False)
         request_path = address_request_path_segment(
             class_id=b'\x6c\x00', instance_id=b'\x01', attribute_id=attribute_id)
@@ -118,10 +120,34 @@ class F4Series:
         self.camera_control_register = clear_bytes(self.camera_control_register)
         self.connected_cip_dispatcher.set_attribute_single_service(request_path, self.camera_control_register)
 
+    def go_online(self):
+        self.camera_control_register = set_bit(self.camera_control_register, 0)
+        self.send_command_register()
+
+    def go_offline(self):
+        self.camera_control_register = set_bit(self.camera_control_register, 1)
+        self.send_command_register()
+
+    def reset_error(self):
+        self.camera_control_register = set_bit(self.camera_control_register, 4)
+        self.send_command_register()
+
+    def reset_count(self):
+        self.camera_control_register = set_bit(self.camera_control_register, 5)
+        self.send_command_register()
+
+    def execute_command(self):
+        self.camera_control_register = set_bit(self.camera_control_register, 7)
+        self.send_command_register()
+
     def trigger_inspection(self):
         self.get_camera_status()
         while not self.status_trigger_ready():
             self.get_camera_status()
         self.camera_control_register = set_bit(self.camera_control_register, 8)
+        self.send_command_register()
+
+    def reset_data_valid(self):
+        self.camera_control_register = set_bit(self.camera_control_register, 11)
         self.send_command_register()
 
