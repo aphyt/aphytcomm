@@ -121,8 +121,6 @@ class F4Series:
         request_path = address_request_path_segment(
             class_id=b'\x6c\x00', instance_id=b'\x01', attribute_id=attribute_id)
         data_length = len(value)
-        padding_length = 2044 - data_length
-        padding = padding_length * b'\x00'
         data = data_length.to_bytes(4, 'little', signed=False)
         data = data + bytes(value, 'utf-8')
         self.connected_cip_dispatcher.set_attribute_single_service(request_path, data)
@@ -139,6 +137,20 @@ class F4Series:
         else:
             return False
 
+    def set_bool(self, number: int, value: bool):
+        assert number >= 1
+        assert number <= 200
+        attribute_id = number.to_bytes(2, 'little', signed=False)
+        request_path = address_request_path_segment(
+            class_id=b'\x68\x00', instance_id=b'\x01', attribute_id=attribute_id)
+        self.connected_cip_dispatcher.get_attribute_single_service(request_path)
+        cip_type = CIPBoolean()
+        if value:
+            cip_type.from_value(True)
+        else:
+            cip_type.from_value(False)
+        self.connected_cip_dispatcher.set_attribute_single_service(request_path, cip_type.data)
+
     def get_int(self, number: int):
         assert number >= 1
         assert number <= 200
@@ -149,6 +161,16 @@ class F4Series:
         value = CIPInteger()
         value.data = reply.reply_data
         return value
+
+    def set_int(self, number: int, value: int):
+        assert number >= 1
+        assert number <= 200
+        attribute_id = number.to_bytes(2, 'little', signed=False)
+        request_path = address_request_path_segment(
+            class_id=b'\x69\x00', instance_id=b'\x01', attribute_id=attribute_id)
+        cip_type = CIPInteger()
+        cip_type.from_value(value)
+        self.connected_cip_dispatcher.set_attribute_single_service(request_path, cip_type.data)
 
     def get_long(self, number: int):
         assert number >= 1
@@ -161,6 +183,16 @@ class F4Series:
         value.data = reply.reply_data
         return value
 
+    def set_long(self, number: int, value: int):
+        assert number >= 1
+        assert number <= 200
+        attribute_id = number.to_bytes(2, 'little', signed=False)
+        request_path = address_request_path_segment(
+            class_id=b'\x6a\x00', instance_id=b'\x01', attribute_id=attribute_id)
+        cip_type = CIPLongInteger()
+        cip_type.from_value(value)
+        self.connected_cip_dispatcher.set_attribute_single_service(request_path, cip_type.data)
+
     def get_float(self, number: int):
         assert number >= 1
         assert number <= 200
@@ -171,6 +203,16 @@ class F4Series:
         value = CIPReal()
         value.data = reply.reply_data
         return value
+
+    def set_float(self, number: int, value: float):
+        assert number >= 1
+        assert number <= 200
+        attribute_id = number.to_bytes(2, 'little', signed=False)
+        request_path = address_request_path_segment(
+            class_id=b'\x6b\x00', instance_id=b'\x01', attribute_id=attribute_id)
+        cip_type = CIPReal()
+        cip_type.from_value(value)
+        self.connected_cip_dispatcher.set_attribute_single_service(request_path, cip_type.data)
 
     def send_command_register(self):
         request_path = address_request_path_segment(class_id=b'\x6d\x00', instance_id=b'\x01', attribute_id=b'\x01')
