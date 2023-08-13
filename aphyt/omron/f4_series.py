@@ -114,6 +114,19 @@ class F4Series:
         reply_string = str(reply.reply_data[4:], 'utf-8')
         return reply_string
 
+    def set_string(self, number: int, value: str):
+        assert number >= 1
+        assert number <= 200
+        attribute_id = number.to_bytes(2, 'little', signed=False)
+        request_path = address_request_path_segment(
+            class_id=b'\x6c\x00', instance_id=b'\x01', attribute_id=attribute_id)
+        data_length = len(value)
+        padding_length = 2044 - data_length
+        padding = padding_length * b'\x00'
+        data = data_length.to_bytes(4, 'little', signed=False)
+        data = data + bytes(value, 'utf-8')
+        self.connected_cip_dispatcher.set_attribute_single_service(request_path, data)
+
     def get_bool(self, number: int):
         assert number >= 1
         assert number <= 200
@@ -121,6 +134,10 @@ class F4Series:
         request_path = address_request_path_segment(
             class_id=b'\x68\x00', instance_id=b'\x01', attribute_id=attribute_id)
         reply = self.connected_cip_dispatcher.get_attribute_single_service(request_path)
+        if reply.reply_data == b'\x01\x00':
+            return True
+        else:
+            return False
 
     def get_int(self, number: int):
         assert number >= 1
@@ -129,6 +146,9 @@ class F4Series:
         request_path = address_request_path_segment(
             class_id=b'\x69\x00', instance_id=b'\x01', attribute_id=attribute_id)
         reply = self.connected_cip_dispatcher.get_attribute_single_service(request_path)
+        value = CIPInteger()
+        value.data = reply.reply_data
+        return value
 
     def get_long(self, number: int):
         assert number >= 1
@@ -137,6 +157,9 @@ class F4Series:
         request_path = address_request_path_segment(
             class_id=b'\x6a\x00', instance_id=b'\x01', attribute_id=attribute_id)
         reply = self.connected_cip_dispatcher.get_attribute_single_service(request_path)
+        value = CIPLongInteger()
+        value.data = reply.reply_data
+        return value
 
     def get_float(self, number: int):
         assert number >= 1
@@ -145,6 +168,9 @@ class F4Series:
         request_path = address_request_path_segment(
             class_id=b'\x6b\x00', instance_id=b'\x01', attribute_id=attribute_id)
         reply = self.connected_cip_dispatcher.get_attribute_single_service(request_path)
+        value = CIPReal()
+        value.data = reply.reply_data
+        return value
 
     def send_command_register(self):
         request_path = address_request_path_segment(class_id=b'\x6d\x00', instance_id=b'\x01', attribute_id=b'\x01')
