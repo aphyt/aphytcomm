@@ -179,7 +179,7 @@ class F4Series:
         request_path = address_request_path_segment(
             class_id=b'\x6a\x00', instance_id=b'\x01', attribute_id=attribute_id)
         reply = self.connected_cip_dispatcher.get_attribute_single_service(request_path)
-        value = CIPLongInteger()
+        value = CIPDoubleInteger()
         value.data = reply.reply_data
         return value
 
@@ -189,7 +189,7 @@ class F4Series:
         attribute_id = number.to_bytes(2, 'little', signed=False)
         request_path = address_request_path_segment(
             class_id=b'\x6a\x00', instance_id=b'\x01', attribute_id=attribute_id)
-        cip_type = CIPLongInteger()
+        cip_type = CIPDoubleInteger()
         cip_type.from_value(value)
         self.connected_cip_dispatcher.set_attribute_single_service(request_path, cip_type.data)
 
