@@ -377,7 +377,8 @@ class NSeries:
         elif array_attributes_all_reply.cip_data_type_of_array == CIPAbbreviatedStructure.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         elif array_attributes_all_reply.cip_data_type_of_array == CIPString.data_type_code():
-            array_member_instance = self._get_member_instance(instance_id)
+            array_member_instance = CIPString()
+            array_member_instance.size = array_attributes_all_reply.size
         elif array_attributes_all_reply.cip_data_type_of_array == CIPArray.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         else:
