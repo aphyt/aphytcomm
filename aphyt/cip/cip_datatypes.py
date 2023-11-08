@@ -322,6 +322,9 @@ class CIPString(CIPDataType):
         super().__init__()
         self.data = str("").encode('utf-8')
 
+    def __eq__(self, other):
+        return other == str(self)
+
     @staticmethod
     def data_type_code():
         return b'\xd0'  #
@@ -541,6 +544,19 @@ class CIPArray(CIPDataType):
         self._list_representation = []
         self._alignment = 0
         self.data = b''
+
+    def __getitem__(self, i):
+        return self._list_representation[i]
+
+    def __setitem__(self, i, value):
+        self._list_representation[i] = value
+        self.from_value(self)
+
+    def __len__(self):
+        return len(self._list_representation)
+
+    def __eq__(self, other):
+        return other == self._list_representation
 
     @property
     def alignment(self) -> int:

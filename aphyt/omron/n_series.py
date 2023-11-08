@@ -390,7 +390,7 @@ class NSeries:
                                          array_attributes_all_reply.array_dimension,
                                          array_attributes_all_reply.number_of_elements,
                                          array_attributes_all_reply.start_array_elements)
-        # cip_array_instance.variable_name = variable_name
+        cip_array_instance.variable_name = variable_name
         return cip_array_instance
 
     def _array_instance_from_variable_type_object(self, variable_type_object: VariableTypeObjectReply) -> CIPArray:
@@ -408,6 +408,7 @@ class NSeries:
         elif variable_type_object.cip_data_type_of_array == CIPAbbreviatedStructure.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         elif variable_type_object.cip_data_type_of_array == CIPString.data_type_code():
+            # ToDo Check with Nested Array of Strings
             array_member_instance = self._get_member_instance(instance_id)
         elif variable_type_object.cip_data_type_of_array == CIPArray.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
@@ -569,6 +570,7 @@ class NSeries:
             else:
                 read_size = cip_datatype_object.size - offset
             response = self._simple_data_segment_read(cip_datatype_object, offset, read_size)
+            # print(response.bytes)
             reply_bytes = response.reply_data
             cip_common_format = CIPCommonFormat()
             cip_common_format.from_bytes(reply_bytes)
@@ -580,10 +582,12 @@ class NSeries:
                 data = data + cip_common_format.data
             else:
                 data = data + cip_common_format.data
+                # print(data)
             offset = offset + max_read_size
         cip_datatype_object.data = data
         # cip_datatype_object.size = len(data) # Removed Why did it exist? If weird stuff breaks revisit
-        return cip_datatype_object.value()
+        cip_datatype_object.value()
+        return cip_datatype_object
 
     def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, data, offset=0):
         """
@@ -595,6 +599,7 @@ class NSeries:
         """
         max_write_size = 400
         cip_datatype_object.from_value(data)
+        print(cip_datatype_object)
         if isinstance(cip_datatype_object, CIPArray):
             max_write_size = max_write_size // cip_datatype_object.array_data_type_size * \
                              cip_datatype_object.array_data_type_size
