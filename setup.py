@@ -5,14 +5,14 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aphyt",
-    version="0.1.14",
+    version="0.1.15",
     author="Joseph Ryan",
     author_email="jr@aphyt.com",
     description="A library to communicate with Omron NX and NJ PLC and motion controllers",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://bitbucket.org/jryan/aphytcomm/src/master/",
-    packages=setuptools.find_packages(exclude=("tests", "nxmessageservice", "nxmessaging", "examples")),
+    url="https://github.com/aphyt/aphytcomm",
+    packages=setuptools.find_packages(exclude=("tests", "examples")),
     package_data={"aphyt.tkmi": ["transparent_icon.ico", "Transparent_Pixel.png"]},
     classifiers=[
         "Programming Language :: Python :: 3",
