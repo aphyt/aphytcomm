@@ -350,7 +350,7 @@ class NSeries:
                 member_cip_datatype_instance.callback = cip_datatype_instance.from_value
                 member_cip_datatype_instance.callback_arg = cip_datatype_instance
                 if variable_type_object.number_of_members == 0:
-                    print(member_instance_id)
+                    pass
             variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
             cip_datatype_instance.members[member_name] = member_cip_datatype_instance
@@ -403,6 +403,8 @@ class NSeries:
         cip_array_instance = CIPArray()
         # Not actually a VariableObjectReply, but the data aligns the same
         instance_id = variable_type_object.nesting_variable_type_instance_id
+        if type(instance_id) is bytes:
+            instance_id = int.from_bytes(instance_id, 'little', signed=False)
         if variable_type_object.cip_data_type_of_array == CIPStructure.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         elif variable_type_object.cip_data_type_of_array == CIPAbbreviatedStructure.data_type_code():
@@ -599,7 +601,6 @@ class NSeries:
         """
         max_write_size = 400
         cip_datatype_object.from_value(data)
-        print(cip_datatype_object)
         if isinstance(cip_datatype_object, CIPArray):
             max_write_size = max_write_size // cip_datatype_object.array_data_type_size * \
                              cip_datatype_object.array_data_type_size

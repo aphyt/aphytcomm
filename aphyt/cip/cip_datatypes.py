@@ -422,10 +422,10 @@ class CIPTime(CIPDataType):
         return b'\xdb'  # (8-byte data)
 
     def value(self):
-        pass
+        return self.data
 
     def from_value(self, value):
-        pass
+        self.data = value
 
 
 class CIPAbbreviatedStructure(CIPDataType):
