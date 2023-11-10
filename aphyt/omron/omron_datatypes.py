@@ -5,6 +5,7 @@ __email__ = "jr@aphyt.com"
 
 from aphyt.cip.cip_datatypes import CIPDataType
 import datetime
+import struct
 
 
 class OmronDateAndTime(CIPDataType):
@@ -76,15 +77,20 @@ class OmronDate(CIPDataType):
 
 class OmronEnum(CIPDataType):
     #     OMRON_ENUM = b'\x07'
+    def __init__(self):
+        super().__init__()
+        self.data = b'\x00\x00\x00\x00'
+        self.size = len(self.data)
+
     @staticmethod
     def data_type_code():
         return b'\x07'  #
 
     def value(self):
-        return self.data
+        return struct.unpack("<L", self.data)[0]
 
     def from_value(self, value):
-        self.data = value
+        self.data = struct.pack("<L", value)
 
 
 class OmronUnsignedIntegerBCD(CIPDataType):

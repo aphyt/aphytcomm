@@ -335,6 +335,7 @@ class NSeries:
         nesting_id = int.from_bytes(nesting_id, 'little')
         nested_variable_type_object = self._get_variable_type_object(nesting_id)
         cip_datatype_instance = CIPStructure()
+        cip_datatype_instance.instance_id = nesting_id
         if variable_type_object.number_of_members == 0:
             # This is a case where it is referencing a structure elsewhere
             cip_datatype_instance.variable_type_name = str(nested_variable_type_object.variable_type_name, 'utf-8')
@@ -372,18 +373,19 @@ class NSeries:
         # Not actually a VariableObjectReply, but the data aligns the same
         array_attributes_all_reply = VariableObjectReply(response.bytes)
         instance_id = int.from_bytes(array_attributes_all_reply.variable_type_instance_id, 'little')
+        cip_array_instance.instance_id = instance_id
         if array_attributes_all_reply.cip_data_type_of_array == CIPStructure.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         elif array_attributes_all_reply.cip_data_type_of_array == CIPAbbreviatedStructure.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         elif array_attributes_all_reply.cip_data_type_of_array == CIPString.data_type_code():
             array_member_instance = CIPString()
-            array_member_instance.size = array_attributes_all_reply.size
         elif array_attributes_all_reply.cip_data_type_of_array == CIPArray.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         else:
             array_member_instance = \
-                self.connected_cip_dispatcher.data_type_dictionary.get(array_attributes_all_reply.cip_data_type_of_array)()
+                self.connected_cip_dispatcher.data_type_dictionary.get(
+                    array_attributes_all_reply.cip_data_type_of_array)()
 
         cip_array_instance.from_instance(array_member_instance,
                                          array_attributes_all_reply.size,
@@ -405,6 +407,7 @@ class NSeries:
         instance_id = variable_type_object.nesting_variable_type_instance_id
         if type(instance_id) is bytes:
             instance_id = int.from_bytes(instance_id, 'little', signed=False)
+        cip_array_instance.instance_id = instance_id
         if variable_type_object.cip_data_type_of_array == CIPStructure.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         elif variable_type_object.cip_data_type_of_array == CIPAbbreviatedStructure.data_type_code():
@@ -417,7 +420,6 @@ class NSeries:
         else:
             array_member_instance = \
                 self.connected_cip_dispatcher.data_type_dictionary.get(variable_type_object.cip_data_type_of_array)()
-
         cip_array_instance.from_instance(array_member_instance,
                                          variable_type_object.size,
                                          variable_type_object.array_dimension,
@@ -572,7 +574,6 @@ class NSeries:
             else:
                 read_size = cip_datatype_object.size - offset
             response = self._simple_data_segment_read(cip_datatype_object, offset, read_size)
-            # print(response.bytes)
             reply_bytes = response.reply_data
             cip_common_format = CIPCommonFormat()
             cip_common_format.from_bytes(reply_bytes)
@@ -584,7 +585,6 @@ class NSeries:
                 data = data + cip_common_format.data
             else:
                 data = data + cip_common_format.data
-                # print(data)
             offset = offset + max_read_size
         cip_datatype_object.data = data
         # cip_datatype_object.size = len(data) # Removed Why did it exist? If weird stuff breaks revisit
@@ -600,10 +600,10 @@ class NSeries:
         :return:
         """
         max_write_size = 400
-        cip_datatype_object.from_value(data)
-        if isinstance(cip_datatype_object, CIPArray):
-            max_write_size = max_write_size // cip_datatype_object.array_data_type_size * \
-                             cip_datatype_object.array_data_type_size
+        # cip_datatype_object.from_value(data)
+        # if isinstance(cip_datatype_object, CIPArray):
+        #     max_write_size = max_write_size // cip_datatype_object.array_data_type_size * \
+        #                      cip_datatype_object.array_data_type_size
         while offset < cip_datatype_object.size:
             if cip_datatype_object.size - offset > max_write_size:
                 write_size = max_write_size
@@ -613,6 +613,7 @@ class NSeries:
                 cip_datatype_object, offset, write_size,
                 cip_datatype_object.data[offset:offset + write_size])
             offset = offset + max_write_size
+        return response
 
     def _simple_data_segment_read(self, cip_datatype_object: CIPDataType, offset, read_size):
         """
@@ -650,10 +651,8 @@ class NSeries:
         elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
             # ToDo Test String array. Probably have to put the length
             if cip_datatype_object.array_data_type == CIPStructure.data_type_code():
-                array_variable_object = self._get_variable_object(cip_datatype_object.instance_id)
                 structure_variable_type_object = \
-                    self._get_variable_type_object(
-                        int.from_bytes(array_variable_object.variable_type_instance_id, 'little'))
+                    self._get_variable_type_object(cip_datatype_object.instance_id)
                 crc_code = structure_variable_type_object.crc_code.to_bytes(2, 'little')
                 request_data = CIPCommonFormat(CIPAbbreviatedStructure.data_type_code(), additional_info_length=2,
                                                additional_info=crc_code,

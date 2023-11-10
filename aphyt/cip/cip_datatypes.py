@@ -45,7 +45,7 @@ class CIPDataType(ABC):
     """
     Abstract Base Class for CIP Data Types. The subclasses will be added to a data type dictionary and
     based on the data type code, the value method will provide an appropriate representation of the
-    data to the client program when it reads from a CIP device and the the from_value method will format
+    data to the client program when it reads from a CIP device and  the from_value method will format
     python types to the proper byte representation to send to the CIP device on write operations
     """
 
@@ -465,14 +465,6 @@ class CIPStructure(CIPDataType):
     def alignment(self, new_alignment):
         self._alignment = new_alignment
 
-    def bind_to_value(self, callback):
-        """
-        Observer Pattern: Allow  to bind a callback function that will act on value change
-        :param callback:
-        :return:
-        """
-        self.observer_callbacks.append(callback)
-
     def __setitem__(self, key, value):
         current_type = self.members.get(key)
         current_type.from_value(value)
@@ -484,14 +476,6 @@ class CIPStructure(CIPDataType):
 
     def __repr__(self):
         return '%s { type: %s | members: %s }' % (self.variable_name, self.variable_type_name, self.members)
-
-        if member.alignment > self.alignment:
-            self.alignment = member.alignment
-        alignment_offset = len(self.data) % member.alignment
-        alignment_padding = 0
-        if alignment_offset != 0:
-            alignment_padding = member.alignment - alignment_offset
-        self.data += b'\x00' * alignment_padding + member.data
 
     def add_member(self, member_name: str, member: CIPDataType):
         self.members[member_name] = member
@@ -536,6 +520,7 @@ class CIPArray(CIPDataType):
         super().__init__()
         self.array_data_type = b''
         self.array_data_type_size = 0
+        self.member_instance_id = None
         self.array_dimensions = 0
         self.number_of_elements = []
         self.start_array_elements = []
@@ -550,7 +535,6 @@ class CIPArray(CIPDataType):
 
     def __setitem__(self, i, value):
         self._list_representation[i] = value
-        self.from_value(self)
 
     def __len__(self):
         return len(self._list_representation)
@@ -577,10 +561,7 @@ class CIPArray(CIPDataType):
         if self.array_data_type == b'\xc1':
             if last_number % 16 != 0:
                 add_bytes = 2
-            # print("Total %s size in bool %s" % (self.bytes(), total_size))
             total_size = total_size // 8 + add_bytes
-            # print("Total %s size in bool %s" % (self.bytes(), total_size))
-            # self.array_data_type_size = required_words * 2
         else:
             total_size = total_size * self.array_data_type_size
         return total_size
@@ -599,6 +580,7 @@ class CIPArray(CIPDataType):
     def from_instance(self, cip_instance: CIPDataType, array_data_size,
                       array_dimensions, number_of_elements, start_array_elements):
         self.array_data_type = cip_instance.data_type_code()
+        self.member_instance_id = cip_instance.instance_id
         self.array_data_type_size = array_data_size
         self.array_dimensions = array_dimensions
         self.number_of_elements = number_of_elements
