@@ -254,6 +254,29 @@ class TestOnline(unittest.TestCase):
 
         self.assertEqual(cip_structure.data, b'\x00\x00\x01\x00\x01\x00')  # This is the real test assert
 
+    def test_array_of_array(self):
+        variable_name = 'Sequences'
+        result = self.eip_instance.read_variable(variable_name)
+        self.eip_instance.write_variable(variable_name, result)
+
+        result[0]['Move_List'][0]['Position'] = 12.4
+        result[0]['Move_List'][0] = result[0]['Move_List'][0]
+        result[0]['Move_List'] = result[0]['Move_List']
+
+        self.eip_instance.write_variable(variable_name, result)
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertAlmostEqual(result[0]['Move_List'][0]['Position'].value(), 12.4)
+        print(result)
+
+        result[0]['Move_List'][0]['Position'] = 0.0
+        result[0]['Move_List'][0] = result[0]['Move_List'][0]
+        result[0]['Move_List'] = result[0]['Move_List']
+
+        self.eip_instance.write_variable(variable_name, result)
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertAlmostEqual(result[0]['Move_List'][0]['Position'].value(), 0.0)
+        print(result)
+
         # self.eip_instance.write_variable(variable_string, True)
         # reply = self.eip_instance.read_variable(variable_string)
         # self.assertEqual(reply, True)
