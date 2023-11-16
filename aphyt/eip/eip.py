@@ -203,14 +203,19 @@ class EIPConnectedCommandMixin(EIPDispatcher):
             received_eip_message.from_bytes(received_data)
         return received_eip_message
 
-    def connect_explicit(self, host):
+    def connect_explicit(self, host, connection_timeout: float):
         """
         Create and explicit Ethernet/IP connection
+        :param connection_timeout:
         :param host:
         """
         try:
             self.explicit_message_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            old_timeout = self.explicit_message_socket.gettimeout()
+            if connection_timeout is not None:
+                self.explicit_message_socket.settimeout(connection_timeout)
             self.explicit_message_socket.connect((host, self.explicit_message_port))
+            self.explicit_message_socket.settimeout(old_timeout)
             self.host = host
             self.is_connected_explicit = True
         except socket.error as err:

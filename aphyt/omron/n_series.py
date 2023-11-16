@@ -224,8 +224,8 @@ class NSeries:
         self.connected_cip_dispatcher = EIPConnectedCIPDispatcher()
         update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
 
-    def connect_explicit(self, host):
-        self.connected_cip_dispatcher.connect_explicit(host)
+    def connect_explicit(self, host, connection_timeout: float = None):
+        self.connected_cip_dispatcher.connect_explicit(host, connection_timeout)
 
     def close_explicit(self):
         self.connected_cip_dispatcher.close_explicit()
@@ -913,19 +913,29 @@ class NSeriesThreadDispatcher:
             delay.daemon = True
             delay.start()
 
-    def connect_explicit(self, host: str, retry_time: float = 1.0):
+    def connect_explicit(self, host: str, connection_timeout: float = None,
+                         retry_time: float = 1.0, max_attempts: int = None):
         self.connection_status.connecting = True
         if not self.connection_status.connected:
             self._host = host
             try:
-                self._instance.connect_explicit(host=self._host)
+                self._instance.connect_explicit(host=self._host, connection_timeout=connection_timeout)
                 self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
                 self.connection_status.connected = self._instance.connected_cip_dispatcher.is_connected_explicit
                 self.connection_status.connecting = False
             except socket.error as err:
                 print(f"Failed to connect, trying again in {retry_time} seconds")
-                delay = threading.Timer(retry_time, self.connect_explicit, [host, retry_time])
-                delay.start()
+                if max_attempts is not None:
+                    max_attempts -= 1
+                    print(f'Will retry {max_attempts} more times')
+                if max_attempts != 0:
+                    time.sleep(retry_time)
+                    self.connect_explicit(host, connection_timeout, retry_time, max_attempts)
+                    # delay = threading.Timer(
+                    #     retry_time, self.connect_explicit, [host, connection_timeout, retry_time, max_attempts])
+                    # delay.start()
+                else:
+                    raise err
 
     def register_session(self, retry_time: float = 1.0):
         self._instance.register_session()
@@ -957,8 +967,8 @@ class NSeriesThreadDispatcher:
     def read_variable(self, variable_name: str):
         try:
             return self._execute_eip_command(self._instance.read_variable, variable_name)
-        except struct.error as err:
-            pass
+        except struct.error as error:
+            raise error
 
     def write_variable(self, variable_name: str, data):
         return self._execute_eip_command(self._instance.write_variable, variable_name, data)
