@@ -467,8 +467,10 @@ class NSeries:
             super_instance = self._get_instance_from_variable_name(res[0])
             for token in res[1:]:
                 if token.isnumeric():
-                    token = int(token)
-                super_instance = super_instance.local_cip_data_type_object
+                    if hasattr(super_instance, 'local_cip_data_type_object'):
+                        super_instance = super_instance.local_cip_data_type_object
+                else:
+                    super_instance = super_instance[token]
             cip_data_type_instance = super_instance
         cip_data_type_instance.variable_name = str(variable_name)
         self.connected_cip_dispatcher.variables.update({variable_name: cip_data_type_instance})
