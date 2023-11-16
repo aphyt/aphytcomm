@@ -468,7 +468,7 @@ class NSeries:
             for token in res[1:]:
                 if token.isnumeric():
                     token = int(token)
-                super_instance = super_instance._local_cip_data_type_object
+                super_instance = super_instance.local_cip_data_type_object
             cip_data_type_instance = super_instance
         cip_data_type_instance.variable_name = str(variable_name)
         self.connected_cip_dispatcher.variables.update({variable_name: cip_data_type_instance})
@@ -528,7 +528,14 @@ class NSeries:
             cip_data_type_instance = self._get_instance_from_variable_name(variable_name)
         if isinstance(cip_data_type_instance, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
             cip_data_type_instance.variable_name = variable_name
-            return self._multi_message_variable_read(cip_data_type_instance)
+            if (isinstance(cip_data_type_instance, CIPArray) and
+                    isinstance(cip_data_type_instance.local_cip_data_type_object, CIPString)):
+                list_of_strings = []
+                for index in range(cip_data_type_instance.number_of_elements[0]):
+                    list_of_strings.append(self.read_variable(f'{variable_name}[{index}]').value())
+                return list_of_strings
+            else:
+                return self._multi_message_variable_read(cip_data_type_instance)
         else:
             response = self.connected_cip_dispatcher.read_tag_service(request_path)
             cip_data_type_instance.from_bytes(response.reply_data)
@@ -552,7 +559,14 @@ class NSeries:
             """Should be an exception"""
             pass
         elif isinstance(cip_data_type_instance, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
-            self._multi_message_variable_write(cip_data_type_instance, data)
+            if (isinstance(cip_data_type_instance, CIPArray) and
+                    isinstance(cip_data_type_instance.local_cip_data_type_object, CIPString)):
+                list_of_strings = data
+                for index in range(cip_data_type_instance.number_of_elements[0]):
+                    self.write_variable(f'{variable_name}[{index}]', data[index])
+                return list_of_strings
+            else:
+                self._multi_message_variable_write(cip_data_type_instance, data)
         else:
             request_data = CIPCommonFormat(cip_data_type_instance.data_type_code(), data=cip_data_type_instance.data)
             self.connected_cip_dispatcher.write_tag_service(request_path, request_data)

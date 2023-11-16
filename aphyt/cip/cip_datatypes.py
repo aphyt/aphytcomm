@@ -525,22 +525,22 @@ class CIPArray(CIPDataType):
         self.number_of_elements = []
         self.start_array_elements = []
         self.size = 0
-        self._local_cip_data_type_object = None
-        self._list_representation = []
+        self.local_cip_data_type_object = None
+        self.list_representation = []
         self._alignment = 0
         self.data = b''
 
     def __getitem__(self, i):
-        return self._list_representation[i]
+        return self.list_representation[i]
 
     def __setitem__(self, i, value):
-        self._list_representation[i] = value
+        self.list_representation[i] = value
 
     def __len__(self):
-        return len(self._list_representation)
+        return len(self.list_representation)
 
     def __eq__(self, other):
-        return other == self._list_representation
+        return other == self.list_representation
 
     @property
     def alignment(self) -> int:
@@ -574,8 +574,8 @@ class CIPArray(CIPDataType):
         self.start_array_elements = start_array_elements
         self.size = self._get_size()
         # ToDo calling get_class_type_data_code seems weird
-        self._local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
-        self._alignment = self._local_cip_data_type_object.alignment
+        self.local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
+        self._alignment = self.local_cip_data_type_object.alignment
 
     def from_instance(self, cip_instance: CIPDataType, array_data_size,
                       array_dimensions, number_of_elements, start_array_elements):
@@ -587,8 +587,8 @@ class CIPArray(CIPDataType):
         self.start_array_elements = start_array_elements
         self.size = self._get_size()
         # ToDo calling get_class_type_data_code seems weird
-        self._local_cip_data_type_object = cip_instance
-        self._alignment = self._local_cip_data_type_object.alignment
+        self.local_cip_data_type_object = cip_instance
+        self._alignment = self.local_cip_data_type_object.alignment
 
     def _recursive_data_to_array(self, dimension: int = 0, position: int = 0):
         """
@@ -608,12 +608,12 @@ class CIPArray(CIPDataType):
                         integer_bool = 1
                     else:
                         integer_bool = 0
-                    self._local_cip_data_type_object.data = integer_bool.to_bytes(2, 'little')
+                    self.local_cip_data_type_object.data = integer_bool.to_bytes(2, 'little')
                 else:
                     start_bytes = (position + element) * self.array_data_type_size
-                    self._local_cip_data_type_object.data = \
+                    self.local_cip_data_type_object.data = \
                         self.data[start_bytes:start_bytes + self.array_data_type_size]
-                temp_value = copy.deepcopy(self._local_cip_data_type_object)
+                temp_value = copy.deepcopy(self.local_cip_data_type_object)
                 temp_array.append(temp_value.value())
             return temp_array
         else:
@@ -630,8 +630,8 @@ class CIPArray(CIPDataType):
         if dimension == 1:
             data = b''
             for element in list_data:
-                self._local_cip_data_type_object.from_value(element)
-                data += self._local_cip_data_type_object.data
+                self.local_cip_data_type_object.from_value(element)
+                data += self.local_cip_data_type_object.data
             return data
         else:
             data = b''
@@ -644,12 +644,12 @@ class CIPArray(CIPDataType):
         return b'\xa3'  # (1-byte signed binary) signed char
 
     def value(self):
-        self._list_representation = self._recursive_data_to_array()
-        return self._list_representation
+        self.list_representation = self._recursive_data_to_array()
+        return self.list_representation
 
     def from_value(self, value):
         if self.array_data_type == b'\xc1':
-            flat_list = flatten(self._list_representation)
+            flat_list = flatten(self.list_representation)
             data_int = 0
             offset = 0
             for item in flat_list:
