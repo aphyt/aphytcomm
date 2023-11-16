@@ -6,6 +6,7 @@ __email__ = "jr@aphyt.com"
 from abc import ABC, abstractmethod
 import aphyt.cip as ap
 import binascii
+import re
 
 
 def cip_crc16(data: bytes, poly=0xa001) -> bytes:
@@ -226,7 +227,19 @@ def variable_request_path_segment(variable_name: str) -> bytes:
     """
     # Symbolic segment
     # 1756-pm020_-en-p.pdf 17 of 94
-    request_path_bytes = b'\x91' + len(variable_name).to_bytes(1, 'little') + variable_name.encode('utf-8')
+    res = list(filter(None, re.split(r'\[|\]|\.', variable_name)))
+    request_path = b''
+    for token in res:
+        if token.isnumeric():
+            element_id = int(token)
+            request_path += address_request_path_segment(element_id=element_id.to_bytes(4, 'little'))
+        else:
+            request_path += _extended_symbol_segment(token)
+    return request_path
+
+
+def _extended_symbol_segment(name: str):
+    request_path_bytes = b'\x91' + len(name).to_bytes(1, 'little') + name.encode('utf-8')
     if len(request_path_bytes) % 2 != 0:
         request_path_bytes = request_path_bytes + b'\x00'
     return request_path_bytes

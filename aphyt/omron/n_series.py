@@ -380,6 +380,7 @@ class NSeries:
             array_member_instance = self._get_member_instance(instance_id)
         elif array_attributes_all_reply.cip_data_type_of_array == CIPString.data_type_code():
             array_member_instance = CIPString()
+            array_member_instance.size = array_attributes_all_reply.size
         elif array_attributes_all_reply.cip_data_type_of_array == CIPArray.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         else:
@@ -459,8 +460,16 @@ class NSeries:
             cip_data_type_instance.size = int.from_bytes(response.reply_data[0:2], 'little')
         elif data_type_code == CIPArray.data_type_code():
             cip_data_type_instance = self._array_instance_from_variable_name(variable_name)
-        else:
+        elif data_type_code != b'':
             cip_data_type_instance = self.connected_cip_dispatcher.data_type_dictionary.get(data_type_code)()
+        else:
+            res = list(filter(None, re.split(r'\[|\]|\.', variable_name)))
+            super_instance = self._get_instance_from_variable_name(res[0])
+            for token in res[1:]:
+                if token.isnumeric():
+                    token = int(token)
+                super_instance = super_instance._local_cip_data_type_object
+            cip_data_type_instance = super_instance
         cip_data_type_instance.variable_name = str(variable_name)
         self.connected_cip_dispatcher.variables.update({variable_name: cip_data_type_instance})
         if variable_name[0:1] == '_':
