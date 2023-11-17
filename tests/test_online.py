@@ -277,6 +277,15 @@ class TestOnline(unittest.TestCase):
         self.assertAlmostEqual(result[0]['Move_List'][0]['Position'].value(), 0.0)
         print(result)
 
+    def test_derived_data_type_variable_name_spec(self):
+        variable_name = 'Sequences[0].Move_List[0].Position'
+        self.eip_instance.write_variable(variable_name, 44.444)
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertAlmostEqual(result, 44.444)
+        self.eip_instance.write_variable(variable_name, 0.0)
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertAlmostEqual(result, 0.0)
+
         # self.eip_instance.write_variable(variable_string, True)
         # reply = self.eip_instance.read_variable(variable_string)
         # self.assertEqual(reply, True)

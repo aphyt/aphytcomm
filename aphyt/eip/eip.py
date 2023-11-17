@@ -203,7 +203,7 @@ class EIPConnectedCommandMixin(EIPDispatcher):
             received_eip_message.from_bytes(received_data)
         return received_eip_message
 
-    def connect_explicit(self, host, connection_timeout: float):
+    def connect_explicit(self, host, connection_timeout: float = None):
         """
         Create and explicit Ethernet/IP connection
         :param connection_timeout:
