@@ -415,7 +415,9 @@ class NSeries:
             array_member_instance = self._get_member_instance(instance_id)
         elif variable_type_object.cip_data_type_of_array == CIPString.data_type_code():
             # ToDo Check with Nested Array of Strings
-            array_member_instance = self._get_member_instance(instance_id)
+            cip_data_type_instance = self._string_instance_from_variable_type_object(variable_type_object)
+            cip_data_type_instance.size = variable_type_object.size_in_memory
+            array_member_instance = cip_data_type_instance
         elif variable_type_object.cip_data_type_of_array == CIPArray.data_type_code():
             array_member_instance = self._get_member_instance(instance_id)
         else:
