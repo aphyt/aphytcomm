@@ -1,33 +1,9 @@
 # aphyt
-This is a library for communicating with industrial devices using Python.
-
-Current development effort is to create Omron Ethernet/IP communications to NX and NJ controllers.
+This is a library for communicating with Omron NX and NJ industrial PLC and motion controllers using Ethernet/IP.
 
 ## Communicating with Omron Sysmac Controllers Using Ethernet/IP
 
-The current release of this software implements the core functionality of reading and writing numeric and Boolean variables to an Omron NX or NJ controller using symbolic names. The key method that goes beyond CIP type requests is update_variable_dictionary. This method uses an Ethernet/IP explicit connection to get the names and data type codes of all published variables, both system and user defined. This information is then used to allow the programmer to use Python based Boolean and numeric data types to write to variables, as well as properly format the data received when reading variables. The example code below demonstrates how to establish the explicit Ethernet/IP connection and then read and write variables to a test project in the NJ or NX controller.
-Currently Supported Data Types
-
-    BOOLEAN
-    SINT (1-byte signed binary)
-    INT (1-word signed binary)
-    DINT (2-word signed binary)
-    LINT (4-word signed binary)
-    USINT (1-byte unsigned binary)
-    UINT (1-word unsigned binary)
-    UDINT (2-word unsigned binary)
-    ULINT (4-word unsigned binary)
-    REAL 2-word floating point)
-    LREAL (4-word floating point)
-    STRING
-    CIP_BYTE = b'\xd1'  # (1-byte hexadecimal)
-    CIP_WORD = b'\xd2'  # (1-word hexadecimal)
-    CIP_DWORD = b'\xd3'  # (2-word hexadecimal)
-    CIP_TIME = b'\xdb'  # (8-byte data)
-    CIP_LWORD = b'\xd4'  # (4-word hexadecimal)
-    CIP_ABBREVIATED_STRUCT = b'\xa0'
-    CIP_STRUCT = b'\xa2'
-    CIP_ARRAY = b'\xa3'
+This software implements the core functionality of reading and writing numeric, Boolean, string, structure and array variables to an Omron NX or NJ controller using symbolic names. The read_variable and write_variable methods allow the programmer to use Python based data types to write to variables, as well as properly format the data received when reading variables. The example code below demonstrates how to establish the explicit Ethernet/IP connection and then read and write variables to a test project in the NJ or NX controller.
 
 ## Example Use
 
@@ -39,16 +15,13 @@ This package is on PyPI so the user can install using:
 
 ### Getting Started
 
-In order to use and explicit connection the programmer should import the n_series file from the eip module to give the program access to the classes to connect to the controller. The programmer should: instantiate an instance from the NSeriesEIP object, connect to the IP address of the controller, register a session and then update the variable dictionary.
-
-The update variable dictionary method creates a dictionary that maps variable names to variable types so that the read_variable and write_variable methods can encode and decode data that is sent to and received from the controller, so the programmer can easily interact with controller data 
+In order to use and explicit connection the programmer should import the n_series file from the eip module to give the program access to the classes to connect to the controller. The programmer should: instantiate an instance from the NSeries or NSeriesThreadDispatcher object, connect to the IP address of the controller, and register a session.
 
     from aphyt import omron
     
     eip_instance = omron.n_series.NSeries()
     eip_instance.connect_explicit('192.168.250.13')
     eip_instance.register_session()
-    eip_instance.update_variable_dictionary()
     
     reply = eip_instance.read_variable('TestBoolFalse')
     print("TestBoolFalse: " + str(reply))
