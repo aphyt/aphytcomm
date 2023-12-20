@@ -334,8 +334,7 @@ class CIPString(CIPDataType):
         return 0
 
     def value(self):
-
-        return str(self.data, 'utf-8').strip('\0')
+        return str(self.data, 'utf-8').rsplit('\0')[0]
 
     def from_value(self, value):
         byte_value = value.encode('utf-8')
