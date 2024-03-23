@@ -254,51 +254,34 @@ class TestOnline(unittest.TestCase):
 
         self.assertEqual(cip_structure.data, b'\x00\x00\x01\x00\x01\x00')  # This is the real test assert
 
-        # self.eip_instance.write_variable(variable_string, True)
-        # reply = self.eip_instance.read_variable(variable_string)
-        # self.assertEqual(reply, True)
-        # self.eip_instance.write_variable(variable_string, False)
-        # reply = self.eip_instance.read_variable(variable_string)
-        # self.assertEqual(reply, False)
-# reply = eip_instance.read_variable('ThreeDimLrealArray')
-# print(reply)
-#
-# reply = eip_instance.read_variable('Axis5Segment')
-# print(reply)
-#
-# reply = eip_instance.read_variable('TestStruct1')
-# print(reply)
-#
-# reply['Bool2'] = False
-# reply = eip_instance.write_variable('TestStruct1', reply)
-# reply = eip_instance.read_variable('TestStruct1')
-# print(reply)
-#
-# reply['Bool2'] = True
-# reply = eip_instance.write_variable('TestStruct1', reply)
-# reply = eip_instance.read_variable('TestStruct1')
-# print(reply)
-#
-# reply['LintMember'] = 7000
-# reply = eip_instance.write_variable('TestStruct1', reply)
-# reply = eip_instance.read_variable('TestStruct1')
-# print(reply)
-#
-# reply['LintMember'] = 14000
-# reply = eip_instance.write_variable('TestStruct1', reply)
-# reply = eip_instance.read_variable('TestStruct1')
-# print(reply)
-#
-# reply = eip_instance.read_variable('PartArray')
-# print(reply)
-# reply[2]['part_name'] = 'ThirdItem'
-# reply = eip_instance.write_variable('PartArray', reply)
-# reply = eip_instance.read_variable('PartArray')
-# print(reply)
-# reply[2]['part_name'] = 'BackItem'
-# reply = eip_instance.write_variable('PartArray', reply)
-# reply = eip_instance.read_variable('PartArray')
-# print(reply)
-# # Demonstrate getitem
-# print(reply[0]['part_name'])
+    def test_array_of_array(self):
+        variable_name = 'Sequences'
+        result = self.eip_instance.read_variable(variable_name)
+        self.eip_instance.write_variable(variable_name, result)
 
+        result[0]['Move_List'][0]['Position'] = 12.4
+        result[0]['Move_List'][0] = result[0]['Move_List'][0]
+        result[0]['Move_List'] = result[0]['Move_List']
+
+        self.eip_instance.write_variable(variable_name, result)
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertAlmostEqual(result[0]['Move_List'][0]['Position'].value(), 12.4)
+        print(result)
+
+        result[0]['Move_List'][0]['Position'] = 0.0
+        result[0]['Move_List'][0] = result[0]['Move_List'][0]
+        result[0]['Move_List'] = result[0]['Move_List']
+
+        self.eip_instance.write_variable(variable_name, result)
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertAlmostEqual(result[0]['Move_List'][0]['Position'].value(), 0.0)
+        print(result)
+
+    def test_derived_data_type_variable_name_spec(self):
+        variable_name = 'Sequences[0].Move_List[0].Position'
+        self.eip_instance.write_variable(variable_name, 44.444)
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertAlmostEqual(result, 44.444)
+        self.eip_instance.write_variable(variable_name, 0.0)
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertAlmostEqual(result, 0.0)
