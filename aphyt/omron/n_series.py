@@ -14,7 +14,6 @@ from signal import signal, SIGINT
 
 from aphyt.eip import *
 import logging
-import inspect
 
 
 class VariableTypeObjectReply(CIPReply):
@@ -526,12 +525,9 @@ class NSeries:
         :param variable_name:
         :return:
         """
-        logger = logging.getLogger(f'{__name__}.{inspect.currentframe().f_code.co_name}')
-        logger.info(f'Reading variable: {variable_name}')
         request_path = variable_request_path_segment(variable_name)
         cip_data_type_instance = self.connected_cip_dispatcher.variables.get(variable_name)
         if cip_data_type_instance is None:
-            logger.info(f'{variable_name} not currently in variable dictionary, getting it from controller')
             cip_data_type_instance = self._get_instance_from_variable_name(variable_name)
         if isinstance(cip_data_type_instance, (CIPString, CIPArray, CIPStructure, CIPAbbreviatedStructure)):
             cip_data_type_instance.variable_name = variable_name
@@ -557,8 +553,6 @@ class NSeries:
         :param data:
         :return:
         """
-        logger = logging.getLogger(f'{__name__}.{inspect.currentframe().f_code.co_name}')
-        logger.info(f'Writing {data} to variable {variable_name}')
         request_path = variable_request_path_segment(variable_name)
         cip_data_type_instance = self.connected_cip_dispatcher.variables.get(variable_name)
         if cip_data_type_instance is None:

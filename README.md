@@ -1,8 +1,6 @@
 # aphyt
 This is a library for communicating with Omron NX and NJ industrial PLC and motion controllers using Ethernet/IP.
 
-View the code on [GitHub](https://github.com/aphyt/aphytcomm)
-
 ## Communicating with Omron Sysmac Controllers Using Ethernet/IP
 
 This software implements the core functionality of reading and writing numeric, Boolean, string, structure and array variables to an Omron NX or NJ controller using symbolic names. The read_variable and write_variable methods allow the programmer to use Python based data types to write to variables, as well as properly format the data received when reading variables. The example code below demonstrates how to establish the explicit Ethernet/IP connection and then read and write variables to a test project in the NJ or NX controller.

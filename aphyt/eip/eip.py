@@ -109,14 +109,13 @@ class EIPMessage:
                  status=b'\x00\x00\x00\x00', sender_context_data=b'\x00\x00\x00\x00\x00\x00\x00\x00',
                  command_options=b'\x00\x00\x00\x00'):
         """
-        EIP Message Initialization
 
-        :param bytes command: 2-byte command
-        :param bytes command_data: The required command data
-        :param bytes session_handle_id: 4-byte session handle identifier
-        :param bytes status: 4-byte status
-        :param bytes sender_context_data: 8-byte sender context data
-        :param bytes command_options: 4-byte command options
+        :param command:
+        :param command_data:
+        :param session_handle_id:
+        :param status:
+        :param sender_context_data:
+        :param command_options:
         """
         self.command = command
         self.length = len(command_data).to_bytes(2, 'little')
@@ -171,9 +170,7 @@ class EIPDispatcher(ABC):
     def list_interfaces(self, host=''):
         """
         Used by an originator to identify possible non-CIP interfaces on the target
-
-        :return: Command data required to list interfaces
-        :rtype bytes:
+        :return:
         """
         eip_message = EIPMessage(b'\x64\x00')
         return self.send_command(eip_message, host).command_data
@@ -194,12 +191,10 @@ class EIPConnectedCommandMixin(EIPDispatcher):
 
     def send_command(self, eip_command: EIPMessage, host) -> EIPMessage:
         """
-        Send Ethernet/IP messages over the explicit message socket and receive the response
-
-        :param str host:
-        :param EIPMessage eip_command:
-        :return: The response EIP Message
-        :rtype: EIPMessage
+        Used to send and receive Ethernet/IP messages
+        :param host:
+        :param eip_command:
+        :return:
         """
         received_eip_message = EIPMessage()
         if self.is_connected_explicit:
@@ -211,9 +206,8 @@ class EIPConnectedCommandMixin(EIPDispatcher):
     def connect_explicit(self, host, connection_timeout: float = None):
         """
         Create and explicit Ethernet/IP connection
-
-        :param str host:
-        :param float connection_timeout:
+        :param connection_timeout:
+        :param host:
         """
         try:
             self.explicit_message_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -233,6 +227,7 @@ class EIPConnectedCommandMixin(EIPDispatcher):
     def close_explicit(self):
         """
         Close the explicit Ethernet/IP connection
+        :return:
         """
         self.is_connected_explicit = False
         self.has_session_handle = False
@@ -243,10 +238,8 @@ class EIPConnectedCommandMixin(EIPDispatcher):
     def register_session(self, command_data=b'\x01\x00\x00\x00'):
         """
         Used by an originator to establish a session. It is required before sending CIP messages
-
-        :param bytes command_data:
-        :return: The response to the register session command
-        :rtype EIPMessage:
+        :param command_data:
+        :return:
         """
         eip_message = EIPMessage(b'\x65\x00', command_data)
         response = self.send_command(eip_message, self.host)
