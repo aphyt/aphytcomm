@@ -218,11 +218,14 @@ class NSeries:
     """
     MAXIMUM_LENGTH = 502  # UCMM maximum length is 502 bytes
 
-    def __init__(self):
+    def __init__(self, host=None, timeout=None):
         super().__init__()
         self.derived_data_type_dictionary = {}
         self.connected_cip_dispatcher = EIPConnectedCIPDispatcher()
         update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
+        if host is not None:
+            self.connect_explicit(host, timeout)
+            self.register_session()
 
     def connect_explicit(self, host, connection_timeout: float = None):
         self.connected_cip_dispatcher.connect_explicit(host, connection_timeout)
@@ -841,8 +844,9 @@ class MonitoredVariable:
 
 
 class NSeriesThreadDispatcher:
-    def __init__(self):
-        self._instance = NSeries()
+    def __init__(self, host: str, connection_timeout: float = None,
+                 retry_time: float = 1.0, max_attempts: int = None):
+        self._instance = NSeries(host, connection_timeout)
         self._host = None
         self.message_timeout = 0.5
         self.executor = None
@@ -851,6 +855,9 @@ class NSeriesThreadDispatcher:
         self.services = None
         self.monitored_variable_dictionary = {}
         self.connection_status = EIPConnectionStatus()
+        if host is not None:
+            self.connect_explicit(host, connection_timeout, retry_time, max_attempts)
+            self.register_session(retry_time)
 
     def add_monitored_variable(self, monitored_variable: MonitoredVariable):
         self.monitored_variable_dictionary[monitored_variable.variable_name] = monitored_variable
