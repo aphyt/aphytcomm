@@ -227,6 +227,12 @@ class NSeries:
             self.connect_explicit(host, timeout)
             self.register_session()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close_explicit()
+
     def connect_explicit(self, host, connection_timeout: float = None):
         self.connected_cip_dispatcher.connect_explicit(host, connection_timeout)
 
