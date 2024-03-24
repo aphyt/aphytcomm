@@ -177,9 +177,7 @@ class HMIScreen(tkinter.Tk):
             self.config(background=background)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.eip_instance = NSeriesThreadDispatcher()
-        self.eip_instance.connect_explicit(dispatcher_host)
-        self.eip_instance.register_session()
+        self.eip_instance = NSeriesThreadDispatcher(dispatcher_host)
         if dictionary_file is not None:
             self.eip_instance.load_dictionary_file_if_present(dictionary_file)
         else:
