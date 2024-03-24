@@ -26,6 +26,18 @@ class TestOnline(unittest.TestCase):
     def tearDownClass(cls) -> None:
         cls.eip_instance.connected_cip_dispatcher.close_explicit()
 
+    def test_string_array_read_write(self):
+        variable_string = 'aStringArray'
+        reply = self.eip_instance.read_variable(variable_string)
+        reply[9] = 'HEY'
+        self.eip_instance.write_variable(variable_string, reply)
+        reply = self.eip_instance.read_variable(variable_string)
+        self.assertEqual(reply[9], 'HEY')
+        reply[9] = 'HO'
+        self.eip_instance.write_variable(variable_string, reply)
+        reply = self.eip_instance.read_variable(variable_string)
+        self.assertEqual(reply[9], 'HO')
+
     def test_boolean_read_write(self):
         variable_string = 'TestBool'
         self.eip_instance.write_variable(variable_string, False)

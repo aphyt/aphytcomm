@@ -542,11 +542,11 @@ class NSeries:
             cip_data_type_instance.variable_name = variable_name
             if (isinstance(cip_data_type_instance, CIPArray) and
                     isinstance(cip_data_type_instance.local_cip_data_type_object, CIPString)):
-                # ToDo This might be completely okay to delete. Try to figure out what I was catching
                 list_of_strings = []
                 for index in range(cip_data_type_instance.number_of_elements[0]):
                     list_of_strings.append(self.read_variable(f'{variable_name}[{index}]').value())
-                return list_of_strings
+                cip_data_type_instance.from_value(list_of_strings)
+                return cip_data_type_instance
             else:
                 return self._multi_message_variable_read(cip_data_type_instance)
         else:

@@ -660,3 +660,5 @@ class CIPArray(CIPDataType):
             self.data = data_int.to_bytes(self.size, 'little')
         else:
             self.data = self._recursive_array_to_data(self.array_dimensions, value)
+        # Call value to run the recursive data to array
+        self.value()
