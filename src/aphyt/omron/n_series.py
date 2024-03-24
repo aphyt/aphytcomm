@@ -850,7 +850,7 @@ class MonitoredVariable:
 
 
 class NSeriesThreadDispatcher:
-    def __init__(self, host: str, connection_timeout: float = None,
+    def __init__(self, host: str = None, connection_timeout: float = None,
                  retry_time: float = 1.0, max_attempts: int = None):
         self._instance = NSeries(host, connection_timeout)
         self._host = None
