@@ -527,7 +527,7 @@ class NSeries:
             cip_array_instance = member_instance
         return cip_array_instance
 
-    def read_variable(self, variable_name: str):
+    def read_variable(self, variable_name: str) -> CIPDataType:
         """
         This method will read the variable name from the controller and return it in the corresponding
         Python datatype
@@ -542,6 +542,7 @@ class NSeries:
             cip_data_type_instance.variable_name = variable_name
             if (isinstance(cip_data_type_instance, CIPArray) and
                     isinstance(cip_data_type_instance.local_cip_data_type_object, CIPString)):
+                # ToDo This might be completely okay to delete. Try to figure out what I was catching
                 list_of_strings = []
                 for index in range(cip_data_type_instance.number_of_elements[0]):
                     list_of_strings.append(self.read_variable(f'{variable_name}[{index}]').value())
@@ -594,7 +595,7 @@ class NSeries:
             logging.warning('Write Operation could not be completed within specified retry count')
             raise IOError('Write Operation could not be completed within specified retry count')
 
-    def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0):
+    def _multi_message_variable_read(self, cip_datatype_object: CIPDataType, offset=0) -> CIPDataType:
         """
         This method is to read data that does not fit into a single CIP message
         :param cip_datatype_object:
@@ -626,7 +627,7 @@ class NSeries:
         cip_datatype_object.value()
         return cip_datatype_object
 
-    def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, offset=0):
+    def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, offset=0) -> CIPReply:
         """
         This method is to write data that does not fit into a single CIP message
         :param cip_datatype_object:
@@ -634,6 +635,7 @@ class NSeries:
         :return:
         """
         max_write_size = 400
+        response = CIPReply
         while offset < cip_datatype_object.size:
             if cip_datatype_object.size - offset > max_write_size:
                 write_size = max_write_size
@@ -645,7 +647,7 @@ class NSeries:
             offset = offset + max_write_size
         return response
 
-    def _simple_data_segment_read(self, cip_datatype_object: CIPDataType, offset, read_size):
+    def _simple_data_segment_read(self, cip_datatype_object: CIPDataType, offset, read_size) -> CIPReply:
         """
         This method formats as request path to be used with simple_data_segment reading operations
         :param cip_datatype_object:
@@ -660,7 +662,7 @@ class NSeries:
         response = self.connected_cip_dispatcher.read_tag_service(request_path)
         return response
 
-    def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data):
+    def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data) -> CIPReply:
         """
         This method formats as request path to be used with simple_data_segment writing operations
         :param cip_datatype_object:
