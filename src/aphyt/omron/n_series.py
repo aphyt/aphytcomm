@@ -531,6 +531,7 @@ class NSeries:
         """
         This method will read the variable name from the controller and return it in the corresponding
         Python datatype
+        :rtype: object
         :param variable_name:
         :return:
         """
