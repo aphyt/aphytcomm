@@ -578,7 +578,7 @@ class NSeries:
                     self.write_variable(f'{variable_name}[{index}]', data[index])
                 return list_of_strings
             else:
-                self._multi_message_variable_write(cip_data_type_instance, data)
+                self._multi_message_variable_write(cip_data_type_instance)
         else:
             request_data = CIPCommonFormat(cip_data_type_instance.data_type_code(), data=cip_data_type_instance.data)
             self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
@@ -626,19 +626,14 @@ class NSeries:
         cip_datatype_object.value()
         return cip_datatype_object
 
-    def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, data, offset=0):
+    def _multi_message_variable_write(self, cip_datatype_object: CIPDataType, offset=0):
         """
         This method is to write data that does not fit into a single CIP message
         :param cip_datatype_object:
-        :param data:
         :param offset:
         :return:
         """
         max_write_size = 400
-        # cip_datatype_object.from_value(data)
-        # if isinstance(cip_datatype_object, CIPArray):
-        #     max_write_size = max_write_size // cip_datatype_object.array_data_type_size * \
-        #                      cip_datatype_object.array_data_type_size
         while offset < cip_datatype_object.size:
             if cip_datatype_object.size - offset > max_write_size:
                 write_size = max_write_size
