@@ -8,6 +8,18 @@ class BaseNSeries(unittest.TestCase):
     # def __init__(self):
     eip_instance = None
 
+    def test_plc_string_array_change(self):
+        variable_string = 'test_DestinationStringArray'
+        string_source_variable_string = 'test_StringSource'
+        array_index_variable_string = 'test_StringArrayIndex'
+        self.eip_instance.write_variable(array_index_variable_string, 9)
+        self.eip_instance.write_variable(string_source_variable_string, 'Hello World')
+        array_value = self.eip_instance.read_variable(variable_string)
+        self.assertEqual(array_value[9], 'Hello World')
+        self.eip_instance.write_variable(string_source_variable_string, '')
+        array_value = self.eip_instance.read_variable(variable_string)
+        self.assertEqual(array_value[9], '')
+
     def test_string_array_read_write(self):
         variable_string = 'test_StringArray'
         reply = self.eip_instance.read_variable(variable_string)
