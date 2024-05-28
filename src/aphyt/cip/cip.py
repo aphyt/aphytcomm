@@ -73,9 +73,9 @@ class CIPReply:
         self.general_status = reply_bytes[2:3]
         self.extended_status_size = reply_bytes[3:4]
         # Research replies that use this. It's usually zero, so I am guessing it is in words (like the request)
-        extended_status_byte_offset = int.from_bytes(self.extended_status_size, 'little') * 2
-        self.extended_status = reply_bytes[4:extended_status_byte_offset]
-        self.reply_data = reply_bytes[4 + extended_status_byte_offset:]
+        extended_status_byte_size = int.from_bytes(self.extended_status_size, 'little') * 2
+        self.extended_status = reply_bytes[4:4 + extended_status_byte_size]
+        self.reply_data = reply_bytes[4 + extended_status_byte_size:]
 
     @property
     def bytes(self) -> bytes:
