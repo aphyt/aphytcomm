@@ -239,7 +239,8 @@ def variable_request_path_segment(variable_name: str) -> bytes:
 
 
 def _extended_symbol_segment(name: str):
-    request_path_bytes = b'\x91' + len(name).to_bytes(1, 'little') + name.encode('utf-8')
+    request_path_bytes = (b'\x91' + len(bytes(name.encode("utf-8"))).to_bytes(1, 'little') +
+                          name.encode('utf-8'))
     if len(request_path_bytes) % 2 != 0:
         request_path_bytes = request_path_bytes + b'\x00'
     return request_path_bytes
