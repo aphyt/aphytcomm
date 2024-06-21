@@ -54,8 +54,8 @@ class CIPRequest:
     @property
     def bytes(self) -> bytes:
         return \
-            self.request_service + self.request_path_size.to_bytes(1, 'little') + \
-            self.request_path + self.request_data
+                self.request_service + self.request_path_size.to_bytes(1, 'little') + \
+                self.request_path + self.request_data
 
 
 class CIPReply:
@@ -84,8 +84,8 @@ class CIPReply:
         :return:
         """
         return \
-            self.reply_service + self.reserved + self.general_status + \
-            self.extended_status_size + self.extended_status + self.reply_data
+                self.reply_service + self.reserved + self.general_status + \
+                self.extended_status_size + self.extended_status + self.reply_data
 
 
 class CIPCommonFormat:
@@ -173,6 +173,20 @@ class CIPDispatcher(ABC):
     def set_attribute_single_service(self, tag_request_path, data):
         set_attribute_single_request = CIPRequest(ap.CIPService.SET_ATTRIBUTE_SINGLE, tag_request_path, data)
         return self.execute_cip_command(set_attribute_single_request)
+
+    def get_instance_list(self, start_instance_id: int = 1, number_of_instances: int = 1, user_defined: bool = True):
+        path = address_request_path_segment(b'\x6a', b'\x00\x00')
+        if user_defined:
+            kind_of_variable = 2
+        else:
+            kind_of_variable = 1
+        kind_of_variable = kind_of_variable.to_bytes(2, 'little')
+        request_data = \
+            start_instance_id.to_bytes(4, 'little') + \
+            number_of_instances.to_bytes(4, 'little') + \
+            kind_of_variable
+        get_instance_list_request = CIPRequest(ap.CIPService.GET_INSTANCE_LIST_EX2, path, request_data)
+        return self.execute_cip_command(get_instance_list_request)
 
 
 def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,

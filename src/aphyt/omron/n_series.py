@@ -164,6 +164,29 @@ class VariableObjectReply(CIPReply):
         return array_start_list
 
 
+class InstanceIDAttributes:
+    def __init__(self, data: bytes):
+        self.data = data
+
+    @property
+    def data_length(self):
+        return struct.unpack('<H', self.data[0:2])[0]
+
+    @property
+    def class_id(self):
+        return self.data[2:4]
+
+    @property
+    def instance_id(self):
+        return self.data[4:8]
+
+    def tag_name_length(self):
+        return struct.unpack('<B', self.data[8:9])[0]
+
+    def tag_name(self):
+        return str(self.data[9: 9 + self.tag_name_length()], 'utf-8')
+
+
 class VariableNameAttributeAllReply(CIPReply):
     """
     CIP Reply from the Get Attribute All service to Tag Name adding descriptive properties
@@ -743,6 +766,36 @@ class NSeries:
             reply = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
             tag = str(reply.reply_data[5:5 + int.from_bytes(reply.reply_data[4:5], 'little')], 'utf-8')
             tag_list.append(tag)
+        return tag_list
+
+    def _get_variable_list_faster(self):
+        tag_list = self._get_system_variable_list() + self._get_user_variable_list()
+        return tag_list
+
+    def _get_user_variable_list(self):
+        return self._get_variable_list_subset(True)
+
+    def _get_system_variable_list(self):
+        return self._get_variable_list_subset(False)
+
+    def _get_variable_list_subset(self, user_defined: bool):
+        all_received = False
+        current_instance = 1
+        tag_list = []
+        while not all_received:
+            reply = self.connected_cip_dispatcher.get_instance_list(current_instance, 100, user_defined)
+            instance_count = struct.unpack('<H', reply.reply_data[0:2])[0]
+            unprocessed_instances = instance_count
+            if reply.reply_data[2] == 0 or instance_count == 0:
+                all_received = True
+            instances = reply.reply_data[4:]
+            while unprocessed_instances != 0:
+                data_length = struct.unpack('<H', instances[4:6])[0]
+                instance = InstanceIDAttributes(instances[4:4 + data_length + 2])
+                tag_list.append(instance.tag_name())
+                instances = instances[4 + data_length + 2:]
+                unprocessed_instances -= 1
+            current_instance = current_instance + instance_count
         return tag_list
 
     def _get_number_of_variables(self) -> int:

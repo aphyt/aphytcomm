@@ -24,6 +24,7 @@ class CIPService:
     GET_ATTRIBUTE_SINGLE = b'\x0e'
     RESET = b'\x05'
     SET_ATTRIBUTE_SINGLE = b'\x10'
+    GET_INSTANCE_LIST_EX2 = b'\x5f'
 
     def __init__(self, cip_dispatcher: CIPDispatcher, **kwargs):
         self.cip_dispatcher = cip_dispatcher
