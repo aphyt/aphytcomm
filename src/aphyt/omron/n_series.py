@@ -329,6 +329,46 @@ class NSeries:
                 self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
             instance_id = instance_id + 1
 
+    def update_variable_dictionary_faster(self):
+        """
+        Make sure the variable dictionary is populated with the
+        latest variable and datatype information from controller
+        :return:
+        """
+        update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
+        variable_list = self._get_variable_list_faster()
+        instance_id = 1
+        for variable in variable_list:
+            # Instantiate the classes into objects
+            variable_cip_datatype = self._get_instance_from_variable_name(variable)
+            variable_cip_datatype.variable_name = str(variable)
+            self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
+            if variable[0:1] == '_':
+                self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
+            else:
+                self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
+            instance_id = instance_id + 1
+
+    def update_variable_dictionary_fastest(self):
+        """
+        Make sure the variable dictionary is populated with the
+        latest variable and datatype information from controller
+        :return:
+        """
+        update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
+        variable_list = self._get_variable_list_faster()
+        instance_id = 1
+        for variable in variable_list:
+            # Instantiate the classes into objects
+            variable_cip_datatype = self._get_instance_from_variable_name(variable)
+            variable_cip_datatype.variable_name = str(variable)
+            self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
+            if variable[0:1] == '_':
+                self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
+            else:
+                self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
+            instance_id = instance_id + 1
+
     def save_current_dictionary(self, file_name: str):
         with (open(file_name, "wb")) as f:
             pickle.dump(self.connected_cip_dispatcher.variables, f)
@@ -778,10 +818,10 @@ class NSeries:
     def _get_system_variable_list(self):
         return self._get_variable_list_subset(False)
 
-    def _get_variable_list_subset(self, user_defined: bool):
+    def _get_instance_list_subset(self, user_defined: bool):
         all_received = False
         current_instance = 1
-        tag_list = []
+        instance_list = []
         while not all_received:
             reply = self.connected_cip_dispatcher.get_instance_list(current_instance, 100, user_defined)
             instance_count = struct.unpack('<H', reply.reply_data[0:2])[0]
@@ -792,10 +832,18 @@ class NSeries:
             while unprocessed_instances != 0:
                 data_length = struct.unpack('<H', instances[4:6])[0]
                 instance = InstanceIDAttributes(instances[4:4 + data_length + 2])
-                tag_list.append(instance.tag_name())
+                instance_list.append(instance)
                 instances = instances[4 + data_length + 2:]
                 unprocessed_instances -= 1
             current_instance = current_instance + instance_count
+        return instance_list
+
+    def _get_variable_list_subset(self, user_defined: bool):
+        # all_received = False
+        instances = self._get_instance_list_subset(user_defined)
+        tag_list = []
+        for instance in instances:
+            tag_list.append(instance.tag_name())
         return tag_list
 
     def _get_number_of_variables(self) -> int:
