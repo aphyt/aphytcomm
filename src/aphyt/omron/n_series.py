@@ -316,58 +316,21 @@ class NSeries:
         :return:
         """
         update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
-        variable_list = self._get_variable_list()
-        instance_id = 1
-        for variable in variable_list:
-            # Instantiate the classes into objects
+        user_instance_list = self._get_instance_list_subset(True)
+        system_instance_list = self._get_instance_list_subset(False)
+        for instance in user_instance_list:
+            variable = instance.tag_name()
             variable_cip_datatype = self._get_instance_from_variable_name(variable)
             variable_cip_datatype.variable_name = str(variable)
             self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
-            if variable[0:1] == '_':
-                self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
-            else:
-                self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
-            instance_id = instance_id + 1
+            self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
 
-    def update_variable_dictionary_faster(self):
-        """
-        Make sure the variable dictionary is populated with the
-        latest variable and datatype information from controller
-        :return:
-        """
-        update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
-        variable_list = self._get_variable_list_faster()
-        instance_id = 1
-        for variable in variable_list:
-            # Instantiate the classes into objects
+        for instance in system_instance_list:
+            variable = instance.tag_name()
             variable_cip_datatype = self._get_instance_from_variable_name(variable)
             variable_cip_datatype.variable_name = str(variable)
             self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
-            if variable[0:1] == '_':
-                self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
-            else:
-                self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
-            instance_id = instance_id + 1
-
-    def update_variable_dictionary_fastest(self):
-        """
-        Make sure the variable dictionary is populated with the
-        latest variable and datatype information from controller
-        :return:
-        """
-        update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
-        variable_list = self._get_variable_list_faster()
-        instance_id = 1
-        for variable in variable_list:
-            # Instantiate the classes into objects
-            variable_cip_datatype = self._get_instance_from_variable_name(variable)
-            variable_cip_datatype.variable_name = str(variable)
-            self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
-            if variable[0:1] == '_':
-                self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
-            else:
-                self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
-            instance_id = instance_id + 1
+            self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
 
     def save_current_dictionary(self, file_name: str):
         with (open(file_name, "wb")) as f:
@@ -796,19 +759,9 @@ class NSeries:
 
     def _get_variable_list(self):
         """
-        Omron specific method for creating a list of variables that are published in the controller.
-        :return:
-        """
-        tag_list = []
-        for tag_index in range(self._get_number_of_variables()):
-            offset = tag_index + 1
-            request_path = address_request_path_segment(b'\x6a', offset.to_bytes(2, 'little'))
-            reply = self.connected_cip_dispatcher.get_attribute_all_service(request_path)
-            tag = str(reply.reply_data[5:5 + int.from_bytes(reply.reply_data[4:5], 'little')], 'utf-8')
-            tag_list.append(tag)
-        return tag_list
-
-    def _get_variable_list_faster(self):
+                Omron specific method for creating a list of variables that are published in the controller.
+                :return:
+                """
         tag_list = self._get_system_variable_list() + self._get_user_variable_list()
         return tag_list
 
