@@ -574,6 +574,8 @@ class CIPArray(CIPDataType):
         self.size = self._get_size()
         # ToDo calling get_class_type_data_code seems weird
         self.local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
+        if self.data == b'':
+            self.data = self.size * b'\x00'
         self._alignment = self.local_cip_data_type_object.alignment
 
     def from_instance(self, cip_instance: CIPDataType, array_data_size,
@@ -587,6 +589,8 @@ class CIPArray(CIPDataType):
         self.size = self._get_size()
         # ToDo calling get_class_type_data_code seems weird
         self.local_cip_data_type_object = cip_instance
+        if self.data == b'':
+            self.data = self.size * b'\x00'
         self._alignment = self.local_cip_data_type_object.alignment
 
     def _recursive_data_to_array(self, dimension: int = 0, position: int = 0):

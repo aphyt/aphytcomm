@@ -9,8 +9,7 @@ class BaseNSeries(unittest.TestCase):
     eip_instance = None
 
     def test_check_variable_dictionary(self):
-        for variable in self.eip_instance.connected_cip_dispatcher.variables:
-            variable.repr()
+        print(self.eip_instance.connected_cip_dispatcher.variables)
 
     def test_plc_string_array_change(self):
         variable_string = 'test_DestinationStringArray'
