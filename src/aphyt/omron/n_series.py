@@ -332,6 +332,30 @@ class NSeries:
             self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
             self.connected_cip_dispatcher.system_variables.update({variable: variable_cip_datatype})
 
+    def variable_list(self):
+        """
+        Return list of variables in the variable dictionary. It will be empty unless the update_variable_dictionary,
+        read_variable or write_variable methods have been run.
+        :return:
+        """
+        return list(self.connected_cip_dispatcher.variables)
+
+    def user_variable_list(self):
+        """
+        Return list of variables in the variable dictionary. It will be empty unless the update_variable_dictionary,
+        read_variable or write_variable methods have been run.
+        :return:
+        """
+        return list(self.connected_cip_dispatcher.user_variables)
+
+    def system_variable_list(self):
+        """
+        Return list of variables in the variable dictionary. It will be empty unless the update_variable_dictionary,
+        read_variable or write_variable methods have been run.
+        :return:
+        """
+        return list(self.connected_cip_dispatcher.system_variables)
+
     def save_current_dictionary(self, file_name: str):
         with (open(file_name, "wb")) as f:
             pickle.dump(self.connected_cip_dispatcher.variables, f)
