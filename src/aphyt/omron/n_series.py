@@ -1014,6 +1014,10 @@ class NSeriesThreadDispatcher:
             delay.start()
         self.connection_status.persist_session = True
 
+    @property
+    def connected_cip_dispatcher(self):
+        return self._instance.connected_cip_dispatcher
+
     def unregister_session(self):
         self.connection_status.has_session = False
         self.connection_status.persist_session = False
