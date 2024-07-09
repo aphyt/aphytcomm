@@ -15,5 +15,5 @@ is already a very expensive method in terms of network messages.
 Actually reading the contents of all variables should be something the programmer explicitly requests, 
 otherwise network traffic for folks that just wanted to know variable names and did not want to retrieve 
 the contents at the same time would be excessive.
-## Not Started
+# Future
 ### Multiple tag reads

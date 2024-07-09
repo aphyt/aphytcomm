@@ -334,27 +334,69 @@ class NSeries:
 
     def variable_list(self):
         """
-        Return list of variables in the variable dictionary. It will be empty unless the update_variable_dictionary,
-        read_variable or write_variable methods have been run.
+        Return list of variables in the variable dictionary. It will be empty unless the
+        update_variable_dictionary, read_variable or write_variable methods have been run.
         :return:
         """
         return list(self.connected_cip_dispatcher.variables)
 
     def user_variable_list(self):
         """
-        Return list of variables in the variable dictionary. It will be empty unless the update_variable_dictionary,
-        read_variable or write_variable methods have been run.
+        Return list of user variables in the variable dictionary. It will be empty unless the
+        update_variable_dictionary, read_variable or write_variable methods have been run.
         :return:
         """
         return list(self.connected_cip_dispatcher.user_variables)
 
     def system_variable_list(self):
         """
-        Return list of variables in the variable dictionary. It will be empty unless the update_variable_dictionary,
-        read_variable or write_variable methods have been run.
+        Return list of system variables in the variable dictionary. It will be empty unless the
+        update_variable_dictionary, read_variable or write_variable methods have been run.
         :return:
         """
         return list(self.connected_cip_dispatcher.system_variables)
+
+    def variable_dictionary(self, update_contents: bool = False):
+        """
+        Returns the current variable dictionary. It will only contain variables added by
+        update_variable_dictionary, read_variable or write_variable methods.
+
+        The values will only be updated if update_contents parameter is True.
+        This is a very expensive operation and should be considered carefully.
+        :return:
+        """
+        if update_contents:
+            for variable in self.variable_list():
+                self.read_variable(variable)
+        return self.connected_cip_dispatcher.variables
+
+    def user_variable_dictionary(self, update_contents: bool = False):
+        """
+        Returns user variable dictionary. It will only contain variables added by
+        update_variable_dictionary, read_variable or write_variable methods.
+
+        The values will only be updated if update_contents parameter is True.
+        This is a very expensive operation and should be considered carefully.
+        :return:
+        """
+        if update_contents:
+            for variable in self.user_variable_list():
+                self.read_variable(variable)
+        return self.connected_cip_dispatcher.user_variables
+
+    def system_variable_dictionary(self, update_contents: bool = False):
+        """
+        Returns system variable dictionary. It will only contain variables added by
+        update_variable_dictionary, read_variable or write_variable methods.
+
+        The values will only be updated if update_contents parameter is True.
+        This is a very expensive operation and should be considered carefully.
+        :return:
+        """
+        if update_contents:
+            for variable in self.system_variable_list():
+                self.read_variable(variable)
+        return self.connected_cip_dispatcher.system_variables
 
     def save_current_dictionary(self, file_name: str):
         with (open(file_name, "wb")) as f:
