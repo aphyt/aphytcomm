@@ -3,6 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
+import binascii
 import socket
 import time
 from typing import List, Tuple
@@ -139,6 +140,15 @@ class EIPMessage:
         self.command_options = eip_message_bytes[20:24]
         self.command_data = eip_message_bytes[24:]
 
+    def context_integer(self):
+        return struct.unpack('<Q', self.sender_context_data)[0]
+
+    def set_context(self, value: int):
+        self.sender_context_data = struct.pack('<Q', value)
+
+    def total_length(self):
+        return struct.unpack('<H', self.length)[0] + 24
+
 
 class EIPDispatcher(ABC):
     explicit_message_port = 44818
@@ -146,6 +156,8 @@ class EIPDispatcher(ABC):
     def __init__(self):
         super().__init__()
         self.socket = None
+        self.eip_responses = {}
+        self.message_number = 0
 
     @abstractmethod
     def send_command(self, eip_command: EIPMessage, host: str) -> EIPMessage:
@@ -189,6 +201,34 @@ class EIPConnectedCommandMixin(EIPDispatcher):
     def __del__(self):
         self.close_explicit()
 
+    def get_response(self, eip_message: EIPMessage):
+        # print(eip_message.context_integer())
+        if eip_message.context_integer() in self.eip_responses.keys():
+            # print('HERE')
+            result = self.eip_responses.pop(eip_message.context_integer())
+            return result
+        else:
+            # print(f'Sending:  {binascii.hexlify(eip_message.bytes())}')
+            self.explicit_message_socket.send(eip_message.bytes())
+            received_data = self.explicit_message_socket.recv(self.BUFFER_SIZE)
+            length = struct.unpack('<H',received_data[2:4])[0] + 24
+            # print(length)
+            received_eip_message = EIPMessage()
+            while len(received_data) > length:
+                received_eip_message.from_bytes(received_data[0:length])
+                # print(f'Received:  {binascii.hexlify(received_eip_message.bytes())}')
+                received_data = received_data[length:]
+                length = struct.unpack('<H', received_data[2:4])[0] + 24
+                self.eip_responses[received_eip_message.context_integer()] = received_eip_message
+            received_eip_message.from_bytes(received_data[0:length])
+            # print(f'Received:  {binascii.hexlify(received_eip_message.bytes())}')
+            if len(received_data) > 0:
+                received_eip_message.from_bytes(received_data)
+            self.eip_responses[received_eip_message.context_integer()] = received_eip_message
+            # print(self.eip_responses)
+            return self.get_response(eip_message)
+
+
     def send_command(self, eip_command: EIPMessage, host) -> EIPMessage:
         """
         Used to send and receive Ethernet/IP messages
@@ -196,12 +236,27 @@ class EIPConnectedCommandMixin(EIPDispatcher):
         :param eip_command:
         :return:
         """
-        received_eip_message = EIPMessage()
+        # received_eip_message = EIPMessage()
         if self.is_connected_explicit:
-            self.explicit_message_socket.send(eip_command.bytes())
-            received_data = self.explicit_message_socket.recv(self.BUFFER_SIZE)
-            received_eip_message.from_bytes(received_data)
-        return received_eip_message
+            if self.message_number == 18446744073709551616:
+                self.message_number = 0
+            eip_command.set_context(self.message_number)
+            self.message_number = self.message_number + 1
+            # self.explicit_message_socket.send(eip_command.bytes())
+            # received_data = self.explicit_message_socket.recv(self.BUFFER_SIZE)
+            # received_eip_message.from_bytes(received_data)
+            return self.get_response(eip_command)
+
+            # if received_eip_message.context_integer() == eip_command.context_integer():
+            #     print(f'received 1, context int {received_eip_message.context_integer()}')
+            #     return received_eip_message
+            # elif received_eip_message.context_integer() in self.eip_responses.keys():
+            #     print(f'received 2, context int {received_eip_message.context_integer()}')
+            #     result = self.eip_responses.pop(received_eip_message.context_integer())
+            #     return result
+            # else:
+            #     print(f'received 3, context int {received_eip_message.context_integer()}')
+            #     self.eip_responses[received_eip_message.context_integer()] = received_eip_message
 
     def connect_explicit(self, host, connection_timeout: float = None):
         """

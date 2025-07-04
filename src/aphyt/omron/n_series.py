@@ -1052,7 +1052,7 @@ class NSeriesThreadDispatcher:
             self._host = host
             try:
                 self._instance.connect_explicit(host=self._host, connection_timeout=connection_timeout)
-                self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+                self.executor = concurrent.futures.ThreadPoolExecutor()
                 self.connection_status.connected = self._instance.connected_cip_dispatcher.is_connected_explicit
                 self.connection_status.connecting = False
             except socket.error as err:
