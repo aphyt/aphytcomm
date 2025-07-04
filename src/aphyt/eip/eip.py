@@ -157,7 +157,7 @@ class EIPDispatcher(ABC):
         super().__init__()
         self.socket = None
         self.eip_responses = {}
-        self.message_number = 0
+        self.message_number = 18446744073709551613 # Using a number close to the max, fail fast on rollover errors
 
     @abstractmethod
     def send_command(self, eip_command: EIPMessage, host: str) -> EIPMessage:
