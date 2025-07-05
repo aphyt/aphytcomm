@@ -259,31 +259,31 @@ class AsyncBaseNSeries(unittest.TestCase):
         reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply, False)
 
-    def test_int_read_write(self):
+    async def test_int_read_write(self):
         variable_string = 'test_Int'
-        self.eip_instance.write_variable(variable_string, 1)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, 1)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply, 1)
-        self.eip_instance.write_variable(variable_string, 1000)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, 1000)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply, 1000)
-        self.eip_instance.write_variable(variable_string, 1)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, 1)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply, 1)
 
-    def test_lreal_read_write(self):
+    async def test_lreal_read_write(self):
         variable_string = 'test_Lreal'
-        self.eip_instance.write_variable(variable_string, 3.14)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, 3.14)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertAlmostEqual(reply, 3.14)
-        self.eip_instance.write_variable(variable_string, 63.12)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, 63.12)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertAlmostEqual(reply, 63.12)
-        self.eip_instance.write_variable(variable_string, 3.14)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, 3.14)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertAlmostEqual(reply, 3.14)
 
-    def test_string_read_write(self):
+    async def test_string_read_write(self):
         variable_string = 'test_String'
         tale_of_two_cities_string_1 = \
             'In England, there was scarcely an amount of order and protection to justify much national boasting. ' \
@@ -318,19 +318,19 @@ class AsyncBaseNSeries(unittest.TestCase):
             'own particular perch behind the mail, beating his feet, and keeping an eye and a hand on the arm-chest before ' \
             'him, where a loaded blunderbuss lay at the top of six or eight loaded horse-pistols, deposited on a substratum ' \
             'of cutlass.'
-        self.eip_instance.write_variable(variable_string, tale_of_two_cities_string_1)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, tale_of_two_cities_string_1)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply, tale_of_two_cities_string_1)
-        self.eip_instance.write_variable(variable_string, tale_of_two_cities_string_2)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, tale_of_two_cities_string_2)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply, tale_of_two_cities_string_2)
-        self.eip_instance.write_variable(variable_string, tale_of_two_cities_string_1)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, tale_of_two_cities_string_1)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply, tale_of_two_cities_string_1)
 
-    def test_array_read_write(self):
+    async def test_array_read_write(self):
         variable_string = 'test_LrealArray'
-        self.eip_instance.write_variable(variable_string,
+        await self.eip_instance.write_variable(variable_string,
                                          [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.3, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -365,7 +365,7 @@ class AsyncBaseNSeries(unittest.TestCase):
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 10.0])
-        reply = self.eip_instance.read_variable(variable_string)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply,
                          [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -394,7 +394,7 @@ class AsyncBaseNSeries(unittest.TestCase):
                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                           0.0, 0.0, 0.0, 0.0, 0.0, 10.0])
-        self.eip_instance.write_variable(variable_string,
+        await self.eip_instance.write_variable(variable_string,
                                          [1.0, 0.0, 0.0, 0.0, 17.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.3, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -429,7 +429,7 @@ class AsyncBaseNSeries(unittest.TestCase):
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 10.0])
-        reply = self.eip_instance.read_variable(variable_string)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply,
                          [1.0, 0.0, 0.0, 0.0, 17.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -458,7 +458,7 @@ class AsyncBaseNSeries(unittest.TestCase):
                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0])
-        self.eip_instance.write_variable(variable_string,
+        await self.eip_instance.write_variable(variable_string,
                                          [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.3, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -493,7 +493,7 @@ class AsyncBaseNSeries(unittest.TestCase):
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                           0.0, 0.0, 0.0, 0.0, 10.0])
-        reply = self.eip_instance.read_variable(variable_string)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply,
                          [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -523,11 +523,11 @@ class AsyncBaseNSeries(unittest.TestCase):
                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                           0.0, 0.0, 0.0, 0.0, 0.0, 10.0])
 
-    def test_three_dimensional_array(self):
+    async def test_three_dimensional_array(self):
         variable_string = 'test_ThreeDimLrealArray'
         # reply = self.eip_instance.read_variable(variable_string)
         # print(reply)
-        self.eip_instance.write_variable(variable_string, [
+        await self.eip_instance.write_variable(variable_string, [
             [[1.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
             [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -541,7 +541,7 @@ class AsyncBaseNSeries(unittest.TestCase):
             [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
              [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]])
         # self.eip_instance.write_variable(variable_string, reply)
-        reply = self.eip_instance.read_variable(variable_string)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(reply, [[[1.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -567,24 +567,24 @@ class AsyncBaseNSeries(unittest.TestCase):
                                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]])
 
-    def test_nested_struct(self):
+    async def test_nested_struct(self):
         variable_string = 'test_Struct'
-        reply = self.eip_instance.read_variable(variable_string)
+        reply = await self.eip_instance.read_variable(variable_string)
         reply['sNest2']['StringMember'] = 'Hello World'
         reply['sNest2']['BoolMember'] = True
-        self.eip_instance.write_variable(variable_string, reply)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, reply)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(str(reply['sNest2']['StringMember']), 'Hello World')
         self.assertTrue(reply['sNest2']['BoolMember'].value())
         print(reply.data)
 
-    def test_nested_struct_reset(self):
+    async def test_nested_struct_reset(self):
         variable_string = 'test_Struct'
-        reply = self.eip_instance.read_variable(variable_string)
+        reply = await self.eip_instance.read_variable(variable_string)
         reply['sNest2']['StringMember'] = 'Goodnight Moon'
         reply['sNest2']['BoolMember'] = False
-        self.eip_instance.write_variable(variable_string, reply)
-        reply = self.eip_instance.read_variable(variable_string)
+        await self.eip_instance.write_variable(variable_string, reply)
+        reply = await self.eip_instance.read_variable(variable_string)
         self.assertEqual(str(reply['sNest2']['StringMember']), 'Goodnight Moon')
         self.assertFalse(reply['sNest2']['BoolMember'].value())
 
