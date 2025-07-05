@@ -3,6 +3,7 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
+import asyncio
 import binascii
 import socket
 import time
@@ -188,6 +189,138 @@ class EIPDispatcher(ABC):
         return self.send_command(eip_message, host).command_data
 
 
+class AsyncEIPDispatcher(ABC):
+    explicit_message_port = 44818
+
+    def __init__(self):
+        super().__init__()
+        self.socket = None
+        self.eip_responses = {}
+        self.message_number = 18446744073709551613 # Using a number close to the max, fail fast on rollover errors
+
+    @abstractmethod
+    async def send_command(self, eip_command: EIPMessage, host: str) -> EIPMessage:
+        pass
+
+    async def list_identity(self, host=''):
+        """
+        Used by an originator to locate possible targets
+        :return:
+        """
+        eip_message = EIPMessage(b'\x63\x00')
+        return await self.send_command(eip_message, host).command_data
+
+    async def list_services(self, host=''):
+        """
+        Find which services a target supports
+        :return:
+        """
+        eip_message = EIPMessage(b'\x04\x00')
+        return await self.send_command(eip_message, host).command_data
+
+    async def list_interfaces(self, host=''):
+        """
+        Used by an originator to identify possible non-CIP interfaces on the target
+        :return:
+        """
+        eip_message = EIPMessage(b'\x64\x00')
+        return await self.send_command(eip_message, host).command_data
+
+
+class AsyncEIPConnectedCommandMixin(AsyncEIPDispatcher):
+    lock = asyncio.Lock()
+    def __init__(self):
+        super().__init__()
+        self.explicit_message_socket = None
+        self.stream_writer = None
+        self.stream_reader = None
+        self.session_handle_id = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.is_connected_explicit = False
+        self.has_session_handle = False
+        self.BUFFER_SIZE = 4096
+        self.host = None
+
+    async def get_response(self, eip_message: EIPMessage):
+        if eip_message.context_integer() in self.eip_responses.keys():
+            result = self.eip_responses.pop(eip_message.context_integer())
+            return result
+        else:
+            self.stream_writer.write(eip_message.bytes())
+            await self.stream_writer.drain()
+            time.sleep(.0004)
+            async with AsyncEIPConnectedCommandMixin.lock:
+                # await asyncio.sleep(.00001)
+                received_data = await self.stream_reader.readexactly(n=24)
+                received_data += await self.stream_reader.readexactly(n=struct.unpack('<H',received_data[2:4])[0])
+            length = struct.unpack('<H',received_data[2:4])[0] + 24
+            received_eip_message = EIPMessage()
+            # while len(received_data) > length:
+            #     received_eip_message.from_bytes(received_data[0:length])
+            #     received_data = received_data[length:]
+            #     length = struct.unpack('<H', received_data[2:4])[0] + 24
+            #     self.eip_responses[received_eip_message.context_integer()] = received_eip_message
+            received_eip_message.from_bytes(received_data[0:length])
+            # received_eip_message.from_bytes(received_data)
+            self.eip_responses[received_eip_message.context_integer()] = received_eip_message
+            return await self.get_response(eip_message)
+
+
+    async def send_command(self, eip_command: EIPMessage, host) -> EIPMessage:
+        """
+        Used to send and receive Ethernet/IP messages
+        :param host:
+        :param eip_command:
+        :return:
+        """
+        # received_eip_message = EIPMessage()
+        if self.message_number == 18446744073709551616:
+            self.message_number = 0
+        eip_command.set_context(self.message_number)
+        self.message_number = self.message_number + 1
+        return await self.get_response(eip_command)
+
+    async def connect_explicit(self, host, connection_timeout: float = None):
+        """
+        Create and explicit Ethernet/IP connection
+        :param connection_timeout:
+        :param host:
+        """
+        try:
+
+            self.stream_reader, self.stream_writer = (
+                await asyncio.open_connection(host, self.explicit_message_port))
+            self.host = host
+            self.is_connected_explicit = True
+        except socket.error as err:
+            if self.explicit_message_socket:
+                await self.explicit_message_socket.close()
+                self.is_connected_explicit = False
+            raise err
+
+    async def close_explicit(self):
+        """
+        Close the explicit Ethernet/IP connection
+        :return:
+        """
+        self.is_connected_explicit = False
+        self.has_session_handle = False
+        self.host = None
+        if self.explicit_message_socket:
+            await self.explicit_message_socket.close()
+
+    async def register_session(self, command_data=b'\x01\x00\x00\x00'):
+        """
+        Used by an originator to establish a session. It is required before sending CIP messages
+        :param command_data:
+        :return:
+        """
+        eip_message = EIPMessage(b'\x65\x00', command_data)
+        response = await self.send_command(eip_message, self.host)
+        self.has_session_handle = True
+        self.session_handle_id = response.session_handle_id
+        return response
+
+
 class EIPConnectedCommandMixin(EIPDispatcher):
     def __init__(self):
         super().__init__()
@@ -202,30 +335,23 @@ class EIPConnectedCommandMixin(EIPDispatcher):
         self.close_explicit()
 
     def get_response(self, eip_message: EIPMessage):
-        # print(eip_message.context_integer())
         if eip_message.context_integer() in self.eip_responses.keys():
-            # print('HERE')
             result = self.eip_responses.pop(eip_message.context_integer())
             return result
         else:
-            # print(f'Sending:  {binascii.hexlify(eip_message.bytes())}')
             self.explicit_message_socket.send(eip_message.bytes())
             received_data = self.explicit_message_socket.recv(self.BUFFER_SIZE)
             length = struct.unpack('<H',received_data[2:4])[0] + 24
-            # print(length)
             received_eip_message = EIPMessage()
             while len(received_data) > length:
                 received_eip_message.from_bytes(received_data[0:length])
-                # print(f'Received:  {binascii.hexlify(received_eip_message.bytes())}')
                 received_data = received_data[length:]
                 length = struct.unpack('<H', received_data[2:4])[0] + 24
                 self.eip_responses[received_eip_message.context_integer()] = received_eip_message
             received_eip_message.from_bytes(received_data[0:length])
-            # print(f'Received:  {binascii.hexlify(received_eip_message.bytes())}')
             if len(received_data) > 0:
                 received_eip_message.from_bytes(received_data)
             self.eip_responses[received_eip_message.context_integer()] = received_eip_message
-            # print(self.eip_responses)
             return self.get_response(eip_message)
 
 
@@ -242,21 +368,7 @@ class EIPConnectedCommandMixin(EIPDispatcher):
                 self.message_number = 0
             eip_command.set_context(self.message_number)
             self.message_number = self.message_number + 1
-            # self.explicit_message_socket.send(eip_command.bytes())
-            # received_data = self.explicit_message_socket.recv(self.BUFFER_SIZE)
-            # received_eip_message.from_bytes(received_data)
             return self.get_response(eip_command)
-
-            # if received_eip_message.context_integer() == eip_command.context_integer():
-            #     print(f'received 1, context int {received_eip_message.context_integer()}')
-            #     return received_eip_message
-            # elif received_eip_message.context_integer() in self.eip_responses.keys():
-            #     print(f'received 2, context int {received_eip_message.context_integer()}')
-            #     result = self.eip_responses.pop(received_eip_message.context_integer())
-            #     return result
-            # else:
-            #     print(f'received 3, context int {received_eip_message.context_integer()}')
-            #     self.eip_responses[received_eip_message.context_integer()] = received_eip_message
 
     def connect_explicit(self, host, connection_timeout: float = None):
         """
@@ -334,6 +446,52 @@ class EIPUnconnectedCommandMixin(EIPDispatcher):
             print(e)
 
         return received_eip_message
+
+
+class AsyncEIPConnectedCIPDispatcher(AsyncEIPConnectedCommandMixin, AsyncCIPDispatcher):
+    """
+    EIP is an encapsulation protocol for CIP (common industrial protocol) messages
+    """
+
+    null_address_item = b'\x00\x00\x00\x00'
+    cip_handle = b'\x00\x00\x00\x00'
+
+    def __init__(self):
+        super().__init__()
+
+    async def execute_cip_command(self, request: CIPRequest) -> CIPReply:
+        """
+        Implements the abstract method in order to become a concrete CIPDispatcher class
+        :param request:
+        :return:
+        """
+        data_address_item = DataAndAddressItem(DataAndAddressItem.UNCONNECTED_MESSAGE, request.bytes)
+        packets = [data_address_item]
+        # ToDo add interface handle to track responses?
+        common_packet_format = CommonPacketFormat(packets)
+        command_specific_data = CommandSpecificData(encapsulated_packet=common_packet_format.bytes())
+        response = await self.send_rr_data(command_specific_data.bytes())
+        response = response.packets[1].bytes()
+        reply_data_and_address_item = DataAndAddressItem('', b'')
+        # ToDo is this removing error data?
+        reply_data_and_address_item.from_bytes(response)
+        cip_reply = CIPReply(reply_data_and_address_item.data)
+        return cip_reply
+
+
+    async def send_rr_data(self, command_specific_data: bytes) -> CommonPacketFormat:
+        """
+        Ethernet/IP command to send an encapsulated request and reply packet between originator and target
+        :param command_specific_data:
+        :return:
+        """
+        eip_message = EIPMessage(b'\x6f\x00', command_specific_data, self.session_handle_id)
+        reply = await self.send_command(eip_message, self.host)
+        reply_command_specific_data = CommandSpecificData()
+        reply_command_specific_data.from_bytes(reply.command_data)
+        reply_packet = CommonPacketFormat([])
+        reply_packet.from_bytes(reply_command_specific_data.encapsulated_packet)
+        return reply_packet
 
 
 class EIPConnectedCIPDispatcher(EIPConnectedCommandMixin, CIPDispatcher):

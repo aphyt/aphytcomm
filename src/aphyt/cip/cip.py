@@ -189,6 +189,81 @@ class CIPDispatcher(ABC):
         return self.execute_cip_command(get_instance_list_request)
 
 
+class AsyncCIPDispatcher(ABC):
+    """
+    CIPDispatcher is an abstract base class that has the basic methods and data required
+    to send and receive CIP messages from a peer that is equipped to communicate using
+    this protocol
+
+    The key method that subclasses need to implement is 'execute_cip_command' which will
+    send a CIPRequest over the CIP network and receive a CIPReply
+
+    ToDo monitor when the read, write, get, set services have all moved to CIP objects mixins and get rid of them
+    """
+
+    def __init__(self):
+        self.variables = {}
+        self.user_variables = {}
+        self.system_variables = {}
+        self.data_type_dictionary = {}
+
+    @abstractmethod
+    async def execute_cip_command(self, request: CIPRequest) -> CIPReply:
+        pass
+
+    async def read_tag_service(self, tag_request_path, number_of_elements=1) -> CIPReply:
+        read_tag_request = \
+            CIPRequest(ap.CIPService.READ_TAG_SERVICE, tag_request_path, number_of_elements.to_bytes(2, 'little'))
+        return await self.execute_cip_command(read_tag_request)
+
+    async def write_tag_service(self, tag_request_path, request_service_data: CIPCommonFormat, number_of_elements=1):
+        data = request_service_data.data_type + \
+               int(request_service_data.additional_info_length).to_bytes(1, 'little') + \
+               request_service_data.additional_info + number_of_elements.to_bytes(2, 'little') + \
+               request_service_data.data
+        write_tag_request = CIPRequest(ap.CIPService.WRITE_TAG_SERVICE, tag_request_path, data)
+        return await self.execute_cip_command(write_tag_request)
+
+    async def read_tag_fragmented_service(self, tag_request_path, offset, number_of_elements):
+        data = tag_request_path + number_of_elements.to_bytes(2, 'little') + offset.to_bytes(4, 'little')
+        read_tag_fragmented_request = \
+            CIPRequest(ap.CIPService.READ_TAG_FRAGMENTED_SERVICE, tag_request_path, data)
+        return await self.execute_cip_command(read_tag_fragmented_request)
+
+    async def write_tag_fragmented_service(self, tag_request_path, cip_datatype_code, data, offset, number_of_elements=1):
+        data = \
+            cip_datatype_code + b'\x00' + number_of_elements.to_bytes(2, 'little') + \
+            offset.to_bytes(4, 'little') + data
+        write_tag_fragmented_request = CIPRequest(ap.CIPService.WRITE_TAG_FRAGMENTED_SERVICE, tag_request_path, data)
+        return await self.execute_cip_command(write_tag_fragmented_request)
+
+    async def get_attribute_all_service(self, tag_request_path):
+        get_attribute_all_request = CIPRequest(ap.CIPService.GET_ATTRIBUTE_ALL, tag_request_path)
+        return await self.execute_cip_command(get_attribute_all_request)
+
+    async def get_attribute_single_service(self, tag_request_path):
+        get_attribute_single_request = CIPRequest(ap.CIPService.GET_ATTRIBUTE_SINGLE, tag_request_path)
+        return await self.execute_cip_command(get_attribute_single_request)
+
+    async def set_attribute_single_service(self, tag_request_path, data):
+        set_attribute_single_request = CIPRequest(ap.CIPService.SET_ATTRIBUTE_SINGLE, tag_request_path, data)
+        return await self.execute_cip_command(set_attribute_single_request)
+
+    async def get_instance_list(self, start_instance_id: int = 1, number_of_instances: int = 1, user_defined: bool = True):
+        path = address_request_path_segment(b'\x6a', b'\x00\x00')
+        if user_defined:
+            kind_of_variable = 2
+        else:
+            kind_of_variable = 1
+        kind_of_variable = kind_of_variable.to_bytes(2, 'little')
+        request_data = \
+            start_instance_id.to_bytes(4, 'little') + \
+            number_of_instances.to_bytes(4, 'little') + \
+            kind_of_variable
+        get_instance_list_request = CIPRequest(ap.CIPService.GET_INSTANCE_LIST_EX2, path, request_data)
+        return await self.execute_cip_command(get_instance_list_request)
+
+
 def address_request_path_segment(class_id: bytes = None, instance_id: bytes = None,
                                  attribute_id: bytes = None, element_id: bytes = None) -> bytes:
     """
