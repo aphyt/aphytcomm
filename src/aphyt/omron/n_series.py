@@ -897,7 +897,6 @@ class AsyncNSeries:
     async def __aenter__(self):
         if self.host is not None:
             await self.connect_explicit(self.host)
-            await self.register_session()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -905,6 +904,7 @@ class AsyncNSeries:
 
     async def connect_explicit(self, host, connection_timeout: float = None):
         await self.connected_cip_dispatcher.connect_explicit(host, connection_timeout)
+        await self.register_session()
 
     async def close_explicit(self):
         await self.connected_cip_dispatcher.close_explicit()
