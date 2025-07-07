@@ -1306,7 +1306,7 @@ class AsyncNSeries:
         :return:
         """
         request_path = variable_request_path_segment(variable_name)
-        cip_data_type_instance = await self.connected_cip_dispatcher.variables.get(variable_name)
+        cip_data_type_instance = self.connected_cip_dispatcher.variables.get(variable_name)
         if cip_data_type_instance is None:
             cip_data_type_instance = await self._get_instance_from_variable_name(variable_name)
         cip_data_type_instance.from_value(data)
@@ -1401,7 +1401,7 @@ class AsyncNSeries:
         request_path = variable_request_path_segment(cip_datatype_object.variable_name)
         simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
         request_path = request_path + simple_data_request_path.bytes()
-        response = self.connected_cip_dispatcher.read_tag_service(request_path)
+        response = await self.connected_cip_dispatcher.read_tag_service(request_path)
         return response
 
     async def _simple_data_segment_write(self, cip_datatype_object: CIPDataType, offset, write_size, data) -> CIPReply:
@@ -1421,7 +1421,7 @@ class AsyncNSeries:
         if cip_datatype_object.data_type_code() == CIPString.data_type_code():
             data = struct.pack("<H", len(data)) + data
             request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
-            response = self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
+            response = await self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
             # ToDo Test String array. Probably have to put the length
             if cip_datatype_object.array_data_type == CIPStructure.data_type_code():
@@ -1433,11 +1433,11 @@ class AsyncNSeries:
                                                data=data)
             else:
                 request_data = CIPCommonFormat(cip_datatype_object.array_data_type, data=data)
-            response = self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
+            response = await self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPStructure.data_type_code():
             request_data = CIPCommonFormat(CIPAbbreviatedStructure.data_type_code(), additional_info_length=2,
                                            additional_info=cip_datatype_object.crc_code, data=data)
-            response = self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
+            response = await self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
         return response
 
     async def _get_variable_object(self, instance_id: int) -> VariableObjectReply:
