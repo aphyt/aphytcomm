@@ -977,7 +977,7 @@ class AsyncNSeries:
 
     def stop_loop(self):
         self.loop.call_soon_threadsafe(self.loop.stop)
-        self.thread.join()
+        # self.thread.join()
 
     def run_method(self, method, positional_arguments, keyword_arguments):
         future = asyncio.run_coroutine_threadsafe(method(*positional_arguments, **keyword_arguments), self.loop)
@@ -997,6 +997,8 @@ class AsyncNSeries:
 
     async def close_explicit(self):
         await self.connected_cip_dispatcher.close_explicit()
+        if self.loop is not None:
+            self.stop_loop()
 
     async def register_session(self):
         await self.connected_cip_dispatcher.register_session()
