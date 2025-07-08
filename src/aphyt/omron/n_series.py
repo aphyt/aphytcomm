@@ -278,7 +278,6 @@ class NSeries:
         return self.connected_cip_dispatcher.execute_cip_command(get_instance_list_request)
 
     def update_derived_data_type_dictionary(self, display=False):
-        # ToDo get the derived data types in such  a way they are easy to use
         number_of_entries = self._get_number_of_derived_data_types()
         for index in range(1, number_of_entries + 1):
             reply = self._get_variable_type_object(index)
@@ -889,16 +888,48 @@ class NewNSeries:
     def __enter__(self):
         self._instance.create_sync_entry()
         if self.host is not None:
-            future = asyncio.run_coroutine_threadsafe(self._instance.connect_explicit(self.host), self._instance.loop)
-            future.result()
+            self.connect_explicit(self.host, self.timeout)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close_explicit()
         self._instance.stop_loop()
 
-    def read_variable(self, variable_name: str):
-        future = asyncio.run_coroutine_threadsafe(self._instance.read_variable(variable_name), self._instance.loop)
+    def connect_explicit(self, host, connection_timeout: float = None):
+        future = asyncio.run_coroutine_threadsafe(
+            self._instance.connect_explicit(host, connection_timeout), self._instance.loop)
+        future.result()
+
+    def close_explicit(self):
+        future = asyncio.run_coroutine_threadsafe(
+            self._instance.close_explicit(), self._instance.loop)
+        future.result()
+
+    def update_variable_dictionary(self):
+        future = asyncio.run_coroutine_threadsafe(
+            self._instance.update_variable_dictionary(), self._instance.loop)
+        future.result()
+
+    def variable_list(self):
+        future = asyncio.run_coroutine_threadsafe(
+            self._instance.variable_list(), self._instance.loop)
         return future.result()
+
+    def user_variable_list(self):
+        future = asyncio.run_coroutine_threadsafe(
+            self._instance.user_variable_list(), self._instance.loop)
+        return future.result()
+
+    def system_variable_list(self):
+        future = asyncio.run_coroutine_threadsafe(
+            self._instance.system_variable_list(), self._instance.loop)
+        return future.result()
+
+    def read_variable(self, variable_name: str):
+        future = asyncio.run_coroutine_threadsafe(
+            self._instance.read_variable(variable_name), self._instance.loop)
+        return future.result()
+
 
 class AsyncNSeries:
     """
@@ -1041,7 +1072,7 @@ class AsyncNSeries:
         update_variable_dictionary, read_variable or write_variable methods have been run.
         :return:
         """
-        return list(await self.connected_cip_dispatcher.user_variables)
+        return list(self.connected_cip_dispatcher.user_variables)
 
     async def system_variable_list(self):
         """
@@ -1049,7 +1080,7 @@ class AsyncNSeries:
         update_variable_dictionary, read_variable or write_variable methods have been run.
         :return:
         """
-        return list(await self.connected_cip_dispatcher.system_variables)
+        return list(self.connected_cip_dispatcher.system_variables)
 
     async def variable_dictionary(self, update_contents: bool = False):
         """
