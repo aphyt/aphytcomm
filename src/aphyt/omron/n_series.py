@@ -921,18 +921,14 @@ class AsyncNSeries:
         self.thread = None
         self.done = False
 
-    def start_loop(self, loop):
-        '''
-        Study this to show code to send stuff to the Async code
-        https://gist.github.com/vxgmichel/82c3c4a683e75e89c62ae08e2cce7efd
-        '''
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
+    def start_loop(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
 
     def create_sync_entry(self):
         self.loop = asyncio.new_event_loop()
         try:
-            self.thread = Thread(target=self.start_loop, args=(self.loop,))
+            self.thread = Thread(target=self.start_loop)
             self.thread.start()
 
         finally:
