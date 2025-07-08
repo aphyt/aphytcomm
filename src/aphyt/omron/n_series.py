@@ -15,6 +15,7 @@ from signal import signal, SIGINT
 from abc import ABC, abstractmethod
 from aphyt.eip import *
 import logging
+from threading import Thread
 
 
 class VariableTypeObjectReply(CIPReply):
@@ -876,6 +877,29 @@ class NSeries:
         return int.from_bytes(reply.reply_data[2:4], 'little')
 
 
+class NewNSeries:
+    def __init__(self, host=None, timeout=None):
+        super().__init__()
+        self.derived_data_type_dictionary = {}
+        self._instance = AsyncNSeries()
+        self.host = host
+        self.timeout = timeout
+        update_data_type_dictionary(self._instance.connected_cip_dispatcher.data_type_dictionary)
+
+    def __enter__(self):
+        self._instance.create_sync_entry()
+        if self.host is not None:
+            future = asyncio.run_coroutine_threadsafe(self._instance.connect_explicit(self.host), self._instance.loop)
+            future.result()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._instance.stop_loop()
+
+    def read_variable(self, variable_name: str):
+        future = asyncio.run_coroutine_threadsafe(self._instance.read_variable(variable_name), self._instance.loop)
+        return future.result()
+
 class AsyncNSeries:
     """
     AsyncNSeries
@@ -893,6 +917,34 @@ class AsyncNSeries:
         self.host = host
         self.timeout = timeout
         update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
+        self.loop = None
+        self.thread = None
+        self.done = False
+
+    def start_loop(self, loop):
+        '''
+        Study this to show code to send stuff to the Async code
+        https://gist.github.com/vxgmichel/82c3c4a683e75e89c62ae08e2cce7efd
+        '''
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+
+    def create_sync_entry(self):
+        self.loop = asyncio.new_event_loop()
+        try:
+            self.thread = Thread(target=self.start_loop, args=(self.loop,))
+            self.thread.start()
+
+        finally:
+            pass
+
+    def stop_loop(self):
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.thread.join()
+
+    def run_method(self, method, positional_arguments, keyword_arguments):
+        future = asyncio.run_coroutine_threadsafe(method(*positional_arguments, **keyword_arguments), self.loop)
+        return future.result()
 
     async def __aenter__(self):
         if self.host is not None:

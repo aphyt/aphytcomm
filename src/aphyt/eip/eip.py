@@ -286,7 +286,6 @@ class AsyncEIPConnectedCommandMixin(AsyncEIPDispatcher):
         :param host:
         """
         try:
-
             self.stream_reader, self.stream_writer = (
                 await asyncio.open_connection(host, self.explicit_message_port))
             self.host = host
