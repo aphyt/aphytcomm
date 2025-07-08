@@ -886,7 +886,6 @@ class NewNSeries:
         update_data_type_dictionary(self._instance.connected_cip_dispatcher.data_type_dictionary)
 
     def __enter__(self):
-        self._instance.create_sync_entry()
         if self.host is not None:
             self.connect_explicit(self.host, self.timeout)
         return self
@@ -896,6 +895,7 @@ class NewNSeries:
         self._instance.stop_loop()
 
     def connect_explicit(self, host, connection_timeout: float = None):
+        self._instance.create_sync_entry()
         future = asyncio.run_coroutine_threadsafe(
             self._instance.connect_explicit(host, connection_timeout), self._instance.loop)
         future.result()
@@ -928,6 +928,16 @@ class NewNSeries:
     def read_variable(self, variable_name: str):
         future = asyncio.run_coroutine_threadsafe(
             self._instance.read_variable(variable_name), self._instance.loop)
+        return future.result()
+
+    def write_variable(self, variable_name: str, data):
+        future = asyncio.run_coroutine_threadsafe(
+            self._instance.write_variable(variable_name, data), self._instance.loop)
+        return future.result()
+
+    def verified_write_variable(self, variable_name: str, data, retry_count: int = 2):
+        future = asyncio.run_coroutine_threadsafe(
+            self._instance.verified_write_variable(variable_name, data, retry_count), self._instance.loop)
         return future.result()
 
 
@@ -1064,7 +1074,7 @@ class AsyncNSeries:
         update_variable_dictionary, read_variable or write_variable methods have been run.
         :return:
         """
-        return list(await self.connected_cip_dispatcher.variables)
+        return list(self.connected_cip_dispatcher.variables)
 
     async def user_variable_list(self):
         """
@@ -1505,7 +1515,7 @@ class AsyncNSeries:
             # ToDo Test String array. Probably have to put the length
             if cip_datatype_object.array_data_type == CIPStructure.data_type_code():
                 structure_variable_type_object = \
-                    self._get_variable_type_object(cip_datatype_object.instance_id)
+                    await self._get_variable_type_object(cip_datatype_object.instance_id)
                 crc_code = structure_variable_type_object.crc_code.to_bytes(2, 'little')
                 request_data = CIPCommonFormat(CIPAbbreviatedStructure.data_type_code(), additional_info_length=2,
                                                additional_info=crc_code,
@@ -1818,6 +1828,15 @@ class NSeriesThreadDispatcher:
 
     def update_variable_dictionary(self):
         self._instance.update_variable_dictionary()
+
+    def variable_list(self):
+        return self._instance.variable_list()
+
+    def user_variable_list(self):
+        return self._instance.user_variable_list()
+
+    def system_variable_list(self):
+        return self._instance.system_variable_list()
 
     def save_current_dictionary(self, file_name: str):
         self._instance.save_current_dictionary(file_name)
