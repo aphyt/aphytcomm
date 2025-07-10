@@ -749,7 +749,6 @@ class NSeries:
         :param read_size:
         :return:
         """
-        # ToDo consider the request path should reside with the variable (possibly converted to logical segment)
         request_path = variable_request_path_segment(cip_datatype_object.variable_name)
         simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
         request_path = request_path + simple_data_request_path.bytes()
@@ -768,14 +767,12 @@ class NSeries:
         request_path = variable_request_path_segment(cip_datatype_object.variable_name)
         simple_data_request_path = SimpleDataSegmentRequest(offset, write_size)
         request_path = request_path + simple_data_request_path.bytes()
-        # ToDo how to prevent testing type code here. Function is doing too much
         response = None
         if cip_datatype_object.data_type_code() == CIPString.data_type_code():
             data = struct.pack("<H", len(data)) + data
             request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
             response = self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
-            # ToDo Test String array. Probably have to put the length
             if cip_datatype_object.array_data_type == CIPStructure.data_type_code():
                 structure_variable_type_object = \
                     self._get_variable_type_object(cip_datatype_object.instance_id)
@@ -826,9 +823,9 @@ class NSeries:
 
     def _get_variable_list(self):
         """
-                Omron specific method for creating a list of variables that are published in the controller.
-                :return:
-                """
+        Omron specific method for creating a list of variables that are published in the controller.
+        :return:
+        """
         tag_list = self._get_system_variable_list() + self._get_user_variable_list()
         return tag_list
 
@@ -877,6 +874,14 @@ class NSeries:
 
 
 class NewNSeries:
+    """
+    NSeries
+    ~~~~~~~
+
+    Class to read and write data to an Omron N-Series controller. This implementation passes messages to the
+    AsyncNSeries class running an event loop so that the asynchronous code can be executed in a synchronous
+    program.
+    """
     def __init__(self, host=None, timeout=None):
         super().__init__()
         self.derived_data_type_dictionary = {}
@@ -946,7 +951,7 @@ class AsyncNSeries:
     AsyncNSeries
     ~~~~~~~
 
-    Class that implements Omron N-Series specific Ethernet/IP services in addition to Ethernet/IP services
+    Asynchronous class that implements Omron N-Series specific Ethernet/IP services in addition to Ethernet/IP services
     and CIP services common to most Ethernet/IP devices
     """
     MAXIMUM_LENGTH = 502  # UCMM maximum length is 502 bytes
@@ -1014,7 +1019,6 @@ class AsyncNSeries:
         return await self.connected_cip_dispatcher.execute_cip_command(get_instance_list_request)
 
     async def update_derived_data_type_dictionary(self, display=False):
-        # ToDo get the derived data types in such  a way they are easy to use
         number_of_entries = await self._get_number_of_derived_data_types()
         for index in range(1, number_of_entries + 1):
             reply = await self._get_variable_type_object(index)
@@ -1488,7 +1492,6 @@ class AsyncNSeries:
         :param read_size:
         :return:
         """
-        # ToDo consider the request path should reside with the variable (possibly converted to logical segment)
         request_path = variable_request_path_segment(cip_datatype_object.variable_name)
         simple_data_request_path = SimpleDataSegmentRequest(offset, read_size)
         request_path = request_path + simple_data_request_path.bytes()
@@ -1507,14 +1510,12 @@ class AsyncNSeries:
         request_path = variable_request_path_segment(cip_datatype_object.variable_name)
         simple_data_request_path = SimpleDataSegmentRequest(offset, write_size)
         request_path = request_path + simple_data_request_path.bytes()
-        # ToDo how to prevent testing type code here. Function is doing too much
         response = None
         if cip_datatype_object.data_type_code() == CIPString.data_type_code():
             data = struct.pack("<H", len(data)) + data
             request_data = CIPCommonFormat(cip_datatype_object.data_type_code(), data=data)
             response = await self.connected_cip_dispatcher.write_tag_service(request_path, request_data)
         elif cip_datatype_object.data_type_code() == CIPArray.data_type_code():
-            # ToDo Test String array. Probably have to put the length
             if cip_datatype_object.array_data_type == CIPStructure.data_type_code():
                 structure_variable_type_object = \
                     await self._get_variable_type_object(cip_datatype_object.instance_id)
