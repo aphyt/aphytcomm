@@ -572,7 +572,6 @@ class CIPArray(CIPDataType):
         self.number_of_elements = number_of_elements
         self.start_array_elements = start_array_elements
         self.size = self._get_size()
-        # ToDo calling get_class_type_data_code seems weird
         self.local_cip_data_type_object = _get_class_data_type_code(self.array_data_type)
         if self.data == b'':
             self.data = self.size * b'\x00'
@@ -587,7 +586,6 @@ class CIPArray(CIPDataType):
         self.number_of_elements = number_of_elements
         self.start_array_elements = start_array_elements
         self.size = self._get_size()
-        # ToDo calling get_class_type_data_code seems weird
         self.local_cip_data_type_object = cip_instance
         if self.data == b'':
             self.data = self.size * b'\x00'
