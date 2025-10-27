@@ -218,14 +218,17 @@ class BaseNSeries(unittest.TestCase):
     def test_structure_offset_1(self):
         variable_name = 'test_StructOffset'
         result = self.eip_instance.read_variable(variable_name)
-        self.assertEqual(1, result['usiTest'])
+        result = result['usiTest'].value()
+        self.assertEqual(1, result)
 
     def test_structure_offset_2(self):
         variable_name = 'test_StructOffset'
         result = self.eip_instance.read_variable(variable_name)
-        self.assertEqual(2, result['S10']['usiTest'])
+        result = result['S10']['usiTest'].value()
+        self.assertEqual(2, result)
 
     def test_structure_offset_3(self):
         variable_name = 'test_StructOffset'
         result = self.eip_instance.read_variable(variable_name)
-        self.assertEqual(-3, result['S10']['iTest1'])
+        result = result['S10']['iTest1'].value()
+        self.assertEqual(-3, result)
