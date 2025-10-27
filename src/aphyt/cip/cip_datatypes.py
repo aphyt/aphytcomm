@@ -483,15 +483,20 @@ class CIPStructure(CIPDataType):
 
     def value(self):
         offset = 0
+        prev_member_value_type = None
         structure_data = self.data
         for member in self.members:
             member_value = self.members[member]
             if member_value.alignment != 0 and offset % member_value.alignment != 0:
-                offset = offset + (member_value.alignment - offset % member_value.alignment)
+                offset += (member_value.alignment - offset % member_value.alignment)
+            elif prev_member_value_type != type(member_value) and offset % 2 != 0:
+                # Make start offset even on member type change
+                offset += 1
             end_byte = offset + member_value.size
             member_value.data = structure_data[offset:end_byte]
             # Call value to handle nested structures
             member_value.value()
+            prev_member_value_type = type(member_value)
             offset = end_byte
         return self
 
