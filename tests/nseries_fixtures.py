@@ -214,3 +214,18 @@ class BaseNSeries(unittest.TestCase):
         self.eip_instance.write_variable(variable_name, 0.0)
         result = self.eip_instance.read_variable(variable_name)
         self.assertAlmostEqual(result, 0.0)
+
+    def test_structure_offset_1(self):
+        variable_name = 'test_StructOffset'
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertEqual(1, result['usiTest'])
+
+    def test_structure_offset_2(self):
+        variable_name = 'test_StructOffset'
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertEqual(2, result['S10']['usiTest'])
+
+    def test_structure_offset_3(self):
+        variable_name = 'test_StructOffset'
+        result = self.eip_instance.read_variable(variable_name)
+        self.assertEqual(-3, result['S10']['iTest1'])
