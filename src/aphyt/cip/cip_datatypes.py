@@ -504,13 +504,18 @@ class CIPStructure(CIPDataType):
         # ToDo lookup data check
         offset = 0
         self.crc_code = value.crc_code
+        prev_member_value_type = None
         mutable_data = bytearray(self.data)
         for member_key in value.members:
             member = value.members.get(member_key)
             if member.alignment != 0 and offset % member.alignment != 0:
-                offset = offset + (member.alignment - offset % member.alignment)
+                offset += (member.alignment - offset % member.alignment)
+            elif prev_member_value_type != type(member) and offset % 2 != 0:
+                # Make start offset even on member type change
+                offset += 1
             end_byte = offset + member.size
             mutable_data[offset:offset+member.size] = member.data
+            prev_member_value_type = type(member)
             offset = end_byte
         self.data = bytes(mutable_data)
         if self.callback is not None:

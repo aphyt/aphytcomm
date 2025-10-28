@@ -232,3 +232,51 @@ class BaseNSeries(unittest.TestCase):
         result = self.eip_instance.read_variable(variable_name)
         result = result['S10']['iTest1'].value()
         self.assertEqual(-3, result)
+
+    def test_structure_offset_write_1(self):
+        variable_name = 'test_StructOffset'
+        variable = self.eip_instance.read_variable(variable_name)
+        result = variable['usiTest'].value()
+        self.assertEqual(1, result)
+        variable['usiTest'] = 5
+        self.eip_instance.write_variable(variable_name, variable)
+        variable = self.eip_instance.read_variable(variable_name)
+        result = variable['usiTest'].value()
+        self.assertEqual(5, result)
+        variable['usiTest'] = 1
+        self.eip_instance.write_variable(variable_name, variable)
+        variable = self.eip_instance.read_variable(variable_name)
+        result = variable['usiTest'].value()
+        self.assertEqual(1, result)
+
+    def test_structure_offset_write_2(self):
+        variable_name = 'test_StructOffset'
+        variable = self.eip_instance.read_variable(variable_name)
+        result = variable['S10']['usiTest'].value()
+        self.assertEqual(2, result)
+        variable['S10']['usiTest'] = 6
+        self.eip_instance.write_variable(variable_name, variable)
+        variable = self.eip_instance.read_variable(variable_name)
+        result = variable['S10']['usiTest'].value()
+        self.assertEqual(6, result)
+        variable['S10']['usiTest'] = 2
+        self.eip_instance.write_variable(variable_name, variable)
+        variable = self.eip_instance.read_variable(variable_name)
+        result = variable['S10']['usiTest'].value()
+        self.assertEqual(2, result)
+
+    def test_structure_offset_write_3(self):
+        variable_name = 'test_StructOffset'
+        variable = self.eip_instance.read_variable(variable_name)
+        result = variable['S10']['iTest1'].value()
+        self.assertEqual(-3, result)
+        variable['S10']['iTest1'] = -7
+        self.eip_instance.write_variable(variable_name, variable)
+        variable = self.eip_instance.read_variable(variable_name)
+        result = variable['S10']['iTest1'].value()
+        self.assertEqual(-7, result)
+        variable['S10']['iTest1'] = -3
+        self.eip_instance.write_variable(variable_name, variable)
+        variable = self.eip_instance.read_variable(variable_name)
+        result = variable['S10']['iTest1'].value()
+        self.assertEqual(-3, result)
