@@ -12,11 +12,7 @@ import binascii
 
 def test_bit(int_type, offset):
     mask = 1 << offset
-    if int_type & mask != 0:
-        response = True
-    else:
-        response = False
-    return response
+    return int_type & mask != 0
 
 
 def set_bit(int_type, offset):
@@ -134,17 +130,11 @@ class CIPBoolean(CIPDataType):
         return b'\xc1'  # (bit)
 
     def value(self):
-        bool_value = int.from_bytes(self.data, 'little')
-        if bool_value == 1:
-            return True
-        else:
-            return False
+        value = int.from_bytes(self.data, 'little')
+        return value != 0
 
     def from_value(self, value):
-        if value:
-            self.data = struct.pack("<h", 1)
-        else:
-            self.data = struct.pack("<h", 0)
+        self.data = struct.pack("<h", 1 if value else 0)
 
 
 class CIPShortInteger(CIPDataType):
