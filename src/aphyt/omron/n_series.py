@@ -899,6 +899,10 @@ class NewNSeries:
         self.close_explicit()
         self._instance.stop_loop()
 
+    @property
+    def connected_cip_dispatcher(self):
+        return self._instance.connected_cip_dispatcher
+
     def connect_explicit(self, host, connection_timeout: float = None):
         self._instance.create_sync_entry()
         future = asyncio.run_coroutine_threadsafe(
