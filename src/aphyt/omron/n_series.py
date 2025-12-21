@@ -448,16 +448,18 @@ class NSeries:
         nest_id = variable_type_object.nesting_variable_type_instance_id
         member_instance_id = int.from_bytes(nest_id, 'little')
         while member_instance_id != 0:
-            member_cip_datatype_instance = self._get_member_instance(member_instance_id)
+            # member_cip_datatype_instance = self._get_member_instance(member_instance_id)
+            variable_type_object_reply = self._get_variable_type_object(member_instance_id)
+            member_cip_datatype_instance = self._get_member_instance(member_instance_id, variable_type_object_reply)
             if type(member_cip_datatype_instance) == CIPStructure:
                 member_cip_datatype_instance.callback = cip_datatype_instance.from_value
                 member_cip_datatype_instance.callback_arg = cip_datatype_instance
                 if variable_type_object.number_of_members == 0:
                     pass
-            variable_type_object_reply = self._get_variable_type_object(member_instance_id)
+            # variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_name = str(variable_type_object_reply.variable_type_name, 'utf-8')
             cip_datatype_instance.members[member_name] = member_cip_datatype_instance
-            variable_type_object_reply = self._get_variable_type_object(member_instance_id)
+            # variable_type_object_reply = self._get_variable_type_object(member_instance_id)
             member_instance_id = \
                 int.from_bytes(variable_type_object_reply.next_instance_id, 'little')
         return cip_datatype_instance
@@ -583,24 +585,29 @@ class NSeries:
             self.connected_cip_dispatcher.user_variables.update({variable_name: cip_data_type_instance})
         return cip_data_type_instance
 
-    def _get_member_instance(self, member_instance_id: int) -> CIPDataType:
+    def _get_member_instance(
+            self, member_instance_id: int, variable_type_object_reply: VariableTypeObjectReply=None) -> CIPDataType:
         """
         This method returns a CIP datatype instance from a member ID. This is how the driver can
         build instances of derived data types like structures and arrays of structures
         :param member_instance_id:
+        :param variable_type_object_reply:
         :return:
         """
-        reply = self._get_variable_type_object(member_instance_id)
-        if reply.cip_data_type == CIPStructure.data_type_code():
-            return self._structure_instance_from_variable_type_object(reply)
-        elif reply.cip_data_type == CIPAbbreviatedStructure.data_type_code():
-            return self._structure_instance_from_variable_type_object(reply)
-        elif reply.cip_data_type == CIPString.data_type_code():
-            return self._string_instance_from_variable_type_object(reply)
-        elif reply.cip_data_type == CIPArray.data_type_code():
-            return self._array_instance_from_variable_type_object(reply)
+        if variable_type_object_reply is None:
+            variable_type_object_reply = self._get_variable_type_object(member_instance_id)
+
+        if variable_type_object_reply.cip_data_type == CIPStructure.data_type_code():
+            return self._structure_instance_from_variable_type_object(variable_type_object_reply)
+        elif variable_type_object_reply.cip_data_type == CIPAbbreviatedStructure.data_type_code():
+            return self._structure_instance_from_variable_type_object(variable_type_object_reply)
+        elif variable_type_object_reply.cip_data_type == CIPString.data_type_code():
+            return self._string_instance_from_variable_type_object(variable_type_object_reply)
+        elif variable_type_object_reply.cip_data_type == CIPArray.data_type_code():
+            return self._array_instance_from_variable_type_object(variable_type_object_reply)
         else:
-            return self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
+            # return self.connected_cip_dispatcher.data_type_dictionary.get(reply.cip_data_type)()
+            return self.connected_cip_dispatcher.data_type_dictionary.get(variable_type_object_reply.cip_data_type)()
 
     def _array_instance_from_variable_object(
             self, variable_object: (VariableObjectReply, VariableTypeObjectReply)) -> CIPArray:
