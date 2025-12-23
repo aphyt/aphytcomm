@@ -4,7 +4,8 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from aphyt.eip import *
-
+from aphyt.cip.cip_datatypes import *
+from aphyt.cip.cip import *
 
 def set_bit(data: bytes, bit_position: int):
     """Set an arbitrary bit in a bytes object to 1"""

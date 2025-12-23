@@ -4,6 +4,9 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 import asyncio
+from abc import ABC, abstractmethod
+from aphyt.cip.cip import CIPReply, CIPRequest, AsyncCIPDispatcher, CIPDispatcher
+import struct
 import binascii
 import socket
 import time

@@ -5,6 +5,8 @@ __email__ = "jr@aphyt.com"
 
 from aphyt.eip import *
 from decimal import *
+from aphyt.cip.cip_datatypes import *
+from aphyt.cip.cip import *
 
 
 def two_bytes_to_fixed_point_temperature(two_bytes: bytes):

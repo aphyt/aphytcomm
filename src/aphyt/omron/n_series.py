@@ -14,6 +14,8 @@ import threading
 from signal import signal, SIGINT
 from abc import ABC, abstractmethod
 from aphyt.eip import *
+from aphyt.cip.cip_datatypes import *
+from aphyt.cip.cip import *
 import logging
 from threading import Thread
 

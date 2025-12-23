@@ -107,7 +107,7 @@ def update_data_type_dictionary(data_type_dictionary):
         data_type_dictionary.update({sub_class.data_type_code(): sub_class})
 
 
-def _get_class_data_type_code(data_type: bytes) -> CIPDataType:
+def _get_class_data_type_code(data_type: bytes) -> CIPDataType | None:
     """
     This function will return a CIP datatype instance from a datatype code
 
@@ -117,6 +117,7 @@ def _get_class_data_type_code(data_type: bytes) -> CIPDataType:
     for sub_class in CIPDataType.__subclasses__():
         if sub_class.data_type_code() == data_type:
             return sub_class()
+    return None
 
 
 class CIPBoolean(CIPDataType):

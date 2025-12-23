@@ -4,6 +4,9 @@ __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
 from ..eip import *
+from aphyt.cip.cip_attributes import CIPObject, address_request_path_segment
+from aphyt.cip.cip import GetAttributeAllMixin, SetAttributeSingleMixin, GetAttributeSingleMixin, CIPAttribute
+from aphyt.cip.cip_datatypes import *
 
 
 class TCPInterfaceObject(CIPObject, GetAttributeSingleMixin, SetAttributeSingleMixin, GetAttributeAllMixin):

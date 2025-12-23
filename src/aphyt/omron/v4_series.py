@@ -3,10 +3,10 @@ __license__ = "GPLv2"
 __maintainer__ = "Joseph Ryan"
 __email__ = "jr@aphyt.com"
 
-import struct
-
 from aphyt.eip import *
 from decimal import *
+from aphyt.cip.cip_datatypes import *
+from aphyt.cip.cip import *
 
 
 class V4Series:
