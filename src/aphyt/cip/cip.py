@@ -44,6 +44,10 @@ class CIPService:
         self.cip_dispatcher = cip_dispatcher
 
 
+class CIPException(Exception):
+    pass
+
+
 class CIPRequest:
     """
     Class for assembling CIP requests

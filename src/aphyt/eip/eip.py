@@ -5,7 +5,7 @@ __email__ = "jr@aphyt.com"
 
 import asyncio
 from abc import ABC, abstractmethod
-from aphyt.cip.cip import CIPReply, CIPRequest, AsyncCIPDispatcher, CIPDispatcher
+from aphyt.cip.cip import CIPReply, CIPRequest, AsyncCIPDispatcher, CIPDispatcher, CIPException
 import struct
 import binascii
 import socket
@@ -478,6 +478,8 @@ class AsyncEIPConnectedCIPDispatcher(AsyncEIPConnectedCommandMixin, AsyncCIPDisp
         # ToDo is this removing error data?
         reply_data_and_address_item.from_bytes(response)
         cip_reply = CIPReply(reply_data_and_address_item.data)
+        if cip_reply.general_status != b'\x00':
+            raise CIPException(f'CIP reply contained a general status code {cip_reply.general_status}')
         return cip_reply
 
 
@@ -523,6 +525,9 @@ class EIPConnectedCIPDispatcher(EIPConnectedCommandMixin, CIPDispatcher):
         # ToDo is this removing error data?
         reply_data_and_address_item.from_bytes(response)
         cip_reply = CIPReply(reply_data_and_address_item.data)
+        if cip_reply.general_status != b'\x00':
+            raise CIPException(f'CIP reply contained a non-zero general status code {cip_reply.general_status}, '
+                               f'which indicates a reply other than success. Common reasons for an')
         return cip_reply
 
     # @staticmethod
