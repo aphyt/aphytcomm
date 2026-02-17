@@ -526,8 +526,7 @@ class EIPConnectedCIPDispatcher(EIPConnectedCommandMixin, CIPDispatcher):
         reply_data_and_address_item.from_bytes(response)
         cip_reply = CIPReply(reply_data_and_address_item.data)
         if cip_reply.general_status != b'\x00':
-            raise CIPException(f'CIP reply contained a non-zero general status code {cip_reply.general_status}, '
-                               f'which indicates a reply other than success. Common reasons for an')
+            raise CIPException(f'CIP reply contained a non-zero general status code {cip_reply.general_status}')
         return cip_reply
 
     # @staticmethod

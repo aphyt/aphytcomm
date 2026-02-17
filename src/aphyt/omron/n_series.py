@@ -657,8 +657,13 @@ class AsyncNSeries:
         :return:
         """
         request_path = variable_request_path_segment(variable_name)
-        response = await self.connected_cip_dispatcher.get_attribute_all_service(request_path)
-        data_type_code = response.reply_data[4:5]
+        data_type_code = b''
+        response = None
+        try:
+            response = await self.connected_cip_dispatcher.get_attribute_all_service(request_path)
+            data_type_code = response.reply_data[4:5]
+        except CIPException:
+            pass
         if data_type_code == CIPStructure.data_type_code():
             variable_type_object_instance_id = int.from_bytes(response.reply_data[8:12], 'little')
             variable_type_object = await self._get_variable_type_object(variable_type_object_instance_id)
@@ -677,7 +682,7 @@ class AsyncNSeries:
         elif data_type_code != b'':
             cip_data_type_instance = self.connected_cip_dispatcher.data_type_dictionary.get(data_type_code)()
         else:
-            res = list(filter(None, re.split(r'\[|\]|\.', variable_name)))
+            res = list(filter(None, re.split(r'[\[\].]', variable_name)))
             super_instance = await self._get_instance_from_variable_name(res[0])
             for token in res[1:]:
                 if token.isnumeric():
