@@ -1,6 +1,7 @@
 import unittest
 from aphyt import omron
 from aphyt.cip.cip_datatypes import *
+from aphyt.cip.cip import CIPException
 
 
 class BaseNSeries(unittest.TestCase):
@@ -280,6 +281,11 @@ class BaseNSeries(unittest.TestCase):
         variable = self.eip_instance.read_variable(variable_name)
         result = variable['S10']['iTest1'].value()
         self.assertEqual(-3, result)
+
+    def test_read_non_existent_variable(self):
+        variable_name = 'test_IntNE'
+        with self.assertRaises(CIPException):
+            self.eip_instance.read_variable(variable_name)
 
 
 
