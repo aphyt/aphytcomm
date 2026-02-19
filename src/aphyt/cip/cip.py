@@ -28,7 +28,20 @@ cip_status_dictionary = {
     b'\x07\x80': ('An inaccessible variable was specified',''),
     b'\x31\x80': ('An internal error occurred. (A memory allocation error occurred)',''),
     b'\x02\x01\x03\x21': ('An attempt was made to write a constant or read-only variable',''),
-    b'\x29\x80': ('A region that all cannot be accessed at the same time was specified for SimpleDataSegment','')
+    b'\x29\x80': ('A region that all cannot be accessed at the same time was specified for SimpleDataSegment',''),
+    b'\x09\x80': ('A segment type error occurred',''),
+    b'\x0f\x80': ('There is an inconsistency in data length information in the Request Data',''),
+    b'\x17\x80': ('More than one element was specified for a variable that does not have elements',''),
+    b'\x18\x80': ('Zero elements or data that exceeded the range of the array was specified for an array',''),
+    b'\x21\x80': ('A value other than 0 or 2 was specified for an AddInfo area',''),
+    b'\x22\x80': ('The data type that is specified in the request service data does not '
+                  'agree with the tag information. The AddInfo Length in the request service data is not 0',''),
+    b'\x23\x80': ('An internal error occurred. (An illegal command format was used.)',''),
+    b'\x24\x80': ('An internal error occurred. (An illegal command length was used.)',''),
+    b'\x25\x80': ('An internal error occurred. (An illegal parameter was used.)',''),
+    b'\x27\x80': ('An internal error occurred. (A parameter error occurred.)',''),
+    b'\x28\x80': ('An attempt was made to write an out-of-range value for a variable for which a subrange '
+                  'is specified. An attempt was made to write an undefined value to an enumeration variable.',''),
 }
 
 def cip_crc16(data: bytes, poly=0xa001) -> bytes:
