@@ -479,9 +479,7 @@ class AsyncEIPConnectedCIPDispatcher(AsyncEIPConnectedCommandMixin, AsyncCIPDisp
         reply_data_and_address_item.from_bytes(response)
         cip_reply = CIPReply(reply_data_and_address_item.data)
         if cip_reply.general_status != b'\x00':
-            raise CIPException(
-                f'CIP reply contained a general status code {binascii.hexlify(cip_reply.general_status)} '
-                f'and {binascii.hexlify(cip_reply.extended_status)} extended status')
+            raise CIPException(cip_reply.general_status, cip_reply.extended_status)
         return cip_reply
 
 
@@ -528,9 +526,7 @@ class EIPConnectedCIPDispatcher(EIPConnectedCommandMixin, CIPDispatcher):
         reply_data_and_address_item.from_bytes(response)
         cip_reply = CIPReply(reply_data_and_address_item.data)
         if cip_reply.general_status != b'\x00':
-            raise CIPException(
-                f'CIP reply contained a general status code {binascii.hexlify(cip_reply.general_status)} '
-                f'and {binascii.hexlify(cip_reply.extended_status)} extended status')
+            raise CIPException(cip_reply.general_status, cip_reply.extended_status)
         return cip_reply
 
     # @staticmethod

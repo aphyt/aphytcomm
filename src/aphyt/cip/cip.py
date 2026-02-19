@@ -8,6 +8,28 @@ from aphyt.cip.cip_attributes import CIPAttribute
 import binascii
 import re
 
+cip_status_dictionary = {
+    b'\x00': ('SUCCESS',''),
+    b'\x02': ('RESOURCE_UNAVAILABLE',''),
+    b'\x04': ('PATH_SEGMENT_ERROR','This is generally caused by the variable not existing or not being published'
+                                   ' in the global variable table'),
+    b'\x05': ('PATH_DESTINATION_UNKNOWN',''),
+    b'\x0c': ('OBJECT_STATE_CONFLICT',''),
+    b'\x11': ('REPLY_DATA_TOO_LARGE',''),
+    b'\x13': ('NOT_ENOUGH_DATA',''),
+    b'\x15': ('TOO_MUCH_DATA',''),
+    b'\x1f': ('VENDOR_SPECIFIC_ERROR',''),
+    b'\x20': ('INVALID_PARAMETER',''),
+    b'\x10\x80': ('Downloading, starting up',''),
+    b'\x11\x80': ('There is an error in tag memory',''),
+    b'\x02\x01\x04\x21': ('An attempt was made to read an I/O vari-able that cannot be read',''),
+    b'\x04\x01\x03\x11': ('The specified address and size exceed a segment boundary',''),
+    b'\x01\x80': ('An internal error occurred',''),
+    b'\x07\x80': ('An inaccessible variable was specified',''),
+    b'\x31\x80': ('An internal error occurred. (A memory allocation error occurred)',''),
+    b'\x02\x01\x03\x21': ('An attempt was made to write a constant or read-only variable',''),
+    b'\x29\x80': ('A region that all cannot be accessed at the same time was specified for SimpleDataSegment','')
+}
 
 def cip_crc16(data: bytes, poly=0xa001) -> bytes:
     data = bytearray(data)
@@ -45,7 +67,19 @@ class CIPService:
 
 
 class CIPException(Exception):
-    pass
+    def __init__(self, status: bytes, extended_status: bytes):
+        self.status = status
+        self.extended_status = extended_status
+        super().__init__(self.get_message())
+
+    def get_message(self):
+        message = (f'\nCIP reply contained a general status code {binascii.hexlify(self.status).decode('utf-8')}\n'
+                   f'{cip_status_dictionary[self.status][0]}\n{cip_status_dictionary[self.status][1]}\n')
+
+        if self.extended_status != b'':
+            message += f'Extended Status: {binascii.hexlify(self.extended_status).decode('utf-8')} \n' \
+                       f'{cip_status_dictionary[self.extended_status][0]}'
+        return message
 
 
 class CIPRequest:
