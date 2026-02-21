@@ -250,21 +250,28 @@ class AsyncEIPConnectedCommandMixin(AsyncEIPDispatcher):
         else:
             self.stream_writer.write(eip_message.bytes())
             await self.stream_writer.drain()
-            time.sleep(.0004)
             async with AsyncEIPConnectedCommandMixin.lock:
-                # await asyncio.sleep(.00001)
                 received_data = await self.stream_reader.readexactly(n=24)
                 received_data += await self.stream_reader.readexactly(n=struct.unpack('<H',received_data[2:4])[0])
             length = struct.unpack('<H',received_data[2:4])[0] + 24
             received_eip_message = EIPMessage()
-            # while len(received_data) > length:
-            #     received_eip_message.from_bytes(received_data[0:length])
-            #     received_data = received_data[length:]
-            #     length = struct.unpack('<H', received_data[2:4])[0] + 24
-            #     self.eip_responses[received_eip_message.context_integer()] = received_eip_message
             received_eip_message.from_bytes(received_data[0:length])
-            # received_eip_message.from_bytes(received_data)
-            self.eip_responses[received_eip_message.context_integer()] = received_eip_message
+            # Below recreates the extraction of a CIP reply that normally occurs in execute_cip_command and
+            # send_rr_data, but we want to check for x02 resource unavailable response
+            reply_command_specific_data = CommandSpecificData()
+            reply_command_specific_data.from_bytes(received_eip_message.command_data)
+            reply_packet = CommonPacketFormat([])
+            reply_packet.from_bytes(reply_command_specific_data.encapsulated_packet)
+            response = reply_packet.packets[1].bytes()
+            reply_data_and_address_item = DataAndAddressItem('', b'')
+            reply_data_and_address_item.from_bytes(response)
+            cip_reply = CIPReply(reply_data_and_address_item.data)
+            if cip_reply.general_status == b'\x02':
+                # Don't add the response to the eip_responses dictionary if it is "resource unavailable"
+                # because we should try again because the resource was flooded.
+                pass
+            else:
+                self.eip_responses[received_eip_message.context_integer()] = received_eip_message
             return await self.get_response(eip_message)
 
 
