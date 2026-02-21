@@ -14,9 +14,9 @@ class TestOnline(nseries_fixtures.BaseNSeries):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.eip_instance = omron.n_series.NSeries()
-        cls.eip_instance.connect_explicit('192.168.250.9')
-        cls.eip_instance.register_session()
+        cls.eip_instance = omron.n_series.NSeries('192.168.250.9')
+        # cls.eip_instance.connect_explicit('192.168.250.9')
+        # cls.eip_instance.register_session()
         # cls.eip_instance.update_variable_dictionary()
 
     @classmethod

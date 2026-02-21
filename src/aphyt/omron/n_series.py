@@ -251,10 +251,10 @@ class NSeries:
         self.host = host
         self.timeout = timeout
         update_data_type_dictionary(self._instance.connected_cip_dispatcher.data_type_dictionary)
-
-    def __enter__(self):
         if self.host is not None:
             self.connect_explicit(self.host, self.timeout)
+
+    def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -1108,7 +1108,7 @@ class NSeriesThreadDispatcher:
         self.connection_status = EIPConnectionStatus()
         if host is not None:
             self.connect_explicit(host, connection_timeout, retry_time, max_attempts)
-            self.register_session(retry_time)
+            # self.register_session(retry_time)
 
     def add_monitored_variable(self, monitored_variable: MonitoredVariable):
         self.monitored_variable_dictionary[monitored_variable.variable_name] = monitored_variable

@@ -28,7 +28,7 @@ class AsyncTestOnline(nseries_fixtures.AsyncBaseNSeries):
         # assign measurement object to unit test object
         cls.eip_instance = omron.n_series.AsyncNSeries()
         await cls.eip_instance.connect_explicit('192.168.250.9')
-        await cls.eip_instance.register_session()
+        # await cls.eip_instance.register_session()
 
     @classmethod
     async def tearDownClass(cls) -> None:
