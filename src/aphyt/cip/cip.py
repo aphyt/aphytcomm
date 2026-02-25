@@ -10,7 +10,8 @@ import re
 
 cip_status_dictionary = {
     b'\x00': ('SUCCESS',''),
-    b'\x02': ('RESOURCE_UNAVAILABLE',''),
+    b'\x02': ('RESOURCE_UNAVAILABLE','This is generally causes by too many coroutines exhausting PLC Ethernet/IP'
+                                     ' processing resources. Decrease the number of coroutines using a semaphore'),
     b'\x04': ('PATH_SEGMENT_ERROR','This is generally caused by the variable not existing or not being published'
                                    ' in the global variable table'),
     b'\x05': ('PATH_DESTINATION_UNKNOWN',''),
