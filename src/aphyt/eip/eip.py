@@ -243,7 +243,8 @@ class AsyncEIPConnectedCommandMixin(AsyncEIPDispatcher):
         self.BUFFER_SIZE = 4096
         self.host = None
 
-    async def get_response(self, eip_message: EIPMessage):
+    async def get_response(self, eip_message: EIPMessage, max_recursion = 20):
+        max_recursion -= 1
         if eip_message.context_integer() in self.eip_responses.keys():
             result = self.eip_responses.pop(eip_message.context_integer())
             return result
@@ -269,10 +270,13 @@ class AsyncEIPConnectedCommandMixin(AsyncEIPDispatcher):
             if cip_reply.general_status == b'\x02':
                 # Don't add the response to the eip_responses dictionary if it is "resource unavailable"
                 # because we should try again because the resource was flooded.
-                pass
+                if max_recursion == 0:
+                    raise CIPException(b'\x02', b'')
+                else:
+                    pass
             else:
                 self.eip_responses[received_eip_message.context_integer()] = received_eip_message
-            return await self.get_response(eip_message)
+            return await self.get_response(eip_message, max_recursion)
 
 
     async def send_command(self, eip_command: EIPMessage, host) -> EIPMessage:
