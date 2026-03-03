@@ -87,12 +87,12 @@ class CIPException(Exception):
         super().__init__(self.get_message())
 
     def get_message(self):
-        message = (f'\nCIP reply contained a general status code {binascii.hexlify(self.status).decode('utf-8')}\n'
-                   f'{cip_status_dictionary[self.status][0]}\n{cip_status_dictionary[self.status][1]}\n')
+        message = (f"\nCIP reply contained a general status code {binascii.hexlify(self.status).decode('utf-8')}\n"
+               f"{cip_status_dictionary[self.status][0]}\n{cip_status_dictionary[self.status][1]}\n")
 
         value = cip_status_dictionary.get(self.extended_status)
         if self.extended_status != b'':
-            message += f'Extended Status: {binascii.hexlify(self.extended_status).decode('utf-8')} \n'
+            message += f"Extended Status: {binascii.hexlify(self.extended_status).decode('utf-8')} \n"
         if value is not None:
             message += f'{value[0]}'
         return message
