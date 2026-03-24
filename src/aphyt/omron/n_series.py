@@ -300,6 +300,15 @@ class NSeries:
             self._instance.system_variable_list(), self._instance.loop)
         return future.result()
 
+    def instances(self):
+        return self._instance.instances
+
+    def system_instances(self):
+        return self._instance.system_instances
+
+    def user_instances(self):
+        return self._instance.user_instances
+
     def read_variable(self, variable_name: str):
         future = asyncio.run_coroutine_threadsafe(
             self._instance.read_variable(variable_name), self._instance.loop)
@@ -336,6 +345,9 @@ class AsyncNSeries:
         self.loop = None
         self.thread = None
         self.done = False
+        self.instances = []
+        self.user_instances = []
+        self.system_instances = []
 
     def start_loop(self):
         asyncio.set_event_loop(self.loop)
@@ -428,16 +440,20 @@ class AsyncNSeries:
         :return:
         """
         update_data_type_dictionary(self.connected_cip_dispatcher.data_type_dictionary)
-        user_instance_list = await self._get_instance_list_subset(True)
-        system_instance_list = await self._get_instance_list_subset(False)
-        for instance in user_instance_list:
+        self.user_instances = []
+        self.system_instances = []
+        self.instances = []
+        self.user_instances = await self._get_instance_list_subset(True)
+        self.system_instances = await self._get_instance_list_subset(False)
+        self.instances = self.user_instances + self.system_instances
+        for instance in self.user_instances:
             variable = instance.tag_name()
             variable_cip_datatype = await self._get_instance_from_variable_name(variable)
             variable_cip_datatype.variable_name = str(variable)
             self.connected_cip_dispatcher.variables.update({variable: variable_cip_datatype})
             self.connected_cip_dispatcher.user_variables.update({variable: variable_cip_datatype})
 
-        for instance in system_instance_list:
+        for instance in self.system_instances:
             variable = instance.tag_name()
             variable_cip_datatype = await self._get_instance_from_variable_name(variable)
             variable_cip_datatype.variable_name = str(variable)
@@ -955,14 +971,18 @@ class AsyncNSeries:
                 Omron specific method for creating a list of variables that are published in the controller.
                 :return:
                 """
-        tag_list = self._get_system_variable_list() + self._get_user_variable_list()
-        return tag_list
+        await self._get_instance_list_subset(True)
+        await self._get_instance_list_subset(False)
+        self.instances = self.user_instances + self.system_instances
+        return self.instances
 
     async def _get_user_variable_list(self):
-        return self._get_variable_list_subset(True)
+        self.user_instances = self._get_variable_list_subset(True)
+        return self.user_instances
 
     async def _get_system_variable_list(self):
-        return self._get_variable_list_subset(False)
+        self.system_instances = self._get_variable_list_subset(False)
+        return self.system_instances
 
     async def _get_instance_list_subset(self, user_defined: bool):
         all_received = False
