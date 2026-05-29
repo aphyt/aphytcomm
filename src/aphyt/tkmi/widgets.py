@@ -200,6 +200,7 @@ class HMIScreen(tkinter.Tk):
 
     def destroy(self):
         self.eip_instance.close_explicit()
+        self.withdraw()
         super().destroy()
 
 

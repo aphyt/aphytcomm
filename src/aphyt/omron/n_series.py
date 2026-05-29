@@ -1117,7 +1117,7 @@ class MonitoredVariable:
 class NSeriesThreadDispatcher:
     def __init__(self, host: str = None, connection_timeout: float = None,
                  retry_time: float = 1.0, max_attempts: int = None):
-        self._instance = NSeries(host, connection_timeout)
+        self._instance = NSeries()
         self._host = None
         self.message_timeout = 0.5
         self.executor = None
@@ -1128,7 +1128,7 @@ class NSeriesThreadDispatcher:
         self.connection_status = EIPConnectionStatus()
         if host is not None:
             self.connect_explicit(host, connection_timeout, retry_time, max_attempts)
-            # self.register_session(retry_time)
+            self.register_session(retry_time)
 
     def add_monitored_variable(self, monitored_variable: MonitoredVariable):
         self.monitored_variable_dictionary[monitored_variable.variable_name] = monitored_variable
@@ -1145,7 +1145,7 @@ class NSeriesThreadDispatcher:
                 self.connection_status.keep_alive_running = False
                 self.executor.shutdown()
                 self._reconnect()
-        else:
+        elif self.connection_status.reconnecting:
             self._reconnect()
 
     def retry_command(self, command, retry_time: float = 0.05, *args, **kwargs):
@@ -1217,7 +1217,7 @@ class NSeriesThreadDispatcher:
                     raise err
 
     def register_session(self, retry_time: float = 1.0):
-        self._instance.register_session()
+        # self._instance.register_session() Already registered with new connect
         session_id = self._instance.connected_cip_dispatcher.session_handle_id
         if session_id != b'\x00\x00\x00\x00\x00\x00\x00\x00':
             self.connection_status.has_session = True
