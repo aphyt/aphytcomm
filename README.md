@@ -32,3 +32,10 @@ if __name__ == '__main__':
             time.sleep(.5)
 
 ```
+## Other Ethernet/IP Libraries
+### Omron EIP for NodeJS
+For users that want to communicate with an Omron NX/NJ controller from NodeJS or NodeRed, [omron-eip](https://github.com/ucsballen/omron-eip) has implemented similar functionality to aphyt for use in those environments.
+### Python EIP for Rockwell Controllers
+For Python users that need to communicate with Rockwell controllers, [Pylogix](https://github.com/dmroeder/pylogix) is a fully featured communications driver. Rockwell and Omron diverge on many vendor specific Ethernet/IP implementation details, so this is a better project if that is your target controller
+### C EIP Library with Wrappers
+[libplctag](https://github.com/libplctag/libplctag) is a library written in C with wrappers for many other languages including C++ and C#. They have implemented Omron specific functionality in addition to Rockwell. Since this library is written in C, it is very appropriate for applications where resource usage is limited.
