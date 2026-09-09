@@ -311,6 +311,10 @@ class AsyncEIPConnectedCommandMixin(AsyncEIPDispatcher):
             if self.explicit_message_socket:
                 await self.explicit_message_socket.close()
                 self.is_connected_explicit = False
+            if self.stream_writer:
+                self.stream_writer.close()
+                await self.stream_writer.wait_closed()
+                self.is_connected_explicit = False
             raise err
 
     async def close_explicit(self):
@@ -323,6 +327,9 @@ class AsyncEIPConnectedCommandMixin(AsyncEIPDispatcher):
         self.host = None
         if self.explicit_message_socket:
             await self.explicit_message_socket.close()
+        if self.stream_writer:
+            self.stream_writer.close()
+            await self.stream_writer.wait_closed()
 
     async def register_session(self, command_data=b'\x01\x00\x00\x00'):
         """

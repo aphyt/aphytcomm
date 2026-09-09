@@ -252,14 +252,16 @@ class NSeries:
         self.timeout = timeout
         update_data_type_dictionary(self._instance.connected_cip_dispatcher.data_type_dictionary)
         if self.host is not None:
-            self.connect_explicit(self.host, self.timeout)
+            try:
+                self.connect_explicit(self.host, self.timeout)
+            except socket.error as err:
+                self.close_explicit()
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close_explicit()
-        self._instance.stop_loop()
 
     @property
     def connected_cip_dispatcher(self):
@@ -351,7 +353,11 @@ class AsyncNSeries:
 
     def start_loop(self):
         asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
+        try:
+            self.loop.run_forever()
+        finally:
+            self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+            self.loop.close()
 
     def create_sync_entry(self):
         self.loop = asyncio.new_event_loop()
@@ -364,7 +370,7 @@ class AsyncNSeries:
 
     def stop_loop(self):
         self.loop.call_soon_threadsafe(self.loop.stop)
-        # self.thread.join()
+
 
     def run_method(self, method, positional_arguments, keyword_arguments):
         future = asyncio.run_coroutine_threadsafe(method(*positional_arguments, **keyword_arguments), self.loop)
